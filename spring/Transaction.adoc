@@ -1,0 +1,408 @@
+= Transaction in SQL and Spring
+
+Transaction is group of related sql statements that works as single unit and inherits ADIC property. It is used to maintain data accuracy and integrity.
+
+
+== What are ACID Properties?
+
+ACID properties are a set of rules that ensure reliable and safe processing of database transactions.  
+ACID stands for:
+
+* A → Atomicity  
+* C → Consistency  
+* I → Isolation  
+* D → Durability  
+
+These properties help maintain data accuracy and integrity.
+
+---
+
+=== 1. Atomicity
+
+Atomicity means that a transaction is treated as a *single unit*.  
+Either **all operations succeed**, or **none of them happen**. 
+If any step in a transaction fails, the entire transaction is rolled back.
+
+==== Example
+Money transfer from Account A to Account B:
+
+* Step 1: Deduct ₹500 from Account A  
+* Step 2: Add ₹500 to Account B  
+
+If Step 2 fails, Step 1 is undone. So, no money is lost.
+
+[source,java]
+----
+BEGIN TRANSACTION;
+UPDATE account SET balance = balance - 500 WHERE id = 1;
+UPDATE account SET balance = balance + 500 WHERE id = 2;
+COMMIT;
+----
+
+---
+
+=== 2. Consistency
+
+Consistency ensures that the database moves from **one valid state to another valid state**. After a transaction, all database rules, constraints, and validations must be satisfied.
+
+==== Example
+If account balance cannot be negative:
+
+* Before transfer: Balance = ₹1000  
+* Transfer amount = ₹1500 → Not allowed  
+
+The transaction fails, and the database remains unchanged.
+
+[source,sql]
+----
+CHECK (balance >= 0)
+----
+
+This ensures invalid data is never saved.
+
+---
+
+=== 3. Isolation
+
+Isolation ensures that **multiple transactions can run at the same time without affecting each other**. Each transaction works as it is the only one running.
+
+==== Example
+Two users trying to book the *last train seat* at the same time:
+
+* Only **one booking succeeds**
+* The other transaction fails or waits
+
+This prevents *dirty reads* and *data corruption*.
+
+---
+
+=== 4. Durability
+
+Durability guarantees that **once a transaction is committed, it stays saved permanently**, even after system crashes. 
+Saved data will not be lost due to power failure or server restart.
+
+==== Example
+After confirming a payment:
+
+* Data is written to disk  
+* Even if the server crashes, the payment record remains safe  
+
+This is achieved using *logs, backups, and disk storage*.
+
+---
+
+=== Summary Table
+
+[cols="1,3,3", options="header"]
+|===
+| Property | Meaning | Simple Example
+
+| Atomicity
+| All or nothing
+| Money transfer — both debit & credit happen or none
+
+| Consistency
+| Valid data only
+| Balance cannot go negative
+
+| Isolation
+| Transactions don't interfere
+| Only one user books the last seat
+
+| Durability
+| Data is permanent after commit
+| Payment record saved even after crash
+|===
+
+---
+
+== Spring Boot Transactions & Propagation Types
+
+*Transaction* is group of related sql statements that works as single unit and inherits ADIC property. It is used to maintain data accuracy and integrity. It make sure that eather:
+
+* all succeed, or
+* all fail together
+
+Spring mainly uses the `@Transactional` annotation to manage this.
+
+[source,java]
+----
+@Transactional
+public void transferMoney() {
+    debitAccount();
+    creditAccount();
+}
+----
+
+If any exception occurs, Spring automatically performs a *rollback*.
+
+---
+
+== @Transactional Annotation Basics
+
+[source,java]
+----
+@Transactional(
+    propagation = Propagation.REQUIRED,
+    isolation = Isolation.READ_COMMITTED,
+    rollbackFor = Exception.class
+)
+----
+
+Common attributes:
+
+* `propagation` → How transactions interact with each other
+* `isolation` → Data visibility between transactions
+* `rollbackFor` → Which exceptions trigger rollback
+
+---
+
+== Transaction Propagation
+
+Propagation defines **how a method behaves when it is called inside another transaction**.
+
+Think of it as:
+> “Should I join the existing transaction, create a new one, or run without one?”
+
+[source,java]
+----
+@Transactional
+public void placeOrder() {
+    savePayment();
+}
+
+@Transactional
+// This method is called inside another transaction so how does it behave?
+public void saveOrder() {
+    orderRepository.save(...);
+}
+
+public void savePayment() {
+    paymentRepository.save(...);
+}
+----
+
+
+---
+
+== 1. REQUIRED (Default)
+
+=== Meaning
+* Uses existing transaction if available
+* Otherwise, creates a new transaction
+
+=== Example
+[source,java]
+----
+@Transactional(propagation = Propagation.REQUIRED)
+public void placeOrder() {
+    saveOrder();
+    savePayment();
+}
+----
+
+=== Flow
+* If `placeOrder()` is called inside another transaction → joins it
+* If not → starts a new transaction
+
+=== Real-life Example
+Placing an order and saving payment must succeed or fail together.
+
+---
+
+== 2. REQUIRES_NEW
+
+=== Meaning
+* Always creates a **new transaction**
+* Suspends the existing transaction
+
+=== Example
+[source,java]
+----
+@Transactional(propagation = Propagation.REQUIRES_NEW)
+public void saveAuditLog() {
+    auditRepository.save(...);
+}
+----
+
+=== Flow
+* Parent transaction is paused
+* New transaction starts
+* Commits independently
+
+=== Real-life Example
+Audit logs should be saved even if the main transaction fails.
+
+---
+
+== 3. SUPPORTS
+
+=== Meaning
+* Joins existing transaction if present
+* Otherwise, runs *without* a transaction
+
+=== Example
+[source,java]
+----
+@Transactional(propagation = Propagation.SUPPORTS)
+public List<User> getUsers() {
+    return userRepository.findAll();
+}
+----
+
+=== Use Case
+Read-only operations that don't require strict transactional behavior.
+
+---
+
+== 4. NOT_SUPPORTED
+
+=== Meaning
+* Always runs **without a transaction**
+* Suspends any existing transaction
+
+=== Example
+[source,java]
+----
+@Transactional(propagation = Propagation.NOT_SUPPORTED)
+public void generateReport() {
+    // long-running read-only logic
+}
+----
+
+=== Use Case
+Reporting, analytics, or non-DB operations.
+
+---
+
+== 5. MANDATORY
+
+=== Meaning
+* Must run inside an existing transaction
+* Throws exception if none exists
+
+=== Example
+[source,java]
+----
+@Transactional(propagation = Propagation.MANDATORY)
+public void updateInventory() {
+    inventoryRepository.save(...);
+}
+----
+
+=== Use Case
+Critical methods that should never run outside a transaction.
+
+---
+
+== 6. NEVER
+
+=== Meaning
+* Must NOT run inside a transaction
+* Throws exception if a transaction exists
+
+=== Example
+[source,java]
+----
+@Transactional(propagation = Propagation.NEVER)
+public void sendNotification() {
+    // external service call
+}
+----
+
+=== Use Case
+External API calls where transactions are not allowed.
+
+---
+
+== 7. NESTED
+
+=== Meaning
+* Runs inside a parent transaction
+* Can rollback independently using savepoints
+
+=== Example
+[source,java]
+----
+@Transactional(propagation = Propagation.NESTED)
+public void saveChildRecord() {
+    childRepository.save(...);
+}
+----
+
+=== Use Case
+Partial rollback without affecting the parent transaction.
+
+NOTE: Works only with databases that support *savepoints* (e.g., MySQL InnoDB).
+
+---
+
+== Common Propagation Summary
+
+[cols="1,2,3", options="header"]
+|===
+| Propagation | Transaction Behavior | Common Use Case
+
+| REQUIRED
+| Join or create
+| Business logic
+
+| REQUIRES_NEW
+| Always new
+| Audit logs
+
+| SUPPORTS
+| Optional
+| Read-only queries
+
+| NOT_SUPPORTED
+| No transaction
+| Reporting
+
+| MANDATORY
+| Must exist
+| Core DB updates
+
+| NEVER
+| Must not exist
+| External calls
+
+| NESTED
+| Savepoint-based
+| Partial rollback
+|===
+
+---
+
+== Important Notes (Very Common Interview Points)
+
+* `@Transactional` works only on **public methods**
+* Internal method calls (same class) do NOT trigger transactions
+* Runtime exceptions cause rollback by default
+* Checked exceptions need `rollbackFor`
+
+[source,java]
+----
+@Transactional(rollbackFor = Exception.class)
+----
+
+---
+
+== One-Line Memory Trick
+
+*REQUIRED → default*
+*REQUIRES_NEW → independent*
+*MANDATORY → must exist*
+*NEVER → must not exist*
+*SUPPORTS → optional*
+*NESTED → savepoint*
+
+---
+
+If you want next:
+* Isolation levels explained with examples
+* Common Spring transaction pitfalls
+* Real project use-case (Order + Payment + Inventory)
+
+Just tell me 👍
+

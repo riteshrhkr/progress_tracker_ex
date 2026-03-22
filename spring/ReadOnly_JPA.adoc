@@ -1,0 +1,297 @@
+= Hibernate Read-Only and Large Dataset Patterns
+:author: Notes
+:toc:
+:sectnums:
+
+== Overview
+
+When using Spring Boot with JPA and Hibernate, large read operations can cause:
+
+* High memory usage
+* Slow performance
+* Persistence context bloating
+
+This document demonstrates best practices for:
+
+* Fetching entities in read-only mode
+* Streaming large datasets
+* Preventing memory leaks
+* High performance data processing
+
+Technology stack:
+
+* Spring Boot
+* Hibernate
+* JPA
+* MySQL
+
+---
+
+== Example Entity
+
+[source,java]
+----
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+
+@Entity
+public class TestingEntity {
+
+    @Id
+    private Long id;
+
+    private String name;
+
+    protected TestingEntity() {}
+
+    public TestingEntity(Long id, String name) {
+        this.id = id;
+        this.name = name;
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public String getName() {
+        return name;
+    }
+}
+----
+
+Best practices:
+
+* Avoid setters for immutable style entities
+* Use constructor initialization
+
+---
+
+== Read Only Transaction
+
+The simplest way to fetch entities without triggering dirty checking.
+
+[source,java]
+----
+@Service
+public class TestingService {
+
+    private final TestingRepository repository;
+
+    public TestingService(TestingRepository repository) {
+        this.repository = repository;
+    }
+
+    @Transactional(readOnly = true)
+    public TestingEntity getEntity(Long id) {
+        return repository.findById(id).orElseThrow();
+    }
+}
+----
+
+Benefits:
+
+* Hibernate skips dirty checking
+* Lower memory overhead
+* Faster queries
+
+---
+
+== Read Only Query Hint
+
+Mark a specific query as read-only.
+
+[source,java]
+----
+@Repository
+public interface TestingRepository extends JpaRepository<TestingEntity, Long> {
+
+    @Query("select t from TestingEntity t where t.id = :id")
+    @QueryHints(@QueryHint(name = "org.hibernate.readOnly", value = "true"))
+    TestingEntity findReadOnlyById(@Param("id") Long id);
+}
+----
+
+This tells Hibernate:
+
+* Do not track changes
+* Do not schedule updates
+
+---
+
+== Streaming Large Datasets
+
+When fetching thousands or millions of rows, avoid `findAll()`.
+
+Repository:
+
+[source,java]
+----
+@Repository
+public interface TestingRepository extends JpaRepository<TestingEntity, Long> {
+
+    @Query("select t from TestingEntity t")
+    @QueryHints({
+        @QueryHint(name = "org.hibernate.fetchSize", value = "1000"),
+        @QueryHint(name = "org.hibernate.readOnly", value = "true")
+    })
+    Stream<TestingEntity> streamAll();
+}
+----
+
+Service:
+
+[source,java]
+----
+@Service
+public class BatchProcessingService {
+
+    private final TestingRepository repository;
+
+    public BatchProcessingService(TestingRepository repository) {
+        this.repository = repository;
+    }
+
+    @Transactional(readOnly = true)
+    public void processEntities() {
+
+        try (Stream<TestingEntity> stream = repository.streamAll()) {
+
+            stream.forEach(entity -> {
+                process(entity);
+            });
+
+        }
+    }
+
+    private void process(TestingEntity entity) {
+        System.out.println(entity.getName());
+    }
+}
+----
+
+Benefits:
+
+* Results fetched gradually
+* Minimal memory usage
+* Suitable for very large tables
+
+---
+
+== Scrollable Results (Hibernate)
+
+For extremely large datasets.
+
+[source,java]
+----
+@Transactional(readOnly = true)
+public void processWithCursor(EntityManager entityManager) {
+
+    Session session = entityManager.unwrap(Session.class);
+
+    ScrollableResults results = session
+            .createQuery("FROM TestingEntity", TestingEntity.class)
+            .setReadOnly(true)
+            .scroll(ScrollMode.FORWARD_ONLY);
+
+    while (results.next()) {
+
+        TestingEntity entity = (TestingEntity) results.get()[0];
+
+        process(entity);
+    }
+}
+----
+
+Advantages:
+
+* Database cursor style processing
+* Very low memory usage
+
+---
+
+== Stateless Session (Maximum Performance)
+
+Hibernate provides a stateless session that disables the persistence context.
+
+[source,java]
+----
+public void processStateless(SessionFactory sessionFactory) {
+
+    StatelessSession session = sessionFactory.openStatelessSession();
+
+    List<TestingEntity> list =
+            session.createQuery("FROM TestingEntity", TestingEntity.class)
+                   .getResultList();
+
+    for (TestingEntity entity : list) {
+        process(entity);
+    }
+}
+----
+
+Characteristics:
+
+* No first-level cache
+* No dirty checking
+* No lazy loading
+* Extremely fast
+
+Best for:
+
+* Batch jobs
+* ETL pipelines
+* Analytics processing
+
+---
+
+== Performance Guidelines
+
+|===
+|Dataset Size |Recommended Approach
+
+|< 10k rows
+|Normal JPA queries
+
+|10k – 1M rows
+|Streaming queries
+
+|> 1M rows
+|ScrollableResults or StatelessSession
+|===
+
+---
+
+== Common Mistake (Memory Leak)
+
+Avoid:
+
+[source,java]
+----
+List<TestingEntity> list = repository.findAll();
+----
+
+Problem:
+
+* Loads entire table into memory
+* Persistence context stores all entities
+* Memory grows quickly
+
+Instead use:
+
+* Streaming
+* Scrollable results
+* Stateless sessions
+
+---
+
+== Summary
+
+Best practices:
+
+1. Use `@Transactional(readOnly = true)` for read services
+2. Use read-only query hints
+3. Stream large datasets
+4. Use scrollable results for huge tables
+5. Use stateless sessions for batch processing
+
+These patterns significantly improve performance and memory efficiency in Spring Boot + Hibernate applications.
