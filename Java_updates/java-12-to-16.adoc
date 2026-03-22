@@ -1,0 +1,1058 @@
+= Java 12-16 Features
+:toc:
+:toc-placement!:
+
+toc::[]
+
+---
+
+*Navigation:* link:README.adoc[Home] | link:java-11.adoc[← Java 11 (LTS)] | *Java 12-16* | link:java-17.adoc[Next: Java 17 (LTS) →]
+
+---
+
+== Introduction
+
+*Java 12-16* (March 2019 - March 2021) were short-term releases that introduced two major developer productivity features: *Switch Expressions* and *Text Blocks*. These features went through preview phases across multiple versions before being finalized.
+
+*Key Themes:*
+
+- *Switch Expressions*: Switch as an expression, not just a statement
+- *Text Blocks*: Multi-line string literals without escape hell
+- *Pattern Matching*: Preview features that became finalized in Java 17
+
+*Interview Importance:* ⭐⭐⭐⭐
+
+Switch Expressions and Text Blocks are widely used in modern codebases and frequently appear in interviews. The pattern matching previews are important background for Java 17.
+
+*Version Timeline:*
+
+- *Java 12*: Switch Expressions (preview)
+- *Java 13*: Text Blocks (preview), Switch Expressions (2nd preview)
+- *Java 14*: Switch Expressions (standard), Records (preview), Pattern Matching instanceof (preview)
+- *Java 15*: Text Blocks (standard), Sealed Classes (preview)
+- *Java 16*: Records (standard), Pattern Matching instanceof (standard)
+
+*Note:* This document covers Java 12-16 together because most features were in preview across multiple versions. Records, Sealed Classes, and Pattern Matching are covered in depth in Java 17 documentation.
+
+*Example Files:*
+
+- link:examples/java12_16/SwitchExpressionsDemo.java[SwitchExpressionsDemo.java] - Switch expressions and text blocks
+
+---
+
+== Switch Expressions
+
+.Overview / What it is
+[%collapsible]
+====
+*Switch Expressions* (standard in Java 14) allow using `switch` as an *expression* that returns a value, rather than just as a statement. It also introduces arrow syntax (`->`) and removes fall-through behavior.
+
+*Mental Model:* "Switch that returns a value" - like a ternary operator but for multiple cases.
+
+[source,java]
+----
+// Old switch statement - verbose, error-prone
+String result;
+switch (day) {
+    case MONDAY:
+    case FRIDAY:
+    case SUNDAY:
+        result = "6 letters";
+        break;
+    case TUESDAY:
+        result = "7 letters";
+        break;
+    case THURSDAY:
+    case SATURDAY:
+        result = "8 letters";
+        break;
+    case WEDNESDAY:
+        result = "9 letters";
+        break;
+    default:
+        result = "Unknown";
+        break;
+}
+
+// Switch expression - concise, safe
+String result = switch (day) {
+    case MONDAY, FRIDAY, SUNDAY -> "6 letters";
+    case TUESDAY -> "7 letters";
+    case THURSDAY, SATURDAY -> "8 letters";
+    case WEDNESDAY -> "9 letters";
+};
+----
+
+*Key Features:*
+
+1. *Arrow syntax* (`->`): No fall-through, no break needed
+2. *Multiple case labels*: Comma-separated cases
+3. *Returns a value*: Can assign result directly
+4. *Exhaustiveness*: Compiler ensures all cases are covered
+5. *yield keyword*: For complex case blocks that need to return a value
+
+[source,java]
+----
+// Using yield for complex logic
+int result = switch (day) {
+    case MONDAY, FRIDAY, SUNDAY -> 6;
+    case TUESDAY -> {
+        System.out.println("Processing Tuesday");
+        yield 7;  // Return value from block
+    }
+    case THURSDAY, SATURDAY -> 8;
+    case WEDNESDAY -> 9;
+};
+----
+====
+
+.Why use it
+[%collapsible]
+====
+*1. Eliminates Fall-Through Bugs*
+
+[source,java]
+----
+// Old way - easy to forget break
+String season;
+switch (month) {
+    case 12:
+    case 1:
+    case 2:
+        season = "Winter";
+        // ❌ Forgot break - falls through!
+    case 3:
+    case 4:
+    case 5:
+        season = "Spring";
+        break;
+    // ...
+}
+
+// Switch expression - no fall-through
+String season = switch (month) {
+    case 12, 1, 2 -> "Winter";
+    case 3, 4, 5 -> "Spring";
+    case 6, 7, 8 -> "Summer";
+    case 9, 10, 11 -> "Fall";
+    default -> "Unknown";
+};
+----
+
+*2. Enforces Exhaustiveness*
+
+[source,java]
+----
+enum Status { ACTIVE, INACTIVE, PENDING }
+
+// ❌ Compilation error - not exhaustive
+String message = switch (status) {
+    case ACTIVE -> "Running";
+    case INACTIVE -> "Stopped";
+    // Missing PENDING - compiler error!
+};
+
+// ✅ Must cover all cases
+String message = switch (status) {
+    case ACTIVE -> "Running";
+    case INACTIVE -> "Stopped";
+    case PENDING -> "Waiting";
+};
+----
+
+*3. Returns Value Directly*
+
+[source,java]
+----
+// Old way - verbose
+int numLetters;
+switch (day) {
+    case MONDAY: numLetters = 6; break;
+    case TUESDAY: numLetters = 7; break;
+    // ...
+}
+return numLetters;
+
+// New way - concise
+return switch (day) {
+    case MONDAY -> 6;
+    case TUESDAY -> 7;
+    // ...
+};
+----
+
+*4. Multiple Case Labels*
+
+[source,java]
+----
+// Old way - repetitive
+switch (month) {
+    case 12:
+    case 1:
+    case 2:
+        return "Winter";
+    // ...
+}
+
+// New way - grouped
+return switch (month) {
+    case 12, 1, 2 -> "Winter";
+    case 3, 4, 5 -> "Spring";
+    // ...
+};
+----
+
+*5. Works Well with Enums*
+
+[source,java]
+----
+enum OrderStatus { PENDING, PROCESSING, SHIPPED, DELIVERED }
+
+double getFee(OrderStatus status) {
+    return switch (status) {
+        case PENDING -> 0.0;
+        case PROCESSING -> 5.0;
+        case SHIPPED -> 10.0;
+        case DELIVERED -> 0.0;
+    };
+}
+----
+====
+
+.When NOT to use
+[%collapsible]
+====
+*1. Simple If-Else is Clearer*
+
+[source,java]
+----
+// ❌ Overkill
+String result = switch (count) {
+    case 0 -> "none";
+    case 1 -> "one";
+    default -> "many";
+};
+
+// ✅ Simpler
+String result = count == 0 ? "none" :
+                count == 1 ? "one" : "many";
+----
+
+*2. When You Need Fall-Through Logic*
+
+[source,java]
+----
+// Rare case: you actually want fall-through behavior
+// Use old switch statement
+switch (action) {
+    case DELETE:
+        validatePermissions();
+        // Fall through to log
+    case UPDATE:
+        logAction(action);
+        break;
+}
+----
+
+*3. Complex Multi-Statement Logic*
+
+[source,java]
+----
+// If each case has many statements, switch expression can be awkward
+String result = switch (type) {
+    case TYPE_A -> {
+        // 20 lines of code
+        // ...
+        yield computedValue;
+    }
+    // Better as separate methods
+};
+
+// ✅ Extract to methods
+String result = switch (type) {
+    case TYPE_A -> handleTypeA();
+    case TYPE_B -> handleTypeB();
+};
+----
+====
+
+.Best Practices
+[%collapsible]
+====
+*Do's:*
+
+✅ *Use arrow syntax for simple cases*
+
+[source,java]
+----
+String result = switch (day) {
+    case MONDAY -> "Start of week";
+    case FRIDAY -> "End of week";
+    default -> "Middle of week";
+};
+----
+
+✅ *Group related cases*
+
+[source,java]
+----
+boolean isWeekend = switch (day) {
+    case SATURDAY, SUNDAY -> true;
+    case MONDAY, TUESDAY, WEDNESDAY, THURSDAY, FRIDAY -> false;
+};
+----
+
+✅ *Use yield for complex blocks*
+
+[source,java]
+----
+int result = switch (operation) {
+    case ADD -> a + b;
+    case MULTIPLY -> {
+        System.out.println("Multiplying " + a + " * " + b);
+        yield a * b;
+    }
+};
+----
+
+✅ *Leverage exhaustiveness with enums*
+
+[source,java]
+----
+// No default needed - compiler ensures all enum values covered
+String description = switch (status) {
+    case ACTIVE -> "Currently active";
+    case INACTIVE -> "Currently inactive";
+    case PENDING -> "Awaiting activation";
+};
+----
+
+*Don'ts:*
+
+❌ *Don't mix arrow and colon syntax*
+
+[source,java]
+----
+// ❌ Can't mix styles
+String result = switch (day) {
+    case MONDAY -> "Monday";
+    case TUESDAY:  // ❌ Error - mixing styles
+        result = "Tuesday";
+        break;
+};
+----
+
+❌ *Don't use for simple conditionals*
+
+[source,java]
+----
+// ❌ Overkill
+String result = switch (flag) {
+    case true -> "yes";
+    case false -> "no";
+};
+
+// ✅ Use ternary
+String result = flag ? "yes" : "no";
+----
+
+❌ *Don't forget yield in blocks*
+
+[source,java]
+----
+// ❌ Compilation error - missing yield
+int result = switch (x) {
+    case 1 -> {
+        int temp = compute();
+        temp * 2;  // ❌ Missing yield!
+    }
+};
+
+// ✅ Use yield
+int result = switch (x) {
+    case 1 -> {
+        int temp = compute();
+        yield temp * 2;
+    }
+};
+----
+====
+
+.Examples
+[%collapsible]
+====
+*Example 1: Day of Week*
+
+[source,java]
+----
+enum Day { MONDAY, TUESDAY, WEDNESDAY, THURSDAY, FRIDAY, SATURDAY, SUNDAY }
+
+String dayType = switch (day) {
+    case MONDAY, TUESDAY, WEDNESDAY, THURSDAY, FRIDAY -> "Weekday";
+    case SATURDAY, SUNDAY -> "Weekend";
+};
+----
+
+*Example 2: Calculation*
+
+[source,java]
+----
+int calculate(int a, int b, String operation) {
+    return switch (operation) {
+        case "add" -> a + b;
+        case "subtract" -> a - b;
+        case "multiply" -> a * b;
+        case "divide" -> {
+            if (b == 0) throw new ArithmeticException("Division by zero");
+            yield a / b;
+        }
+        default -> throw new IllegalArgumentException("Unknown operation");
+    };
+}
+----
+
+*Example 3: HTTP Status*
+
+[source,java]
+----
+String getStatusMessage(int statusCode) {
+    return switch (statusCode) {
+        case 200 -> "OK";
+        case 201 -> "Created";
+        case 400 -> "Bad Request";
+        case 401 -> "Unauthorized";
+        case 404 -> "Not Found";
+        case 500 -> "Internal Server Error";
+        default -> "Unknown Status";
+    };
+}
+----
+
+For more examples, see link:examples/java12_16/SwitchExpressionsDemo.java[SwitchExpressionsDemo.java]
+====
+
+.Common Pitfalls
+[%collapsible]
+====
+*1. Forgetting yield in Blocks*
+
+[source,java]
+----
+// ❌ Missing yield
+int result = switch (x) {
+    case 1 -> {
+        int temp = x * 2;
+        temp;  // ❌ Not a yield!
+    }
+};
+
+// ✅ Use yield
+int result = switch (x) {
+    case 1 -> {
+        int temp = x * 2;
+        yield temp;
+    }
+};
+----
+
+*2. Missing Default for Non-Exhaustive Types*
+
+[source,java]
+----
+// ❌ int is not exhaustive - need default
+String result = switch (number) {
+    case 1 -> "one";
+    case 2 -> "two";
+    // Compilation error - missing default
+};
+
+// ✅ Add default
+String result = switch (number) {
+    case 1 -> "one";
+    case 2 -> "two";
+    default -> "other";
+};
+----
+
+*3. Mixing Old and New Syntax*
+
+[source,java]
+----
+// ❌ Can't mix colon and arrow
+String result = switch (x) {
+    case 1 -> "one";
+    case 2:  // ❌ Error
+        return "two";
+};
+----
+
+*4. Unreachable Code with Arrow Syntax*
+
+[source,java]
+----
+// ❌ No fall-through with arrows
+String result = switch (x) {
+    case 1 -> "one";
+    case 2 -> "two";
+    System.out.println("test");  // ❌ Unreachable!
+};
+----
+====
+
+.Quick Review Questions
+[%collapsible]
+====
+1. *What's the main benefit of switch expressions?*
+   - Returns a value directly, eliminates fall-through bugs, enforces exhaustiveness
+
+2. *What does the arrow (`->`) syntax mean?*
+   - No fall-through, no break needed. Executes only that case.
+
+3. *When do you need to use `yield`?*
+   - When you have a block of code (enclosed in `{}`) and need to return a value from it
+
+4. *Can you mix arrow and colon syntax?*
+   - No. Must use one style throughout the switch.
+
+5. *What happens if you don't cover all enum values?*
+   - Compilation error (unless you have a `default` case)
+
+6. *Can you have multiple case labels?*
+   - Yes! Use comma: `case 1, 2, 3 -> "result";`
+
+7. *Do you need `break` with arrow syntax?*
+   - No. Arrow syntax has no fall-through.
+
+8. *Can switch expressions throw exceptions?*
+   - Yes, you can throw exceptions in any case branch.
+
+9. *What's the difference between switch statement and switch expression?*
+   - Expression returns a value and must be exhaustive. Statement doesn't return value.
+
+10. *When should you use old switch vs new switch?*
+    - Use new switch expressions when returning values. Use old switch if you actually need fall-through (rare).
+====
+
+---
+
+== Text Blocks
+
+.Overview / What it is
+[%collapsible]
+====
+*Text Blocks* (standard in Java 15) allow multi-line string literals using triple quotes (`"""`). They preserve formatting and eliminate escape character hell for JSON, HTML, SQL, etc.
+
+*Mental Model:* "WYSIWYG strings" - What You See Is What You Get. No more `\n` and `\"` everywhere.
+
+[source,java]
+----
+// Old way - escape hell
+String json = "{\n" +
+              "  \"name\": \"John\",\n" +
+              "  \"age\": 30,\n" +
+              "  \"email\": \"john@example.com\"\n" +
+              "}";
+
+// Text block - clean and readable
+String json = """
+    {
+      "name": "John",
+      "age": 30,
+      "email": "john@example.com"
+    }
+    """;
+----
+
+*Syntax:*
+
+[source,java]
+----
+String textBlock = """
+    Line 1
+    Line 2
+    Line 3
+    """;
+----
+
+*Key Features:*
+
+1. *Multi-line*: No `\n` needed - actual line breaks
+2. *No escape quotes*: Double quotes don't need escaping
+3. *Incidental whitespace removal*: Automatic indentation normalization
+4. *Line terminator normalization*: Always uses `\n` regardless of platform
+====
+
+.Why use it
+[%collapsible]
+====
+*1. JSON - Dramatically Cleaner*
+
+[source,java]
+----
+// Before - unreadable
+String json = "{\"users\":[{\"id\":1,\"name\":\"Alice\"},{\"id\":2,\"name\":\"Bob\"}]}";
+
+// With text blocks - readable
+String json = """
+    {
+      "users": [
+        {"id": 1, "name": "Alice"},
+        {"id": 2, "name": "Bob"}
+      ]
+    }
+    """;
+----
+
+*2. SQL Queries*
+
+[source,java]
+----
+// Before - messy
+String sql = "SELECT u.name, u.email, o.total\n" +
+             "FROM users u\n" +
+             "JOIN orders o ON u.id = o.user_id\n" +
+             "WHERE o.status = 'COMPLETED'\n" +
+             "ORDER BY o.created_at DESC";
+
+// With text blocks - clear
+String sql = """
+    SELECT u.name, u.email, o.total
+    FROM users u
+    JOIN orders o ON u.id = o.user_id
+    WHERE o.status = 'COMPLETED'
+    ORDER BY o.created_at DESC
+    """;
+----
+
+*3. HTML Templates*
+
+[source,java]
+----
+// Before - painful
+String html = "<html>\n" +
+              "  <body>\n" +
+              "    <h1>Welcome</h1>\n" +
+              "    <p>Hello, " + name + "!</p>\n" +
+              "  </body>\n" +
+              "</html>";
+
+// With text blocks - natural
+String html = """
+    <html>
+      <body>
+        <h1>Welcome</h1>
+        <p>Hello, %s!</p>
+      </body>
+    </html>
+    """.formatted(name);
+----
+
+*4. Embedded Scripts*
+
+[source,java]
+----
+String script = """
+    function calculateTotal(items) {
+      return items.reduce((sum, item) => {
+        return sum + item.price * item.quantity;
+      }, 0);
+    }
+    """;
+----
+
+*5. Test Data*
+
+[source,java]
+----
+String testCsv = """
+    Name,Age,City
+    Alice,30,New York
+    Bob,25,London
+    Charlie,35,Tokyo
+    """;
+----
+====
+
+.When NOT to use
+[%collapsible]
+====
+*1. Single Line Strings*
+
+[source,java]
+----
+// ❌ Overkill
+String message = """
+    Hello World
+    """;
+
+// ✅ Use regular string
+String message = "Hello World";
+----
+
+*2. Dynamic Content (Use formatted instead)*
+
+[source,java]
+----
+// ❌ Concatenation defeats the purpose
+String message = """
+    Hello, """ + name + """
+    !
+    Welcome to """ + appName;
+
+// ✅ Use formatted() or String.format()
+String message = """
+    Hello, %s!
+    Welcome to %s
+    """.formatted(name, appName);
+----
+
+*3. When Indentation Matters Precisely*
+
+[source,java]
+----
+// Text blocks remove "incidental" indentation
+// If you need exact control, might need regular strings
+----
+====
+
+.Best Practices
+[%collapsible]
+====
+*Do's:*
+
+✅ *Use for JSON, XML, SQL, HTML*
+
+[source,java]
+----
+String json = """
+    {
+      "status": "success",
+      "data": {
+        "id": 123
+      }
+    }
+    """;
+----
+
+✅ *Use formatted() for placeholders*
+
+[source,java]
+----
+String query = """
+    SELECT * FROM users
+    WHERE age > %d
+    AND city = '%s'
+    """.formatted(minAge, city);
+----
+
+✅ *Align closing delimiter to control trailing newline*
+
+[source,java]
+----
+// Includes trailing newline
+String withNewline = """
+    Line 1
+    Line 2
+    """;
+
+// No trailing newline
+String withoutNewline = """
+    Line 1
+    Line 2""";
+----
+
+✅ *Use stripIndent() to control indentation*
+
+[source,java]
+----
+String text = """
+        Indented text
+        More text
+        """.stripIndent();
+----
+
+*Don'ts:*
+
+❌ *Don't use for simple strings*
+
+[source,java]
+----
+// ❌ Unnecessary
+String s = """
+    Hello
+    """;
+
+// ✅ Simple string
+String s = "Hello";
+----
+
+❌ *Don't concatenate text blocks*
+
+[source,java]
+----
+// ❌ Bad
+String result = """
+    Part 1
+    """ + variable + """
+    Part 2
+    """;
+
+// ✅ Use formatted
+String result = """
+    Part 1
+    %s
+    Part 2
+    """.formatted(variable);
+----
+====
+
+.Examples
+[%collapsible]
+====
+*Example 1: JSON Response*
+
+[source,java]
+----
+String createJsonResponse(int id, String name, String status) {
+    return """
+        {
+          "id": %d,
+          "name": "%s",
+          "status": "%s",
+          "timestamp": "%s"
+        }
+        """.formatted(id, name, status, Instant.now());
+}
+----
+
+*Example 2: SQL Query*
+
+[source,java]
+----
+String query = """
+    SELECT p.id, p.name, p.price, c.name as category
+    FROM products p
+    INNER JOIN categories c ON p.category_id = c.id
+    WHERE p.price > ?
+    AND p.in_stock = true
+    ORDER BY p.created_at DESC
+    LIMIT 10
+    """;
+----
+
+*Example 3: Email Template*
+
+[source,java]
+----
+String emailTemplate = """
+    Dear %s,
+
+    Thank you for your order #%d.
+
+    Order Details:
+    %s
+
+    Total: $%.2f
+
+    Best regards,
+    Customer Service
+    """;
+
+String email = emailTemplate.formatted(
+    customerName,
+    orderId,
+    orderDetails,
+    totalAmount
+);
+----
+
+For more examples, see link:examples/java12_16/SwitchExpressionsDemo.java[SwitchExpressionsDemo.java]
+====
+
+.Common Pitfalls
+[%collapsible]
+====
+*1. Unexpected Indentation Removal*
+
+[source,java]
+----
+// Indentation is relative to closing """
+String text = """
+        Line 1
+        Line 2
+        """;  // Indentation removed
+
+// To keep indentation, align closing quotes to the left
+String text = """
+        Line 1
+        Line 2
+""";  // Indentation preserved
+----
+
+*2. Trailing Whitespace*
+
+[source,java]
+----
+// Trailing spaces on lines are removed by default
+String text = """
+    Line 1
+    Line 2
+    """;
+// Spaces after "Line 1" and "Line 2" are removed
+----
+
+*3. Forgetting formatted()*
+
+[source,java]
+----
+// ❌ Literal %s in output
+String message = """
+    Hello, %s!
+    """;  // Outputs: Hello, %s!
+
+// ✅ Use formatted()
+String message = """
+    Hello, %s!
+    """.formatted(name);  // Outputs: Hello, John!
+----
+
+*4. Line Terminator Confusion*
+
+[source,java]
+----
+// Text blocks always use \n, regardless of platform
+// On Windows, \r\n is normalized to \n
+String text = """
+    Line 1
+    Line 2
+    """;
+// Contains \n, not \r\n
+----
+====
+
+.Quick Review Questions
+[%collapsible]
+====
+1. *How do you start a text block?*
+   - Triple double quotes `"""` followed by a newline
+
+2. *Do you need to escape double quotes in text blocks?*
+   - No, double quotes don't need escaping (but triple quotes do)
+
+3. *How are line breaks handled?*
+   - Actual line breaks become `\n` in the string
+
+4. *How do you add variables to text blocks?*
+   - Use `formatted()` method or `String.format()` with placeholders
+
+5. *What is "incidental" whitespace?*
+   - Common leading whitespace that's automatically removed based on the closing `"""` position
+
+6. *Does the closing `"""` position matter?*
+   - Yes! It determines how much indentation is removed
+
+7. *Are trailing newlines included?*
+   - Depends on closing `"""` position. If on new line, newline is included. If on same line as last content, no trailing newline.
+
+8. *Can you use escape sequences in text blocks?*
+   - Yes, `\n`, `\t`, etc. still work, but usually not needed
+
+9. *When should you use text blocks vs regular strings?*
+   - Use text blocks for multi-line strings (JSON, SQL, HTML). Use regular strings for single-line content.
+
+10. *Are text blocks more efficient than concatenation?*
+    - Yes, they're compiled to a single string constant, unlike concatenation
+====
+
+---
+
+== Other Java 12-16 Features (Brief Overview)
+
+*These features are covered in detail in Java 17 documentation:*
+
+=== Records (Preview Java 14-15, Standard Java 16)
+
+Brief overview - see Java 17 for full coverage:
+
+[source,java]
+----
+// Compact data carriers
+record Point(int x, int y) { }
+
+Point p = new Point(10, 20);
+System.out.println(p.x());  // 10
+----
+
+=== Pattern Matching for instanceof (Preview Java 14-15, Standard Java 16)
+
+Brief overview - see Java 17 for full coverage:
+
+[source,java]
+----
+// Before
+if (obj instanceof String) {
+    String s = (String) obj;
+    System.out.println(s.length());
+}
+
+// Java 16+
+if (obj instanceof String s) {
+    System.out.println(s.length());
+}
+----
+
+=== Sealed Classes (Preview Java 15-16, Standard Java 17)
+
+Brief overview - see Java 17 for full coverage:
+
+[source,java]
+----
+// Restrict which classes can extend/implement
+sealed interface Shape permits Circle, Rectangle, Triangle { }
+
+final class Circle implements Shape { }
+final class Rectangle implements Shape { }
+final class Triangle implements Shape { }
+----
+
+=== Helpful NullPointerExceptions (Java 14)
+
+[source,java]
+----
+// Before: NullPointerException with no details
+// After: Shows exactly which part was null
+// e.g., "Cannot invoke String.length() because user.name is null"
+----
+
+=== ZGC and Shenandoah GC Improvements
+
+Production garbage collectors - operational concern, not coding feature.
+
+---
+
+== Summary
+
+*Java 12-16's Main Contributions:*
+
+1. *Switch Expressions* (Java 14): Switch as an expression, arrow syntax, exhaustiveness
+2. *Text Blocks* (Java 15): Multi-line strings without escape hell
+3. *Records* (Java 16): Compact data carriers (see Java 17)
+4. *Pattern Matching instanceof* (Java 16): Eliminate casting (see Java 17)
+
+*Key Takeaways:*
+
+- Switch expressions eliminate fall-through bugs and return values directly
+- Text blocks make JSON, SQL, HTML much more readable
+- Use arrow syntax (`->`) for switch expressions
+- Use text blocks for any multi-line string content
+- Records and Pattern Matching are covered fully in Java 17
+
+*Most Important:* Master switch expressions and text blocks - both are heavily used in modern Java and appear frequently in interviews.
+
+*What's Next:* Java 17 (LTS) brings Records, Sealed Classes, and Pattern Matching to standard - all major features for modern Java development.
+
+---
+
+*Navigation:* link:README.adoc[Home] | link:java-11.adoc[← Java 11 (LTS)] | *Java 12-16* | link:java-17.adoc[Next: Java 17 (LTS) →]
+
+---

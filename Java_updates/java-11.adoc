@@ -1,0 +1,1218 @@
+= Java 11 Features (LTS)
+:toc:
+:toc-placement!:
+
+toc::[]
+
+---
+
+*Navigation:* link:README.adoc[Home] | link:java-10.adoc[← Java 10] | *Java 11 (LTS)* | link:java-12-to-16.adoc[Next: Java 12-16 →]
+
+---
+
+== Introduction
+
+*Java 11* (September 2018) is a *Long-Term Support (LTS)* release, making it highly significant for production environments. It introduced practical developer-focused improvements to String manipulation, file I/O, and HTTP communication.
+
+*Key Themes:*
+
+- *String Enhancements*: New methods for common text operations
+- *File I/O Improvements*: Simpler file reading/writing
+- *HTTP Client*: Modern, standardized HTTP API (from Java 9-10 incubator)
+- *Productivity*: Lambda parameter `var`, collection `toArray()` improvements
+
+*Interview Importance:* ⭐⭐⭐⭐⭐
+
+As an LTS version, Java 11 is widely deployed in production. The String methods are heavily used and frequently appear in interviews.
+
+*Example Files:*
+
+- link:examples/java11/StringMethodsDemo.java[StringMethodsDemo.java] - String methods and file I/O improvements
+- link:examples/java11/HttpClientDemo.java[HttpClientDemo.java] - Modern HTTP Client API usage
+
+---
+
+== String Methods
+
+.Overview / What it is
+[%collapsible]
+====
+Java 11 added several highly practical methods to the `String` class for common operations that previously required verbose code or external libraries.
+
+*Mental Model:* "Finally, String does what you always wished it did" - these methods fill common gaps.
+
+*New String Methods:*
+
+[source,java]
+----
+String text = "  Hello World  ";
+
+// Check if string is empty or only whitespace
+text.isBlank();        // false
+"   ".isBlank();       // true
+
+// Remove leading/trailing whitespace (Unicode-aware)
+text.strip();          // "Hello World"
+text.stripLeading();   // "Hello World  "
+text.stripTrailing();  // "  Hello World"
+
+// Split string into lines
+String multiline = "Line 1\nLine 2\nLine 3";
+multiline.lines();     // Stream<String> of lines
+
+// Repeat string n times
+"Java".repeat(3);      // "JavaJavaJava"
+----
+
+*Key Differences:*
+
+- `strip()` vs `trim()`: `strip()` is Unicode-aware, `trim()` only removes ASCII whitespace
+- `isBlank()` vs `isEmpty()`: `isBlank()` checks for whitespace, `isEmpty()` checks for zero length
+====
+
+.Why use it
+[%collapsible]
+====
+*1. isBlank() - Better Empty Checks*
+
+[source,java]
+----
+// Before Java 11 - verbose
+if (input == null || input.trim().isEmpty()) {
+    // handle empty input
+}
+
+// Java 11+ - cleaner
+if (input == null || input.isBlank()) {
+    // handle empty input
+}
+----
+
+*2. strip() - Unicode-Aware Whitespace Removal*
+
+[source,java]
+----
+String text = "\u2000Hello\u2000";  // Unicode spaces
+
+// trim() doesn't remove Unicode whitespace
+text.trim();   // Still has Unicode spaces
+
+// strip() removes all Unicode whitespace
+text.strip();  // "Hello"
+----
+
+*3. lines() - Easy Text Processing*
+
+[source,java]
+----
+String log = "INFO: Started\nWARN: Memory high\nERROR: Failed";
+
+// Before Java 11
+String[] lines = log.split("\n");
+for (String line : lines) {
+    if (line.contains("ERROR")) {
+        System.out.println(line);
+    }
+}
+
+// Java 11+ with streams
+log.lines()
+    .filter(line -> line.contains("ERROR"))
+    .forEach(System.out::println);
+----
+
+*4. repeat() - String Repetition*
+
+[source,java]
+----
+// Before Java 11 - complex
+String border = String.join("", Collections.nCopies(50, "="));
+
+// Java 11+ - simple
+String border = "=".repeat(50);
+----
+
+*5. Combined Power*
+
+[source,java]
+----
+// Clean and process CSV data
+String csv = loadFile();
+List<String[]> data = csv.lines()
+    .filter(line -> !line.isBlank())
+    .map(line -> line.strip())
+    .map(line -> line.split(","))
+    .collect(Collectors.toList());
+----
+====
+
+.When NOT to use
+[%collapsible]
+====
+*1. When trim() is Sufficient*
+
+[source,java]
+----
+// If you only have ASCII whitespace, trim() is fine
+String simple = "  hello  ";
+simple.trim();  // Perfectly adequate
+
+// strip() is slower due to Unicode handling
+simple.strip(); // Overkill for ASCII-only
+----
+
+*2. When You Need Empty String Default*
+
+[source,java]
+----
+// isBlank() treats "   " as blank
+// If you need to preserve whitespace-only strings
+if (input != null && !input.isEmpty()) {  // Preserves "   "
+    // ...
+}
+----
+
+*3. Complex Line Processing*
+
+[source,java]
+----
+// lines() doesn't preserve line terminators
+// If you need to distinguish \n vs \r\n, use split()
+String text = "Line1\r\nLine2\n";
+// lines() loses the difference
+----
+
+*4. Performance-Critical Repeated Operations*
+
+[source,java]
+----
+// repeat() creates new String each time
+// For many repetitions, use StringBuilder
+StringBuilder sb = new StringBuilder();
+for (int i = 0; i < 1000000; i++) {
+    sb.append("x");
+}
+----
+====
+
+.Best Practices
+[%collapsible]
+====
+*Do's:*
+
+✅ *Use isBlank() for user input validation*
+
+[source,java]
+----
+if (username == null || username.isBlank()) {
+    throw new IllegalArgumentException("Username required");
+}
+----
+
+✅ *Use strip() when dealing with international text*
+
+[source,java]
+----
+String userInput = getUserInput();
+String cleaned = userInput.strip();  // Handles all Unicode whitespace
+----
+
+✅ *Use lines() with Stream operations*
+
+[source,java]
+----
+long errorCount = logContent.lines()
+    .filter(line -> line.contains("ERROR"))
+    .count();
+----
+
+✅ *Use repeat() for formatting and testing*
+
+[source,java]
+----
+String separator = "-".repeat(80);
+String testData = "x".repeat(1000);
+----
+
+*Don'ts:*
+
+❌ *Don't use strip() everywhere - use trim() for ASCII*
+
+[source,java]
+----
+// Overkill
+String simple = "  hello  ".strip();
+
+// Better for ASCII-only
+String simple = "  hello  ".trim();
+----
+
+❌ *Don't forget null checks*
+
+[source,java]
+----
+// ❌ NullPointerException if str is null
+str.isBlank();
+
+// ✅ Proper null handling
+str == null || str.isBlank();
+----
+
+❌ *Don't use repeat() in loops*
+
+[source,java]
+----
+// ❌ Inefficient
+for (int i = 0; i < 1000; i++) {
+    String s = "x".repeat(i);  // Creates many intermediate strings
+}
+
+// ✅ Use StringBuilder for accumulation
+StringBuilder sb = new StringBuilder();
+for (int i = 0; i < 1000; i++) {
+    sb.append("x");
+}
+----
+====
+
+.Examples
+[%collapsible]
+====
+*Example 1: Input Validation*
+
+[source,java]
+----
+public void createUser(String username, String email) {
+    if (username == null || username.isBlank()) {
+        throw new IllegalArgumentException("Username cannot be blank");
+    }
+    if (email == null || email.isBlank()) {
+        throw new IllegalArgumentException("Email cannot be blank");
+    }
+
+    // Strip whitespace from inputs
+    username = username.strip();
+    email = email.strip();
+
+    // Continue with user creation...
+}
+----
+
+*Example 2: Log Processing*
+
+[source,java]
+----
+String logFile = Files.readString(Path.of("app.log"));
+
+// Count errors
+long errorCount = logFile.lines()
+    .filter(line -> line.contains("ERROR"))
+    .count();
+
+// Extract error messages
+List<String> errors = logFile.lines()
+    .filter(line -> line.contains("ERROR"))
+    .map(String::strip)
+    .collect(Collectors.toList());
+----
+
+*Example 3: Text Formatting*
+
+[source,java]
+----
+public String formatReport(String title, List<String> items) {
+    String border = "=".repeat(60);
+    String spacer = " ".repeat(5);
+
+    StringBuilder report = new StringBuilder();
+    report.append(border).append("\n");
+    report.append(spacer).append(title).append("\n");
+    report.append(border).append("\n");
+
+    for (String item : items) {
+        report.append(spacer).append(item).append("\n");
+    }
+
+    report.append(border);
+    return report.toString();
+}
+----
+
+For more examples, see link:examples/java11/StringMethodsDemo.java[StringMethodsDemo.java]
+====
+
+.Common Pitfalls
+[%collapsible]
+====
+*1. Forgetting Null Checks*
+
+[source,java]
+----
+// ❌ NullPointerException
+String input = null;
+if (input.isBlank()) { ... }
+
+// ✅ Proper null handling
+if (input == null || input.isBlank()) { ... }
+----
+
+*2. Confusing isBlank() and isEmpty()*
+
+[source,java]
+----
+String whitespace = "   ";
+
+whitespace.isEmpty();  // false (length > 0)
+whitespace.isBlank();  // true (only whitespace)
+----
+
+*3. strip() vs trim() Performance*
+
+[source,java]
+----
+// For ASCII-only text in tight loops, trim() is faster
+for (String line : millionsOfLines) {
+    line.trim();   // ✅ Faster for ASCII
+    line.strip();  // ❌ Slower due to Unicode handling
+}
+----
+
+*4. lines() Loses Line Terminators*
+
+[source,java]
+----
+String text = "Line1\nLine2\r\nLine3";
+
+// ❌ Can't tell what line terminators were used
+text.lines().forEach(System.out::println);
+
+// ✅ If you need terminators, use split with limit
+text.split("\\r?\\n", -1);
+----
+
+*5. repeat() with Large Numbers*
+
+[source,java]
+----
+// ❌ OutOfMemoryError
+String huge = "x".repeat(Integer.MAX_VALUE);
+
+// ✅ Validate before repeating
+int count = getUserInput();
+if (count > 0 && count < 10000) {
+    String repeated = "x".repeat(count);
+}
+----
+====
+
+.Quick Review Questions
+[%collapsible]
+====
+1. *What's the difference between isBlank() and isEmpty()?*
+   - `isEmpty()` returns true only if length is 0. `isBlank()` returns true if string is empty OR contains only whitespace.
+
+2. *What's the difference between strip() and trim()?*
+   - `strip()` is Unicode-aware and removes all Unicode whitespace. `trim()` only removes ASCII whitespace (≤ U+0020).
+
+3. *What does lines() return?*
+   - `Stream<String>` - a stream of lines extracted from the string.
+
+4. *How does repeat() work?*
+   - Returns a new string with the original string concatenated N times. "ab".repeat(3) → "ababab"
+
+5. *Can isBlank() replace null checks?*
+   - No! `isBlank()` throws NullPointerException on null. Always check: `str == null || str.isBlank()`
+
+6. *Does lines() preserve line terminators?*
+   - No. Line terminators (\n, \r\n, \r) are removed.
+
+7. *What happens with repeat(0)?*
+   - Returns empty string "".
+
+8. *Is strip() always better than trim()?*
+   - No. For ASCII-only text, `trim()` is faster. Use `strip()` when dealing with international text.
+
+9. *Can you use lines() on an empty string?*
+   - Yes. Returns an empty stream.
+
+10. *What's a good use case for repeat()?*
+    - Creating separators, padding, test data, or formatting: `"=".repeat(80)` for a line separator.
+====
+
+---
+
+== File Methods (Files class)
+
+.Overview / What it is
+[%collapsible]
+====
+Java 11 added convenient methods to `java.nio.file.Files` for reading and writing entire files as strings in a single method call.
+
+*New File Methods:*
+
+[source,java]
+----
+Path path = Path.of("data.txt");
+
+// Read entire file as String
+String content = Files.readString(path);
+String content = Files.readString(path, StandardCharsets.UTF_8);
+
+// Write String to file
+Files.writeString(path, "Hello World");
+Files.writeString(path, "Hello", StandardCharsets.UTF_8,
+                  StandardOpenOption.APPEND);
+----
+
+*Mental Model:* "Files ↔ String in one line" - no more BufferedReader/Writer boilerplate for simple operations.
+====
+
+.Why use it
+[%collapsible]
+====
+*1. Simpler File Reading*
+
+[source,java]
+----
+// Before Java 11 - verbose
+Path path = Paths.get("config.txt");
+StringBuilder sb = new StringBuilder();
+try (BufferedReader reader = Files.newBufferedReader(path)) {
+    String line;
+    while ((line = reader.readLine()) != null) {
+        sb.append(line).append("\n");
+    }
+}
+String content = sb.toString();
+
+// Java 11+ - one line
+String content = Files.readString(Path.of("config.txt"));
+----
+
+*2. Simpler File Writing*
+
+[source,java]
+----
+// Before Java 11
+try (BufferedWriter writer = Files.newBufferedWriter(path)) {
+    writer.write("Hello World");
+}
+
+// Java 11+
+Files.writeString(path, "Hello World");
+----
+
+*3. Combined with String Methods*
+
+[source,java]
+----
+// Read, process, and write back
+String config = Files.readString(path);
+String processed = config.lines()
+    .filter(line -> !line.isBlank())
+    .map(String::strip)
+    .collect(Collectors.joining("\n"));
+Files.writeString(path, processed);
+----
+====
+
+.When NOT to use
+[%collapsible]
+====
+*1. Large Files*
+
+[source,java]
+----
+// ❌ Loads entire file into memory - OutOfMemoryError for large files
+String hugeFile = Files.readString(Path.of("10GB.txt"));
+
+// ✅ Use streaming for large files
+Files.lines(Path.of("10GB.txt"))
+    .forEach(this::processLine);
+----
+
+*2. Binary Files*
+
+[source,java]
+----
+// ❌ readString() is for text files
+String binary = Files.readString(Path.of("image.png"));
+
+// ✅ Use readAllBytes() for binary data
+byte[] imageData = Files.readAllBytes(Path.of("image.png"));
+----
+
+*3. Line-by-Line Processing*
+
+[source,java]
+----
+// ❌ Inefficient - loads all into memory
+String content = Files.readString(path);
+for (String line : content.split("\n")) {
+    processLine(line);
+}
+
+// ✅ Stream lines directly
+Files.lines(path).forEach(this::processLine);
+----
+====
+
+.Best Practices
+[%collapsible]
+====
+*Do's:*
+
+✅ *Use for small config/text files*
+
+[source,java]
+----
+String config = Files.readString(Path.of("app.properties"));
+String template = Files.readString(Path.of("email-template.html"));
+----
+
+✅ *Specify charset for portability*
+
+[source,java]
+----
+Files.readString(path, StandardCharsets.UTF_8);
+Files.writeString(path, content, StandardCharsets.UTF_8);
+----
+
+✅ *Use with StandardOpenOption for appending*
+
+[source,java]
+----
+Files.writeString(logFile, logEntry, StandardCharsets.UTF_8,
+                  StandardOpenOption.CREATE,
+                  StandardOpenOption.APPEND);
+----
+
+*Don'ts:*
+
+❌ *Don't use for large files*
+
+[source,java]
+----
+// ❌ Memory issues
+String bigLog = Files.readString(Path.of("huge.log"));
+
+// ✅ Use streaming
+Files.lines(Path.of("huge.log")).forEach(this::process);
+----
+
+❌ *Don't forget exception handling*
+
+[source,java]
+----
+// ❌ Throws IOException
+String content = Files.readString(path);
+
+// ✅ Handle or declare
+try {
+    String content = Files.readString(path);
+} catch (IOException e) {
+    // handle error
+}
+----
+====
+
+.Examples
+[%collapsible]
+====
+*Example 1: Configuration File*
+
+[source,java]
+----
+// Read config
+String config = Files.readString(Path.of("app.config"));
+Map<String, String> settings = config.lines()
+    .filter(line -> !line.isBlank() && !line.startsWith("#"))
+    .map(line -> line.split("="))
+    .collect(Collectors.toMap(
+        parts -> parts[0].strip(),
+        parts -> parts[1].strip()
+    ));
+
+// Update and write back
+settings.put("version", "2.0");
+String newConfig = settings.entrySet().stream()
+    .map(e -> e.getKey() + "=" + e.getValue())
+    .collect(Collectors.joining("\n"));
+Files.writeString(Path.of("app.config"), newConfig);
+----
+
+*Example 2: Template Processing*
+
+[source,java]
+----
+String template = Files.readString(Path.of("email.html"));
+String email = template
+    .replace("{{name}}", userName)
+    .replace("{{date}}", LocalDate.now().toString());
+Files.writeString(Path.of("output.html"), email);
+----
+
+For more examples, see link:examples/java11/StringMethodsDemo.java[StringMethodsDemo.java]
+====
+
+.Common Pitfalls
+[%collapsible]
+====
+*1. Memory Issues with Large Files*
+
+[source,java]
+----
+// ❌ OutOfMemoryError
+String huge = Files.readString(Path.of("5GB.log"));
+
+// ✅ Check file size first
+long size = Files.size(path);
+if (size < 10_000_000) {  // 10MB limit
+    String content = Files.readString(path);
+}
+----
+
+*2. Default Charset Assumptions*
+
+[source,java]
+----
+// ❌ Platform-dependent
+Files.readString(path);
+
+// ✅ Explicit charset
+Files.readString(path, StandardCharsets.UTF_8);
+----
+
+*3. Overwriting Files Accidentally*
+
+[source,java]
+----
+// ❌ Overwrites existing file
+Files.writeString(path, "new content");
+
+// ✅ Use APPEND to add to existing file
+Files.writeString(path, "new line\n", StandardCharsets.UTF_8,
+                  StandardOpenOption.APPEND);
+----
+====
+
+.Quick Review Questions
+[%collapsible]
+====
+1. *What does Files.readString() return?*
+   - The entire file content as a single String.
+
+2. *What's the default charset for readString()?*
+   - UTF-8 in Java 11+
+
+3. *When should you NOT use readString()?*
+   - For large files (loads entire file into memory), binary files, or when you need line-by-line processing.
+
+4. *How do you append to a file with writeString()?*
+   - Use `StandardOpenOption.APPEND`: `Files.writeString(path, content, StandardCharsets.UTF_8, StandardOpenOption.APPEND)`
+
+5. *Does writeString() create the file if it doesn't exist?*
+   - Yes, by default it creates the file (or overwrites if it exists).
+====
+
+---
+
+== HTTP Client API
+
+.Overview / What it is
+[%collapsible]
+====
+Java 11 standardized the *HTTP Client API* (introduced as incubator in Java 9-10) providing a modern, feature-rich alternative to the old `HttpURLConnection`.
+
+*Mental Model:* "Modern, fluent HTTP client built-in to Java" - supports HTTP/2, async requests, WebSocket.
+
+[source,java]
+----
+// Create a client
+HttpClient client = HttpClient.newHttpClient();
+
+// Build a request
+HttpRequest request = HttpRequest.newBuilder()
+    .uri(URI.create("https://api.example.com/users"))
+    .GET()
+    .build();
+
+// Send synchronously
+HttpResponse<String> response = client.send(request,
+    HttpResponse.BodyHandlers.ofString());
+
+System.out.println(response.statusCode());
+System.out.println(response.body());
+
+// Send asynchronously
+client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+    .thenApply(HttpResponse::body)
+    .thenAccept(System.out::println);
+----
+
+*Key Features:*
+
+- HTTP/1.1 and HTTP/2 support
+- Synchronous and asynchronous requests
+- CompletableFuture-based async API
+- WebSocket support
+- Request/response builders (fluent API)
+- Multiple body handlers (String, File, InputStream, etc.)
+====
+
+.Why use it
+[%collapsible]
+====
+*1. Modern, Fluent API*
+
+[source,java]
+----
+// Before Java 11 - HttpURLConnection (painful!)
+URL url = new URL("https://api.example.com/users");
+HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+conn.setRequestMethod("GET");
+conn.setRequestProperty("Accept", "application/json");
+
+int status = conn.getResponseCode();
+BufferedReader reader = new BufferedReader(
+    new InputStreamReader(conn.getInputStream()));
+String line;
+StringBuilder response = new StringBuilder();
+while ((line = reader.readLine()) != null) {
+    response.append(line);
+}
+reader.close();
+
+// Java 11+ - clean and fluent
+HttpClient client = HttpClient.newHttpClient();
+HttpRequest request = HttpRequest.newBuilder()
+    .uri(URI.create("https://api.example.com/users"))
+    .header("Accept", "application/json")
+    .GET()
+    .build();
+
+HttpResponse<String> response = client.send(request,
+    HttpResponse.BodyHandlers.ofString());
+----
+
+*2. Async Support with CompletableFuture*
+
+[source,java]
+----
+// Async request
+HttpClient client = HttpClient.newHttpClient();
+HttpRequest request = HttpRequest.newBuilder()
+    .uri(URI.create("https://api.example.com/data"))
+    .build();
+
+CompletableFuture<String> future = client
+    .sendAsync(request, HttpResponse.BodyHandlers.ofString())
+    .thenApply(HttpResponse::body);
+
+// Do other work while request is in progress
+doOtherWork();
+
+// Get result when ready
+String result = future.join();
+----
+
+*3. HTTP/2 Support*
+
+[source,java]
+----
+HttpClient client = HttpClient.newBuilder()
+    .version(HttpClient.Version.HTTP_2)
+    .build();
+// Automatically uses HTTP/2 if server supports it
+----
+
+*4. Easy POST with JSON*
+
+[source,java]
+----
+String json = "{\"name\":\"John\",\"age\":30}";
+
+HttpRequest request = HttpRequest.newBuilder()
+    .uri(URI.create("https://api.example.com/users"))
+    .header("Content-Type", "application/json")
+    .POST(HttpRequest.BodyPublishers.ofString(json))
+    .build();
+
+HttpResponse<String> response = client.send(request,
+    HttpResponse.BodyHandlers.ofString());
+----
+====
+
+.When NOT to use
+[%collapsible]
+====
+*1. When You Need Advanced Features*
+
+[source,java]
+----
+// HttpClient is good for basic HTTP operations
+// For complex scenarios, consider libraries like:
+// - Apache HttpClient (more features, retry policies, connection pooling config)
+// - OkHttp (interceptors, caching, etc.)
+// - Spring RestTemplate/WebClient (Spring integration)
+----
+
+*2. When You Need Built-in JSON Parsing*
+
+[source,java]
+----
+// HttpClient returns String, you need to parse JSON yourself
+HttpResponse<String> response = client.send(request,
+    HttpResponse.BodyHandlers.ofString());
+String json = response.body();
+// Need Jackson, Gson, or JSON-B to parse
+
+// Libraries like RestTemplate provide automatic JSON mapping
+----
+
+*3. Before Java 11*
+
+[source,java]
+----
+// HttpClient is only standard in Java 11+
+// For Java 8-10, use third-party libraries
+----
+====
+
+.Best Practices
+[%collapsible]
+====
+*Do's:*
+
+✅ *Reuse HttpClient instances*
+
+[source,java]
+----
+// ✅ Create once, reuse
+private static final HttpClient client = HttpClient.newHttpClient();
+
+public String fetchData(String url) {
+    HttpRequest request = HttpRequest.newBuilder()
+        .uri(URI.create(url))
+        .build();
+    // Reuse client for all requests
+    return client.send(request, HttpResponse.BodyHandlers.ofString()).body();
+}
+----
+
+✅ *Set timeouts*
+
+[source,java]
+----
+HttpClient client = HttpClient.newBuilder()
+    .connectTimeout(Duration.ofSeconds(10))
+    .build();
+
+HttpRequest request = HttpRequest.newBuilder()
+    .uri(URI.create(url))
+    .timeout(Duration.ofSeconds(30))
+    .build();
+----
+
+✅ *Use async for multiple requests*
+
+[source,java]
+----
+List<CompletableFuture<String>> futures = urls.stream()
+    .map(url -> HttpRequest.newBuilder().uri(URI.create(url)).build())
+    .map(request -> client.sendAsync(request,
+        HttpResponse.BodyHandlers.ofString()))
+    .map(future -> future.thenApply(HttpResponse::body))
+    .collect(Collectors.toList());
+
+CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+----
+
+*Don'ts:*
+
+❌ *Don't create new client for each request*
+
+[source,java]
+----
+// ❌ Inefficient
+for (String url : urls) {
+    HttpClient client = HttpClient.newHttpClient();  // Bad!
+    // ...
+}
+
+// ✅ Reuse client
+HttpClient client = HttpClient.newHttpClient();
+for (String url : urls) {
+    // Reuse same client
+}
+----
+
+❌ *Don't forget error handling*
+
+[source,java]
+----
+// ❌ Throws IOException and InterruptedException
+HttpResponse<String> response = client.send(request,
+    HttpResponse.BodyHandlers.ofString());
+
+// ✅ Handle exceptions
+try {
+    HttpResponse<String> response = client.send(request,
+        HttpResponse.BodyHandlers.ofString());
+} catch (IOException | InterruptedException e) {
+    // Handle network errors
+}
+----
+====
+
+.Examples
+[%collapsible]
+====
+*Example 1: GET Request*
+
+[source,java]
+----
+HttpClient client = HttpClient.newHttpClient();
+
+HttpRequest request = HttpRequest.newBuilder()
+    .uri(URI.create("https://jsonplaceholder.typicode.com/users/1"))
+    .header("Accept", "application/json")
+    .GET()
+    .build();
+
+HttpResponse<String> response = client.send(request,
+    HttpResponse.BodyHandlers.ofString());
+
+System.out.println("Status: " + response.statusCode());
+System.out.println("Body: " + response.body());
+----
+
+*Example 2: POST Request*
+
+[source,java]
+----
+String json = """
+    {
+        "title": "My Post",
+        "body": "Post content",
+        "userId": 1
+    }
+    """;
+
+HttpRequest request = HttpRequest.newBuilder()
+    .uri(URI.create("https://jsonplaceholder.typicode.com/posts"))
+    .header("Content-Type", "application/json")
+    .POST(HttpRequest.BodyPublishers.ofString(json))
+    .build();
+
+HttpResponse<String> response = client.send(request,
+    HttpResponse.BodyHandlers.ofString());
+----
+
+*Example 3: Async Multiple Requests*
+
+[source,java]
+----
+List<String> urls = List.of(
+    "https://api.example.com/user/1",
+    "https://api.example.com/user/2",
+    "https://api.example.com/user/3"
+);
+
+List<CompletableFuture<HttpResponse<String>>> futures = urls.stream()
+    .map(url -> HttpRequest.newBuilder().uri(URI.create(url)).build())
+    .map(request -> client.sendAsync(request,
+        HttpResponse.BodyHandlers.ofString()))
+    .collect(Collectors.toList());
+
+// Wait for all to complete
+CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+
+// Process results
+futures.forEach(future -> {
+    HttpResponse<String> response = future.join();
+    System.out.println(response.body());
+});
+----
+
+For more examples, see link:examples/java11/HttpClientDemo.java[HttpClientDemo.java]
+====
+
+.Common Pitfalls
+[%collapsible]
+====
+*1. Creating New Client for Each Request*
+
+[source,java]
+----
+// ❌ Very inefficient
+for (String url : urls) {
+    HttpClient client = HttpClient.newHttpClient();
+    // ...
+}
+
+// ✅ Reuse client
+HttpClient client = HttpClient.newHttpClient();
+for (String url : urls) {
+    // Use same client
+}
+----
+
+*2. Not Setting Timeouts*
+
+[source,java]
+----
+// ❌ Can hang forever
+HttpClient client = HttpClient.newHttpClient();
+
+// ✅ Always set timeouts
+HttpClient client = HttpClient.newBuilder()
+    .connectTimeout(Duration.ofSeconds(10))
+    .build();
+
+HttpRequest request = HttpRequest.newBuilder()
+    .uri(URI.create(url))
+    .timeout(Duration.ofSeconds(30))
+    .build();
+----
+
+*3. Ignoring Status Codes*
+
+[source,java]
+----
+// ❌ Assumes 200 OK
+HttpResponse<String> response = client.send(request,
+    HttpResponse.BodyHandlers.ofString());
+String body = response.body();
+
+// ✅ Check status code
+if (response.statusCode() == 200) {
+    String body = response.body();
+} else {
+    // Handle error
+}
+----
+
+*4. Async Error Handling*
+
+[source,java]
+----
+// ❌ Exceptions are swallowed
+client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+    .thenApply(HttpResponse::body)
+    .thenAccept(System.out::println);
+
+// ✅ Handle errors
+client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+    .thenApply(HttpResponse::body)
+    .thenAccept(System.out::println)
+    .exceptionally(throwable -> {
+        System.err.println("Error: " + throwable.getMessage());
+        return null;
+    });
+----
+====
+
+.Quick Review Questions
+[%collapsible]
+====
+1. *What HTTP versions does HttpClient support?*
+   - HTTP/1.1 and HTTP/2
+
+2. *Should you create a new HttpClient for each request?*
+   - No! HttpClient instances are expensive. Create once and reuse.
+
+3. *How do you make an async request?*
+   - Use `sendAsync()` which returns `CompletableFuture<HttpResponse<T>>`
+
+4. *What does BodyHandlers.ofString() do?*
+   - Converts the HTTP response body to a String
+
+5. *How do you set a timeout?*
+   - On the client: `.connectTimeout(Duration)` or on the request: `.timeout(Duration)`
+
+6. *What's the difference between send() and sendAsync()?*
+   - `send()` blocks until response is received. `sendAsync()` returns immediately with a CompletableFuture.
+
+7. *How do you send JSON in a POST request?*
+   - Use `.POST(HttpRequest.BodyPublishers.ofString(json))` with "Content-Type: application/json" header
+
+8. *Does HttpClient automatically follow redirects?*
+   - By default, no. Configure with `.followRedirects(HttpClient.Redirect.NORMAL)`
+
+9. *Can you use HttpClient with Java 8?*
+   - No, it's standard only in Java 11+. Use third-party libraries for Java 8.
+
+10. *How do you handle errors in async requests?*
+    - Use `.exceptionally()` on the CompletableFuture to handle exceptions
+====
+
+---
+
+== Other Java 11 Features (Brief Mentions)
+
+*var in Lambda Parameters (Java 11 enhancement of Java 10 var)*
+
+[source,java]
+----
+// Allows annotations on lambda parameters
+list.stream()
+    .map((@NotNull var x) -> x.toUpperCase())
+    .forEach(System.out::println);
+----
+
+*Collection.toArray() Enhancement*
+
+[source,java]
+----
+// Before Java 11
+String[] array = list.toArray(new String[list.size()]);
+
+// Java 11+ - array size inferred
+String[] array = list.toArray(String[]::new);
+----
+
+*Predicate.not() (Minor enhancement)*
+
+[source,java]
+----
+// More readable negation
+lines.stream()
+    .filter(Predicate.not(String::isBlank))
+    .collect(Collectors.toList());
+----
+
+*Nest-Based Access Control* - JVM internal feature for nested classes (not relevant for daily coding)
+
+*Dynamic Class-File Constants* - JVM internal optimization (not relevant for daily coding)
+
+*Epsilon GC* - No-op garbage collector for testing (operational concern, not coding)
+
+*Flight Recorder* - Production profiling tool (operational tool, not a language feature)
+
+---
+
+== Summary
+
+*Java 11's Main Contributions:*
+
+1. *String methods*: `isBlank()`, `strip()`, `lines()`, `repeat()` - daily use
+2. *File I/O*: `Files.readString()`, `Files.writeString()` - simple file operations
+3. *HTTP Client*: Modern, built-in HTTP client with async support
+
+*Key Takeaways:*
+
+- String methods fill common gaps and work great with streams
+- File methods are perfect for small files, but don't use for large files
+- HTTP Client is modern and async-capable, reuse instances
+- Java 11 is an LTS release - widely used in production
+
+*Most Important:* Master the String methods - they appear frequently in interviews and are used daily.
+
+*What's Next:* Java 12-16 introduce switch expressions and text blocks, which we'll cover together in the next section.
+
+---
+
+*Navigation:* link:README.adoc[Home] | link:java-10.adoc[← Java 10] | *Java 11 (LTS)* | link:java-12-to-16.adoc[Next: Java 12-16 →]
+
+---

@@ -1,0 +1,186 @@
+= Java Version Study Notes (Java 8 → Java 25)
+:toc:
+:toc-placement!:
+
+toc::[]
+
+== Overview
+
+This is a comprehensive study guide for **intermediate Java developers** preparing for **technical interviews and professional-level review**. The notes focus on understanding core concepts deeply while enabling quick recall of key features.
+
+Each Java version is documented in its own file with:
+
+- **Deep-dive coverage** of major features
+- **Collapsible sections** for focused study
+- **Real-world examples** with interview-style scenarios
+- **Best practices** and common pitfalls
+- **Quick review questions** for self-assessment
+
+== Study Approach
+
+**Recommended Path:**
+
+1. Start with Java 8 (foundation for modern Java)
+2. Progress chronologically through versions
+3. Focus on features relevant to your interview preparation
+4. Review example code and run scenarios locally
+5. Use quick review questions to test understanding
+
+**Time Investment:**
+
+- Deep dive per version: 2-4 hours
+- Quick review per version: 30-45 minutes
+- Example code practice: 1-2 hours per version
+
+== Version Index
+
+=== LTS (Long-Term Support) Versions ⭐
+
+- **link:java-8.adoc[Java 8]** (March 2014) - Lambdas, Streams, Optional, Date-Time API
+- **link:java-11.adoc[Java 11]** (September 2018) - HTTP Client, var in lambdas, String methods
+- **link:java-17.adoc[Java 17]** (September 2021) - Sealed classes, Pattern matching, Records
+- **link:java-21.adoc[Java 21]** (September 2023) - Virtual threads, Sequenced collections, Pattern matching for switch
+- **link:java-25.adoc[Java 25]** (September 2025) - Scoped Values, Flexible constructors, Simplified main methods
+
+=== Feature Releases
+
+==== Java 9-10
+- **link:java-9.adoc[Java 9]** (September 2017) - Modules, JShell, Collection factories
+- **link:java-10.adoc[Java 10]** (March 2018) - Local variable type inference (var)
+
+==== Java 12-16
+- **link:java-12-to-16.adoc[Java 12-16]** (Grouped) - Switch expressions, Text blocks, Records (preview), Sealed classes (preview)
+
+==== Java 18-20
+- **link:java-18-to-20.adoc[Java 18-20]** (Grouped) - UTF-8 by default, Simple web server, Virtual threads (preview)
+
+==== Java 22-24
+- **link:java-22-to-24.adoc[Java 22-24]** (Grouped) - Unnamed variables, Preview features leading to Java 25
+
+== Project Structure
+
+----
+Java_updates/
+├── README.adoc           (this file)
+├── java-8.adoc           (Java 8 features)
+├── java-9.adoc           (Java 9 features)
+├── ...
+├── java-25.adoc          (Java 25 features)
+└── examples/
+    ├── java8/            (Java 8 code examples)
+    ├── java9/            (Java 9 code examples)
+    └── ...
+----
+
+== Progress Tracker
+
+[%header,cols="1,2,1"]
+|===
+|Version |Status |Last Updated
+
+|Java 8
+|✅ Complete - All 6 features
+|2025-10-24
+
+|Java 9
+|✅ Complete - All 6 features
+|2025-10-24
+
+|Java 10
+|✅ Complete - var keyword
+|2025-10-26
+
+|Java 11 (LTS)
+|✅ Complete - String, File I/O, HTTP Client
+|2025-10-26
+
+|Java 12-16
+|✅ Complete - Switch expressions, Text blocks
+|2025-10-26
+
+|Java 17 (LTS)
+|✅ Complete - Records, Sealed classes, Pattern matching
+|2025-10-26
+
+|Java 18-20
+|✅ Complete - Brief overview
+|2025-10-26
+
+|Java 21 (LTS)
+|✅ Complete - Virtual threads, Pattern matching for switch
+|2025-10-27
+
+|Java 22-24
+|✅ Complete - Brief overview
+|2025-10-27
+
+|Java 25 (LTS)
+|✅ Complete - All 7 finalized features
+|2025-10-27
+|===
+
+**🎉 PROJECT COMPLETE! All Java versions from 8 to 25 documented!**
+
+**Statistics:**
+- Total documentation: ~27,000 lines of AsciiDoc
+- Example programs: 16 complete Java programs (~10,100 lines)
+- Inline code snippets: 500+ examples
+- Common pitfalls: 170+ documented
+- Interview questions: 225+ questions
+- ALL 5 LTS VERSIONS COVERED: Java 8, 11, 17, 21, and 25
+
+== How to Use This Guide
+
+**For Interview Preparation:**
+
+1. Focus on LTS versions first (8, 11, 17, 21)
+2. Read each feature's "Overview" and "Why use it" sections
+3. Study code examples and understand the patterns
+4. Review "Common pitfalls" - these often appear in interviews
+5. Test yourself with "Quick Review" questions
+
+**For Quick Reference:**
+
+1. Use collapsible sections to jump to specific features
+2. Review "Best practices" for production code guidance
+3. Check "When not to use" to avoid anti-patterns
+
+**For Hands-On Practice:**
+
+1. Navigate to `examples/javaX/` directories
+2. Run the code locally (requires appropriate JDK version)
+3. Modify examples to experiment with variations
+4. Create your own scenarios based on the patterns
+
+== Interview Focus Areas
+
+**Most Frequently Asked (All Levels):**
+
+- Java 8: Streams, Lambdas, Optional
+- Java 11: HTTP Client, var keyword
+- Java 17: Records, Sealed classes
+- Java 21: Virtual threads, Pattern matching for switch
+- Java 25: Scoped Values, Flexible constructors
+
+**Advanced Topics:**
+
+- Functional programming patterns
+- Concurrency improvements (CompletableFuture, Virtual threads)
+- Memory management changes
+- Module system (Java 9+)
+
+== Contribution & Feedback
+
+This is a personal study guide. Feel free to adapt the structure for your own learning needs.
+
+**Version Information:**
+
+- Document format: AsciiDoc
+- Compatible with: Asciidoctor, GitHub AsciiDoc rendering
+- Code examples: Tested with corresponding JDK versions
+
+---
+
+**Happy Learning!** 🚀
+
+Start with → **link:java-8.adoc[Java 8 Features]**

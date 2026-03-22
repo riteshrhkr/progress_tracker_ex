@@ -1,0 +1,1291 @@
+= Java 17 Features (LTS)
+:toc:
+:toc-placement!:
+
+toc::[]
+
+---
+
+*Navigation:* link:README.adoc[Home] | link:java-12-to-16.adoc[← Java 12-16] | *Java 17 (LTS)* | link:java-18-to-20.adoc[Next: Java 18-20 →]
+
+---
+
+== Introduction
+
+*Java 17* (September 2021) is a *Long-Term Support (LTS)* release and represents a major milestone in modern Java. It finalizes three major features that were in preview across Java 14-16: *Records*, *Sealed Classes*, and *Pattern Matching for instanceof*.
+
+*Key Themes:*
+
+- *Data Modeling*: Records for immutable data carriers
+- *Type Safety*: Sealed classes for controlled inheritance
+- *Type Testing*: Pattern matching eliminates casting boilerplate
+- *Modern Java*: These features define the modern Java programming style
+
+*Interview Importance:* ⭐⭐⭐⭐⭐
+
+As the current widely-adopted LTS version, Java 17 features are essential for modern Java development and are heavily emphasized in technical interviews. Records and pattern matching are particularly common.
+
+*Example Files:*
+
+- link:examples/java17/RecordsDemo.java[RecordsDemo.java] - Records, sealed classes, and pattern matching
+
+---
+
+== Records
+
+.Overview / What it is
+[%collapsible]
+====
+*Records* (standard in Java 16, refined in Java 17) are a special kind of class designed to be transparent carriers for immutable data. They automatically provide constructors, getters, `equals()`, `hashCode()`, and `toString()`.
+
+*Mental Model:* "Data class on autopilot" - just declare the data, Java generates all the boilerplate.
+
+[source,java]
+----
+// Before records - verbose boilerplate
+public final class Point {
+    private final int x;
+    private final int y;
+
+    public Point(int x, int y) {
+        this.x = x;
+        this.y = y;
+    }
+
+    public int getX() { return x; }
+    public int getY() { return y; }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Point point = (Point) o;
+        return x == point.x && y == point.y;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(x, y);
+    }
+
+    @Override
+    public String toString() {
+        return "Point{x=" + x + ", y=" + y + '}';
+    }
+}
+
+// With record - one line!
+record Point(int x, int y) { }
+----
+
+*What You Get Automatically:*
+
+1. *Private final fields* for each component
+2. *Canonical constructor* with all components
+3. *Accessor methods* (NOT getters - just component name)
+4. *equals()* comparing all components
+5. *hashCode()* based on all components
+6. *toString()* with readable output
+
+[source,java]
+----
+record Person(String name, int age) { }
+
+// Usage
+Person p = new Person("Alice", 30);
+System.out.println(p.name());     // "Alice" - accessor, not getName()
+System.out.println(p.age());      // 30
+System.out.println(p);            // Person[name=Alice, age=30]
+
+Person p2 = new Person("Alice", 30);
+System.out.println(p.equals(p2)); // true
+----
+====
+
+.Why use it
+[%collapsible]
+====
+*1. Eliminates Boilerplate for Data Classes*
+
+[source,java]
+----
+// Old way - 50+ lines
+public class Customer {
+    private final String id;
+    private final String name;
+    private final String email;
+    // Constructor, getters, equals, hashCode, toString...
+}
+
+// Record - 1 line
+record Customer(String id, String name, String email) { }
+----
+
+*2. Immutable by Default*
+
+[source,java]
+----
+record Point(int x, int y) { }
+
+Point p = new Point(10, 20);
+// p.x = 15;  // ❌ Compilation error - fields are final
+----
+
+*3. Perfect for DTOs (Data Transfer Objects)*
+
+[source,java]
+----
+// API response
+record UserResponse(Long id, String username, String email, boolean active) { }
+
+// Database result
+record OrderSummary(String orderId, double total, int itemCount) { }
+
+// Configuration
+record DatabaseConfig(String host, int port, String database) { }
+----
+
+*4. Works Great with Streams*
+
+[source,java]
+----
+List<Person> people = List.of(
+    new Person("Alice", 30),
+    new Person("Bob", 25),
+    new Person("Charlie", 35)
+);
+
+// Easy to map and collect
+List<String> names = people.stream()
+    .map(Person::name)  // Method reference to accessor
+    .collect(Collectors.toList());
+
+// Easy to group
+Map<Integer, List<Person>> byAge = people.stream()
+    .collect(Collectors.groupingBy(Person::age));
+----
+
+*5. Supports Customization When Needed*
+
+[source,java]
+----
+record Person(String name, int age) {
+    // Compact constructor - validation
+    public Person {
+        if (age < 0) {
+            throw new IllegalArgumentException("Age cannot be negative");
+        }
+        // Auto-assigns fields
+    }
+
+    // Additional methods
+    public boolean isAdult() {
+        return age >= 18;
+    }
+
+    // Static factory methods
+    public static Person of(String name, int age) {
+        return new Person(name, age);
+    }
+}
+----
+====
+
+.When NOT to use
+[%collapsible]
+====
+*1. When You Need Mutable State*
+
+[source,java]
+----
+// ❌ Records are immutable
+record ShoppingCart(List<Item> items, double total) { }
+// Can't modify cart after creation
+
+// ✅ Use regular class for mutable state
+class ShoppingCart {
+    private List<Item> items = new ArrayList<>();
+    private double total;
+
+    public void addItem(Item item) { ... }
+}
+----
+
+*2. When You Need Inheritance*
+
+[source,java]
+----
+// ❌ Records cannot extend other classes
+record Employee extends Person { }  // Compilation error
+
+// ✅ Records are final and can only implement interfaces
+record Employee(String name, int id) implements Comparable<Employee> { }
+----
+
+*3. When You Need Custom equals/hashCode Logic*
+
+[source,java]
+----
+// Records always use all components in equals/hashCode
+// If you need custom logic, use regular class
+record Person(String name, int age, String internalId) { }
+// Can't exclude internalId from equals - it's automatic
+
+// ✅ Use class if you need selective equality
+class Person {
+    String name;
+    int age;
+    String internalId;  // Excluded from equals
+}
+----
+
+*4. When You Need JPA/Hibernate Entities*
+
+[source,java]
+----
+// ❌ JPA requires mutable entities with no-arg constructor
+@Entity
+record User(Long id, String name) { }  // Won't work
+
+// ✅ Use regular class for entities
+@Entity
+class User {
+    @Id private Long id;
+    private String name;
+    // Default constructor, setters required
+}
+----
+
+*5. When You Have Complex Business Logic*
+
+[source,java]
+----
+// Records are for data, not behavior
+// If your class has complex business logic, use regular class
+class OrderProcessor {
+    // Many methods, complex state management
+    // Not a good fit for record
+}
+----
+====
+
+.Best Practices
+[%collapsible]
+====
+*Do's:*
+
+✅ *Use for DTOs and value objects*
+
+[source,java]
+----
+record ApiResponse(int status, String message, Object data) { }
+record Coordinates(double latitude, double longitude) { }
+record Money(BigDecimal amount, String currency) { }
+----
+
+✅ *Add validation in compact constructor*
+
+[source,java]
+----
+record Email(String address) {
+    public Email {
+        if (!address.matches("^[A-Za-z0-9+_.-]+@(.+)$")) {
+            throw new IllegalArgumentException("Invalid email");
+        }
+    }
+}
+----
+
+✅ *Implement interfaces when needed*
+
+[source,java]
+----
+record Point(int x, int y) implements Comparable<Point> {
+    @Override
+    public int compareTo(Point other) {
+        int cmp = Integer.compare(x, other.x);
+        return cmp != 0 ? cmp : Integer.compare(y, other.y);
+    }
+}
+----
+
+✅ *Use with collections - perfect for Map keys*
+
+[source,java]
+----
+record UserId(String value) { }
+
+Map<UserId, User> userCache = new HashMap<>();
+userCache.put(new UserId("123"), user);
+// equals/hashCode automatically correct
+----
+
+*Don'ts:*
+
+❌ *Don't use for entities with lifecycle*
+
+[source,java]
+----
+// ❌ Bad - needs to be mutable
+record ShoppingCart(List<Item> items) {
+    public void addItem(Item item) {
+        items.add(item);  // Violates immutability principle
+    }
+}
+
+// ✅ Use class
+class ShoppingCart {
+    private List<Item> items = new ArrayList<>();
+    public void addItem(Item item) { items.add(item); }
+}
+----
+
+❌ *Don't put mutable objects in records without defensive copying*
+
+[source,java]
+----
+// ❌ Dangerous - array is mutable
+record Data(int[] values) { }
+
+Data d = new Data(new int[]{1, 2, 3});
+d.values()[0] = 999;  // Mutated!
+
+// ✅ Defensive copy
+record Data(int[] values) {
+    public Data {
+        values = values.clone();
+    }
+
+    @Override
+    public int[] values() {
+        return values.clone();
+    }
+}
+----
+
+❌ *Don't use for complex hierarchies*
+
+[source,java]
+----
+// ❌ Records can't extend each other
+record Animal(String name) { }
+record Dog extends Animal { }  // Error!
+
+// ✅ Use sealed interfaces if needed (covered later)
+----
+====
+
+.Examples
+[%collapsible]
+====
+*Example 1: Simple Data Carrier*
+
+[source,java]
+----
+record Product(String id, String name, double price) { }
+
+Product laptop = new Product("P001", "Laptop", 999.99);
+System.out.println(laptop.name());   // "Laptop"
+System.out.println(laptop);          // Product[id=P001, name=Laptop, price=999.99]
+----
+
+*Example 2: With Validation*
+
+[source,java]
+----
+record Age(int value) {
+    public Age {
+        if (value < 0 || value > 150) {
+            throw new IllegalArgumentException("Invalid age: " + value);
+        }
+    }
+
+    public boolean isMinor() {
+        return value < 18;
+    }
+}
+
+Age age = new Age(25);
+System.out.println(age.isMinor());  // false
+----
+
+*Example 3: Nested Records*
+
+[source,java]
+----
+record Address(String street, String city, String zipCode) { }
+
+record Person(String name, int age, Address address) { }
+
+Person person = new Person(
+    "Alice",
+    30,
+    new Address("123 Main St", "New York", "10001")
+);
+
+System.out.println(person.address().city());  // "New York"
+----
+
+*Example 4: With Collections*
+
+[source,java]
+----
+record Order(String id, List<String> items, double total) {
+    // Defensive copy for mutable list
+    public Order {
+        items = List.copyOf(items);  // Immutable copy
+    }
+}
+
+List<String> items = new ArrayList<>(List.of("Laptop", "Mouse"));
+Order order = new Order("ORD-001", items, 1029.98);
+
+items.add("Keyboard");  // Won't affect order
+System.out.println(order.items());  // [Laptop, Mouse]
+----
+
+For more examples, see link:examples/java17/RecordsDemo.java[RecordsDemo.java]
+====
+
+.Common Pitfalls
+[%collapsible]
+====
+*1. Forgetting Records Are Immutable*
+
+[source,java]
+----
+// ❌ Expecting mutation
+record Cart(List<String> items) { }
+
+Cart cart = new Cart(new ArrayList<>());
+cart.items().add("Item");  // Compiles but violates immutability
+
+// ✅ Create new record
+Cart cart = new Cart(List.of("Item1"));
+Cart newCart = new Cart(
+    Stream.concat(cart.items().stream(), Stream.of("Item2"))
+        .collect(Collectors.toList())
+);
+----
+
+*2. Mutable Components*
+
+[source,java]
+----
+// ❌ Array is mutable
+record Data(int[] values) { }
+
+Data d = new Data(new int[]{1, 2, 3});
+d.values()[0] = 999;  // Mutated!
+
+// ✅ Use defensive copying
+record Data(int[] values) {
+    public Data { values = values.clone(); }
+    @Override
+    public int[] values() { return values.clone(); }
+}
+----
+
+*3. Accessor Naming Confusion*
+
+[source,java]
+----
+record Person(String name) { }
+
+// ❌ Wrong - not getName()
+person.getName();  // Compilation error
+
+// ✅ Just the component name
+person.name();
+----
+
+*4. Trying to Add Instance Fields*
+
+[source,java]
+----
+// ❌ Can't add instance fields
+record Person(String name) {
+    private String nickname;  // Compilation error
+}
+
+// ✅ Add as a component
+record Person(String name, String nickname) { }
+----
+
+*5. Inheritance Confusion*
+
+[source,java]
+----
+// ❌ Records can't extend classes
+record Employee extends Person { }  // Error
+
+// ❌ Records can't be extended
+class Manager extends Employee { }  // Error - record is final
+
+// ✅ Records can implement interfaces
+record Employee(String name) implements Comparable<Employee> { }
+----
+====
+
+.Quick Review Questions
+[%collapsible]
+====
+1. *What methods does a record automatically provide?*
+   - Constructor, accessors (not getters), equals(), hashCode(), toString()
+
+2. *Are records mutable or immutable?*
+   - Immutable - all fields are private final
+
+3. *Can records extend other classes?*
+   - No. Records implicitly extend java.lang.Record and cannot extend other classes
+
+4. *Can you extend a record?*
+   - No. Records are implicitly final
+
+5. *What's the accessor method name for a component?*
+   - Same as the component name. For `record Person(String name)`, it's `name()`, not `getName()`
+
+6. *Can you add instance fields to a record?*
+   - No. Only the components declared in the record header
+
+7. *Can records implement interfaces?*
+   - Yes! Records can implement any interface
+
+8. *What's a compact constructor?*
+   - A constructor without parameter list that validates/normalizes components before auto-assignment
+
+9. *When should you NOT use records?*
+   - When you need mutability, inheritance, JPA entities, or custom equals/hashCode logic
+
+10. *Can you have static members in records?*
+    - Yes! Static fields, methods, and nested classes are allowed
+====
+
+---
+
+== Sealed Classes
+
+.Overview / What it is
+[%collapsible]
+====
+*Sealed Classes* (standard in Java 17) restrict which classes can extend or implement them. You explicitly declare the permitted subclasses, giving you exhaustive control over the type hierarchy.
+
+*Mental Model:* "Controlled inheritance" - you decide exactly who can extend/implement your type.
+
+[source,java]
+----
+// Sealed class - only permits specific subclasses
+public sealed class Shape
+    permits Circle, Rectangle, Triangle {
+}
+
+// Permitted subclasses must be final, sealed, or non-sealed
+final class Circle extends Shape {
+    double radius;
+}
+
+final class Rectangle extends Shape {
+    double width, height;
+}
+
+final class Triangle extends Shape {
+    double base, height;
+}
+----
+
+*Three Options for Subclasses:*
+
+1. *final* - Cannot be extended further
+2. *sealed* - Can be extended, but only by its permitted subclasses
+3. *non-sealed* - Opens back up for extension
+
+[source,java]
+----
+sealed class Animal permits Dog, Cat { }
+
+final class Dog extends Animal { }  // No further extension
+
+sealed class Cat extends Animal permits HouseCat, WildCat { }  // Further sealing
+
+non-sealed class Bird extends Animal { }  // Anyone can extend Bird
+----
+====
+
+.Why use it
+[%collapsible]
+====
+*1. Exhaustive Pattern Matching*
+
+[source,java]
+----
+sealed interface Result permits Success, Failure { }
+record Success(String data) implements Result { }
+record Failure(String error) implements Result { }
+
+// Compiler knows all possible types - no default needed!
+String handleResult(Result result) {
+    return switch (result) {
+        case Success(String data) -> "Got: " + data;
+        case Failure(String error) -> "Error: " + error;
+        // No default needed - compiler knows these are all cases
+    };
+}
+----
+
+*2. Domain Modeling*
+
+[source,java]
+----
+// Payment methods - exactly these, no others
+sealed interface PaymentMethod
+    permits CreditCard, DebitCard, PayPal, BankTransfer { }
+
+record CreditCard(String number, String cvv) implements PaymentMethod { }
+record DebitCard(String number, String pin) implements PaymentMethod { }
+record PayPal(String email) implements PaymentMethod { }
+record BankTransfer(String accountNumber) implements PaymentMethod { }
+
+// Exhaustive handling
+double processingFee(PaymentMethod payment) {
+    return switch (payment) {
+        case CreditCard c -> 0.029 * amount;
+        case DebitCard d -> 0.015 * amount;
+        case PayPal p -> 0.034 * amount;
+        case BankTransfer b -> 0.0;
+    };
+}
+----
+
+*3. State Machines*
+
+[source,java]
+----
+sealed interface OrderState
+    permits Pending, Processing, Shipped, Delivered, Cancelled { }
+
+record Pending() implements OrderState { }
+record Processing(String assignedTo) implements OrderState { }
+record Shipped(String trackingNumber) implements OrderState { }
+record Delivered(LocalDateTime deliveredAt) implements OrderState { }
+record Cancelled(String reason) implements OrderState { }
+
+// Compiler ensures all states are handled
+String getStatusMessage(OrderState state) {
+    return switch (state) {
+        case Pending() -> "Order received";
+        case Processing(String assignedTo) -> "Being processed by " + assignedTo;
+        case Shipped(String tracking) -> "Shipped: " + tracking;
+        case Delivered(LocalDateTime time) -> "Delivered at " + time;
+        case Cancelled(String reason) -> "Cancelled: " + reason;
+    };
+}
+----
+
+*4. API Design - Prevent Unwanted Extensions*
+
+[source,java]
+----
+// Library API - we control all implementations
+public sealed class DatabaseConnection
+    permits MySQLConnection, PostgreSQLConnection, OracleConnection {
+    // Internal implementation details
+}
+
+// Users can't create custom connection types
+// This maintains API stability
+----
+====
+
+.When NOT to use
+[%collapsible]
+====
+*1. When You Want Open Extension*
+
+[source,java]
+----
+// ❌ Bad - plugins should be extensible
+sealed interface Plugin permits AudioPlugin, VideoPlugin { }
+
+// ✅ Use regular interface for plugin systems
+interface Plugin { }  // Anyone can implement
+----
+
+*2. When Hierarchy is Large and Changing*
+
+[source,java]
+----
+// ❌ Maintenance nightmare with many subclasses
+sealed class Vehicle
+    permits Car, Truck, Motorcycle, Bus, Van, SUV, Boat, Plane, ... { }
+
+// ✅ Use regular inheritance if hierarchy is large/evolving
+----
+
+*3. For Simple Data Classes*
+
+[source,java]
+----
+// ❌ Overkill
+sealed class Point permits Point2D, Point3D { }
+
+// ✅ Just use records or regular classes
+record Point2D(int x, int y) { }
+record Point3D(int x, int y, int z) { }
+----
+====
+
+.Best Practices
+[%collapsible]
+====
+*Do's:*
+
+✅ *Combine with records for algebraic data types*
+
+[source,java]
+----
+sealed interface Json permits JsonObject, JsonArray, JsonString, JsonNumber, JsonBoolean, JsonNull { }
+
+record JsonObject(Map<String, Json> values) implements Json { }
+record JsonArray(List<Json> values) implements Json { }
+record JsonString(String value) implements Json { }
+record JsonNumber(double value) implements Json { }
+record JsonBoolean(boolean value) implements Json { }
+record JsonNull() implements Json { }
+----
+
+✅ *Use for finite state machines*
+
+[source,java]
+----
+sealed interface ConnectionState
+    permits Disconnected, Connecting, Connected, Failed { }
+----
+
+✅ *Use for closed domain models*
+
+[source,java]
+----
+sealed interface HttpMethod permits GET, POST, PUT, DELETE, PATCH { }
+----
+
+*Don'ts:*
+
+❌ *Don't seal when you want extensibility*
+
+[source,java]
+----
+// ❌ Prevents users from adding custom validators
+sealed interface Validator permits EmailValidator, PhoneValidator { }
+
+// ✅ Leave open for extension
+interface Validator { }
+----
+
+❌ *Don't forget to mark permitted classes*
+
+[source,java]
+----
+sealed class Animal permits Dog, Cat { }
+
+class Dog extends Animal { }  // ❌ Error - must be final, sealed, or non-sealed
+
+final class Dog extends Animal { }  // ✅ OK
+----
+====
+
+.Examples
+[%collapsible]
+====
+*Example 1: Simple Sealed Hierarchy*
+
+[source,java]
+----
+sealed interface Status permits Active, Inactive, Suspended { }
+
+record Active(LocalDateTime since) implements Status { }
+record Inactive(String reason) implements Status { }
+record Suspended(LocalDateTime until) implements Status { }
+
+// Usage
+Status status = new Active(LocalDateTime.now());
+----
+
+*Example 2: Sealed with Pattern Matching*
+
+[source,java]
+----
+sealed interface Result<T> permits Ok, Error { }
+
+record Ok<T>(T value) implements Result<T> { }
+record Error<T>(String message) implements Result<T> { }
+
+// Exhaustive switch
+<T> String describe(Result<T> result) {
+    return switch (result) {
+        case Ok(var value) -> "Success: " + value;
+        case Error(var msg) -> "Failed: " + msg;
+    };
+}
+----
+
+For more examples, see link:examples/java17/RecordsDemo.java[RecordsDemo.java]
+====
+
+.Common Pitfalls
+[%collapsible]
+====
+*1. Forgetting to Mark Subclasses*
+
+[source,java]
+----
+sealed class Base permits Sub { }
+
+class Sub extends Base { }  // ❌ Error - not final, sealed, or non-sealed
+
+final class Sub extends Base { }  // ✅
+----
+
+*2. Permitted Classes Not in Same Module*
+
+[source,java]
+----
+// Permitted classes must be in same module/package
+// (unless in same file)
+----
+
+*3. Missing Case in Pattern Matching*
+
+[source,java]
+----
+sealed interface Shape permits Circle, Square { }
+
+// ❌ Error if you add Triangle later and forget to update switches
+String describe(Shape s) {
+    return switch (s) {
+        case Circle c -> "circle";
+        case Square sq -> "square";
+        // Add Triangle later - compiler catches missing case!
+    };
+}
+----
+====
+
+.Quick Review Questions
+[%collapsible]
+====
+1. *What does sealed mean?*
+   - Restricts which classes can extend/implement the type
+
+2. *What are the three options for permitted subclasses?*
+   - final (cannot extend), sealed (controlled extension), non-sealed (open extension)
+
+3. *Where must permitted subclasses be located?*
+   - Same module/package (or same file)
+
+4. *Why use sealed classes?*
+   - Exhaustive pattern matching, controlled type hierarchy, better domain modeling
+
+5. *Can sealed classes work with records?*
+   - Yes! Perfect combination for algebraic data types
+
+6. *What happens if you add a new permitted class?*
+   - Compiler forces you to update all exhaustive switches
+
+7. *Can interfaces be sealed?*
+   - Yes! Both classes and interfaces can be sealed
+
+8. *When should you NOT use sealed classes?*
+   - When you want open extensibility (plugins, frameworks)
+
+9. *Do you need a default case with sealed types in switch?*
+   - No! Compiler knows all cases are covered
+
+10. *Can a sealed class have non-permitted subclasses?*
+    - No. Only the explicitly permitted classes can extend/implement it
+====
+
+---
+
+## Pattern Matching for instanceof
+
+.Overview / What it is
+[%collapsible]
+====
+*Pattern Matching for instanceof* (standard in Java 16, refined in Java 17) eliminates the need for explicit casting after an `instanceof` check. The cast variable is automatically created in scope.
+
+*Mental Model:* "Test and cast in one step" - no more redundant casting.
+
+[source,java]
+----
+// Before Java 16 - redundant cast
+if (obj instanceof String) {
+    String s = (String) obj;
+    System.out.println(s.length());
+}
+
+// Java 16+ - pattern matching
+if (obj instanceof String s) {
+    System.out.println(s.length());
+}
+----
+
+*Key Features:*
+
+1. *Pattern variable*: Automatically created and typed
+2. *Scope*: Only in scope where compiler knows type is safe
+3. *Works with* `instanceof`, `&&`, and `||` expressions
+
+[source,java]
+----
+// Pattern variable scope
+if (obj instanceof String s) {
+    System.out.println(s.length());  // ✅ s in scope
+}
+// System.out.println(s);  // ❌ s not in scope here
+
+// Works with && (smart scoping)
+if (obj instanceof String s && s.length() > 5) {
+    System.out.println(s.toUpperCase());  // ✅ s in scope
+}
+
+// Not with || (s might not exist)
+if (obj instanceof String s || s.isEmpty()) {  // ❌ Error
+}
+----
+====
+
+.Why use it
+[%collapsible]
+====
+*1. Eliminates Redundant Casts*
+
+[source,java]
+----
+// Before
+if (animal instanceof Dog) {
+    Dog dog = (Dog) animal;
+    dog.bark();
+}
+
+// After
+if (animal instanceof Dog dog) {
+    dog.bark();
+}
+----
+
+*2. Cleaner Conditional Logic*
+
+[source,java]
+----
+// Before - verbose
+if (obj instanceof String) {
+    String s = (String) obj;
+    if (s.length() > 10) {
+        return s.toUpperCase();
+    }
+}
+
+// After - concise
+if (obj instanceof String s && s.length() > 10) {
+    return s.toUpperCase();
+}
+----
+
+*3. Better with Complex Conditions*
+
+[source,java]
+----
+if (obj instanceof String s && !s.isEmpty() && s.startsWith("PREFIX")) {
+    processString(s);
+}
+----
+
+*4. Works Great with Sealed Classes*
+
+[source,java]
+----
+sealed interface Shape permits Circle, Rectangle { }
+
+double area(Shape shape) {
+    if (shape instanceof Circle c) {
+        return Math.PI * c.radius() * c.radius();
+    } else if (shape instanceof Rectangle r) {
+        return r.width() * r.height();
+    }
+    throw new IllegalArgumentException();
+}
+----
+====
+
+.When NOT to use
+[%collapsible]
+====
+*1. When Polymorphism is Better*
+
+[source,java]
+----
+// ❌ Bad - use polymorphism
+if (shape instanceof Circle c) {
+    return Math.PI * c.radius() * c.radius();
+} else if (shape instanceof Rectangle r) {
+    return r.width() * r.height();
+}
+
+// ✅ Better - polymorphic method
+interface Shape {
+    double area();
+}
+----
+
+*2. For Simple Type Checks*
+
+[source,java]
+----
+// Sometimes old way is fine for very simple checks
+if (obj instanceof String) {
+    // ... do something that doesn't need the cast
+}
+----
+====
+
+.Best Practices
+[%collapsible]
+====
+*Do's:*
+
+✅ *Use with conditional chains*
+
+[source,java]
+----
+if (obj instanceof String s && s.length() > 0) {
+    System.out.println(s.toUpperCase());
+}
+----
+
+✅ *Use with sealed classes for exhaustiveness*
+
+[source,java]
+----
+sealed interface Result permits Success, Failure { }
+
+String handle(Result r) {
+    if (r instanceof Success s) return s.value();
+    if (r instanceof Failure f) return "Error: " + f.error();
+    throw new IllegalStateException();  // Unreachable but required
+}
+----
+
+*Don'ts:*
+
+❌ *Don't use with OR conditions*
+
+[source,java]
+----
+// ❌ Error - s not definitely assigned
+if (obj instanceof String s || checkSomething()) {
+    System.out.println(s);  // Error!
+}
+----
+
+❌ *Don't access pattern variable outside its scope*
+
+[source,java]
+----
+if (obj instanceof String s) {
+    // s is in scope
+}
+// s is not in scope here
+----
+====
+
+.Examples
+[%collapsible]
+====
+*Example 1: Basic Pattern Matching*
+
+[source,java]
+----
+Object obj = "Hello";
+
+if (obj instanceof String s) {
+    System.out.println("Length: " + s.length());
+}
+----
+
+*Example 2: With Conditions*
+
+[source,java]
+----
+if (obj instanceof String s && s.length() > 5) {
+    System.out.println("Long string: " + s);
+}
+----
+
+*Example 3: Method Processing*
+
+[source,java]
+----
+void process(Object obj) {
+    if (obj instanceof Integer i) {
+        System.out.println("Number: " + (i * 2));
+    } else if (obj instanceof String s) {
+        System.out.println("Text: " + s.toUpperCase());
+    } else if (obj instanceof List<?> list) {
+        System.out.println("List size: " + list.size());
+    }
+}
+----
+
+For more examples, see link:examples/java17/RecordsDemo.java[RecordsDemo.java]
+====
+
+.Common Pitfalls
+[%collapsible]
+====
+*1. Pattern Variable Scope Confusion*
+
+[source,java]
+----
+if (obj instanceof String s) {
+    System.out.println(s);  // ✅ OK
+}
+System.out.println(s);  // ❌ Error - not in scope
+----
+
+*2. Using with OR*
+
+[source,java]
+----
+// ❌ Error
+if (obj instanceof String s || obj == null) {
+    System.out.println(s);  // s might not exist
+}
+----
+
+*3. Shadowing Variables*
+
+[source,java]
+----
+String s = "outer";
+if (obj instanceof String s) {  // ❌ Error - shadows outer variable
+    //...
+}
+----
+====
+
+.Quick Review Questions
+[%collapsible]
+====
+1. *What does pattern matching for instanceof eliminate?*
+   - Explicit casting after type check
+
+2. *What is a pattern variable?*
+   - The automatically created and typed variable in the pattern: `if (obj instanceof String s)` - s is the pattern variable
+
+3. *Where is the pattern variable in scope?*
+   - Only where compiler knows the type is safe (inside the if block, and in && conditions)
+
+4. *Can you use pattern variables with OR conditions?*
+   - No. They work with && but not ||
+
+5. *Do you still need to cast after instanceof check?*
+   - No! The pattern variable is automatically the correct type
+
+6. *When is pattern matching better than polymorphism?*
+   - When you don't control the types (external libraries), or for quick utility methods
+
+7. *Can pattern variables shadow existing variables?*
+   - No. Compilation error if you try to shadow an existing variable
+
+8. *Does this work with switch?*
+   - Not in Java 17, but pattern matching for switch comes in later versions
+
+9. *What's the main benefit?*
+   - Cleaner, more concise code with less boilerplate
+
+10. *When should you NOT use it?*
+    - When polymorphism is a better design choice
+====
+
+---
+
+== Other Java 17 Features (Brief Overview)
+
+Java 17, being an LTS release, also included several JVM improvements and minor enhancements:
+
+=== JVM and Performance Improvements
+
+*Enhanced Pseudo-Random Number Generators (JEP 356)*
+
+New interfaces and implementations for PRNGs, making it easier to use different algorithms:
+
+[source,java]
+----
+// New API for random number generation
+RandomGenerator generator = RandomGenerator.of("L64X128MixRandom");
+int random = generator.nextInt(100);
+----
+
+*macOS/AArch64 Port (JEP 391)*
+
+Native support for macOS on Apple Silicon (M1/M2 chips) - operational improvement, better performance on Apple hardware.
+
+*Deprecate the Applet API for Removal (JEP 398)*
+
+Applet API marked for removal - irrelevant for modern development (browsers dropped support years ago).
+
+*Strongly Encapsulate JDK Internals (JEP 403)*
+
+Strong encapsulation of internal APIs by default (previously relaxed with `--illegal-access=permit`). This improves security and maintainability but may break code using internal APIs like `sun.misc.Unsafe`.
+
+*Context-Specific Deserialization Filters (JEP 415)*
+
+Enhanced security for object deserialization - allows applications to configure deserialization filters. Important for security but not daily coding.
+
+*Remove RMI Activation (JEP 407)*
+
+Removal of obsolete RMI Activation mechanism - rarely used in modern applications.
+
+*Deprecate the Security Manager for Removal (JEP 411)*
+
+Security Manager deprecated - rarely used in modern applications, alternative security mechanisms are preferred.
+
+=== Why These Matter (Brief)
+
+While these aren't daily coding features, they're important for:
+
+- *LTS Stability*: Java 17 removed deprecated/obsolete features, making it cleaner
+- *Performance*: Better JVM optimizations, especially on modern hardware (Apple Silicon, modern CPUs)
+- *Security*: Stronger encapsulation and better deserialization controls
+- *Platform Support*: First-class support for newer platforms
+
+*Interview Note:* You typically won't be asked about these JVM internals unless interviewing for JVM-focused roles. Focus on Records, Sealed Classes, and Pattern Matching for general Java interviews.
+
+---
+
+== Summary
+
+*Java 17's Main Contributions:*
+
+1. *Records*: Compact immutable data carriers - eliminate boilerplate
+2. *Sealed Classes*: Controlled inheritance - exhaustive type hierarchies
+3. *Pattern Matching for instanceof*: Eliminate redundant casts
+4. *JVM Improvements*: Better performance, security, and platform support
+
+*Key Takeaways:*
+
+- Records are perfect for DTOs, value objects, and immutable data
+- Sealed classes enable exhaustive pattern matching and controlled domain models
+- Pattern matching eliminates the test-and-cast boilerplate
+- These three features work beautifully together for modern Java design
+- As an LTS release, Java 17 is stable, performant, and widely adopted
+
+*Most Important:* Master Records - they're used everywhere in modern Java and heavily tested in interviews. Sealed classes and pattern matching are important for advanced design patterns.
+
+*What's Next:* Java 18-20 bring minor improvements and previews of features that become standard in Java 21.
+
+---
+
+*Navigation:* link:README.adoc[Home] | link:java-12-to-16.adoc[← Java 12-16] | *Java 17 (LTS)* | link:java-18-to-20.adoc[Next: Java 18-20 →]
+
+---

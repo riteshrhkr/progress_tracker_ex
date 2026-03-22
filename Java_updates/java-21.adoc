@@ -1,0 +1,451 @@
+= Java 21 Features (LTS)
+:toc:
+:toc-placement!:
+
+toc::[]
+
+---
+
+*Navigation:* link:README.adoc[Home] | link:java-18-to-20.adoc[← Java 18-20] | *Java 21 (LTS)* | link:java-22-to-25.adoc[Next: Java 22-25 →]
+
+---
+
+== Introduction
+
+*Java 21* (September 2023) is the latest *Long-Term Support (LTS)* release and represents a massive leap forward in Java's evolution. It finalizes revolutionary features that simplify concurrent programming and enhance expressiveness.
+
+*Key Themes:*
+
+- *Concurrency Revolution*: Virtual Threads (Project Loom) make concurrent programming dramatically simpler
+- *Collections Enhancement*: Sequenced Collections fill a major gap in the Collections API
+- *Pattern Matching*: Pattern Matching for switch and Record Patterns enhance expressiveness
+- *Modern Java*: These features define cutting-edge Java development
+
+*Interview Importance:* ⭐⭐⭐⭐⭐
+
+Java 21 is THE most important recent release. Virtual Threads and Pattern Matching are game-changers that appear frequently in modern Java interviews.
+
+*Example Files:*
+
+- link:examples/java21/VirtualThreadsDemo.java[VirtualThreadsDemo.java] - Virtual threads and concurrency
+- link:examples/java21/PatternMatchingDemo.java[PatternMatchingDemo.java] - Pattern matching for switch and record patterns
+
+---
+
+== Virtual Threads (Project Loom)
+
+.Overview / What it is
+[%collapsible]
+====
+*Virtual Threads* are lightweight threads managed by the JVM rather than the OS. You can create millions of them without the overhead of traditional platform threads.
+
+*Mental Model:* "Threads without the pain" - Write simple synchronous code that scales like async code.
+
+[source,java]
+----
+// Traditional platform thread - expensive (limited to ~thousands)
+Thread platformThread = new Thread(() -> {
+    System.out.println("Platform thread");
+});
+platformThread.start();
+
+// Virtual thread - cheap (can create millions!)
+Thread virtualThread = Thread.startVirtualThread(() -> {
+    System.out.println("Virtual thread");
+});
+----
+
+*Key Benefits:*
+
+1. *Millions of threads*: Create 1M+ virtual threads easily
+2. *Simple code*: Write synchronous code, get async performance
+3. *No callback hell*: No CompletableFuture chains or reactive complexity
+4. *Blocking is OK*: Blocking operations don't waste OS threads
+
+[source,java]
+----
+// Create many virtual threads easily
+try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
+    for (int i = 0; i < 1_000_000; i++) {
+        executor.submit(() -> {
+            // Each task gets its own virtual thread
+            performTask();
+        });
+    }
+}  // Auto-closes, waits for all to complete
+----
+====
+
+.Why use it
+[%collapsible]
+====
+*1. Massively Concurrent I/O*
+
+[source,java]
+----
+// Handle 100,000 concurrent HTTP requests - simple code
+try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
+    for (Request request : requests) {  // 100k requests
+        executor.submit(() -> handleRequest(request));
+    }
+}
+
+void handleRequest(Request req) {
+    // Simple synchronous-looking code
+    String data = httpClient.send(req);  // Blocks - but it's OK!
+    String result = database.query(data);  // Blocks - still OK!
+    return result;
+}
+----
+
+*2. Simpler Than Async/Reactive*
+
+[source,java]
+----
+// OLD WAY - CompletableFuture hell
+CompletableFuture.supplyAsync(() -> fetchUser())
+    .thenCompose(user -> fetchOrders(user))
+    .thenCompose(orders -> fetchDetails(orders))
+    .thenAccept(details -> process(details))
+    .exceptionally(ex -> handleError(ex));
+
+// VIRTUAL THREADS - simple synchronous code
+Thread.startVirtualThread(() -> {
+    User user = fetchUser();          // Looks blocking, doesn't block OS thread
+    Orders orders = fetchOrders(user);
+    Details details = fetchDetails(orders);
+    process(details);
+});
+----
+
+*3. Thread-Per-Request Pattern Works Again*
+
+[source,java]
+----
+// Web server - one virtual thread per request
+server.createContext("/api", exchange -> {
+    Thread.startVirtualThread(() -> handleApiRequest(exchange));
+});
+
+// Can handle millions of concurrent requests!
+----
+====
+
+.When NOT to use
+[%collapsible]
+====
+*1. CPU-Intensive Tasks*
+
+[source,java]
+----
+// ❌ Virtual threads don't help with CPU-bound work
+Thread.startVirtualThread(() -> {
+    // Heavy computation - no benefit from virtual threads
+    computePrimes(1_000_000);
+});
+
+// ✅ Use platform threads or ForkJoinPool
+ForkJoinPool.commonPool().submit(() -> computePrimes(1_000_000));
+----
+
+*2. When You Need Thread Pinning Control*
+
+Virtual threads can "pin" to platform threads when using `synchronized` blocks during blocking I/O. Use `ReentrantLock` instead if this matters.
+
+*3. Thread-Local Heavy Code*
+
+[source,java]
+----
+// ❌ Thread-locals with millions of virtual threads = memory issues
+ThreadLocal<ExpensiveObject> threadLocal = new ThreadLocal<>();
+
+// ✅ Use ScopedValues (preview) or avoid thread-locals
+----
+====
+
+.Best Practices
+[%collapsible]
+====
+*Do's:*
+
+✅ *Use for I/O-bound tasks*
+
+[source,java]
+----
+// Perfect for HTTP calls, database queries, file I/O
+try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
+    tasks.forEach(task -> executor.submit(() -> {
+        String data = httpClient.get(task.url());  // I/O
+        database.save(data);                        // I/O
+    }));
+}
+----
+
+✅ *Use Executors.newVirtualThreadPerTaskExecutor()*
+
+[source,java]
+----
+try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
+    // Submit tasks
+}  // Auto-shutdown and wait
+----
+
+✅ *Prefer ReentrantLock over synchronized for blocking code*
+
+[source,java]
+----
+// ✅ Better for virtual threads
+private final Lock lock = new ReentrantLock();
+
+void method() {
+    lock.lock();
+    try {
+        // Blocking I/O here won't pin virtual thread
+    } finally {
+        lock.unlock();
+    }
+}
+----
+
+*Don'ts:*
+
+❌ *Don't use thread pools with virtual threads*
+
+[source,java]
+----
+// ❌ Defeats the purpose
+Executors.newFixedThreadPool(100);  // Limited pool
+
+// ✅ One virtual thread per task
+Executors.newVirtualThreadPerTaskExecutor();
+----
+
+❌ *Don't use for CPU-intensive work*
+
+[source,java]
+----
+// ❌ No benefit
+Thread.startVirtualThread(() -> calculatePi(1_000_000));
+----
+====
+
+For more examples, see link:examples/java21/VirtualThreadsDemo.java[VirtualThreadsDemo.java]
+
+---
+
+== Sequenced Collections
+
+.Overview / What it is
+[%collapsible]
+====
+*Sequenced Collections* fill a major gap - a common interface for collections with a defined encounter order (first/last element).
+
+[source,java]
+----
+// New interfaces
+interface SequencedCollection<E> extends Collection<E> {
+    SequencedCollection<E> reversed();
+    void addFirst(E e);
+    void addLast(E e);
+    E getFirst();
+    E getLast();
+    E removeFirst();
+    E removeLast();
+}
+
+// List, Deque, SortedSet now extend SequencedCollection
+List<String> list = List.of("a", "b", "c");
+String first = list.getFirst();  // "a"
+String last = list.getLast();    // "c"
+----
+====
+
+.Why use it
+[%collapsible]
+====
+*1. Uniform API Across Collections*
+
+[source,java]
+----
+// Before Java 21 - inconsistent APIs
+List<String> list = ...;
+String first = list.get(0);  // List: get(0)
+String last = list.get(list.size() - 1);
+
+Deque<String> deque = ...;
+String first = deque.getFirst();  // Deque: getFirst()
+
+// Java 21 - consistent!
+list.getFirst();
+deque.getFirst();
+linkedHashSet.getFirst();
+----
+
+*2. Easy Reversal*
+
+[source,java]
+----
+List<Integer> numbers = List.of(1, 2, 3);
+List<Integer> reversed = numbers.reversed();  // [3, 2, 1]
+
+// Works on the reversed view
+reversed.getFirst();  // 3
+----
+====
+
+For complete details see link:examples/java21/PatternMatchingDemo.java[PatternMatchingDemo.java]
+
+---
+
+== Pattern Matching for switch
+
+.Overview / What it is
+[%collapsible]
+====
+*Pattern Matching for switch* (finalized in Java 21) allows using patterns in switch expressions, including type patterns, guarded patterns, and null handling.
+
+[source,java]
+----
+// Type patterns in switch
+String formatted = switch (obj) {
+    case Integer i -> String.format("int %d", i);
+    case Long l    -> String.format("long %d", l);
+    case String s  -> String.format("String %s", s);
+    case null      -> "null";
+    default        -> obj.toString();
+};
+
+// With guards
+String result = switch (obj) {
+    case String s && s.length() > 10 -> "Long string: " + s;
+    case String s -> "Short string: " + s;
+    default -> "Not a string";
+};
+----
+====
+
+.Why use it
+[%collapsible]
+====
+*1. Clean Type Testing*
+
+[source,java]
+----
+// Before - ugly instanceof chain
+String result;
+if (obj instanceof Integer i) {
+    result = "int: " + i;
+} else if (obj instanceof String s) {
+    result = "string: " + s;
+} else {
+    result = "other";
+}
+
+// Java 21 - clean switch
+String result = switch (obj) {
+    case Integer i -> "int: " + i;
+    case String s -> "string: " + s;
+    default -> "other";
+};
+----
+
+*2. Guards for Complex Conditions*
+
+[source,java]
+----
+String classify = switch (value) {
+    case Integer i && i > 0 -> "positive";
+    case Integer i && i < 0 -> "negative";
+    case Integer i -> "zero";
+    default -> "not an integer";
+};
+----
+
+*3. Null-Safe Switches*
+
+[source,java]
+----
+switch (obj) {
+    case null -> System.out.println("Null value");
+    case String s -> System.out.println("String: " + s);
+    default -> System.out.println("Other");
+}
+----
+====
+
+---
+
+== Record Patterns
+
+.Overview / What it is
+[%collapsible]
+====
+*Record Patterns* (finalized in Java 21) allow deconstructing record values directly in patterns.
+
+[source,java]
+----
+record Point(int x, int y) {}
+
+// Deconstruct in instanceof
+if (obj instanceof Point(int x, int y)) {
+    System.out.println("x: " + x + ", y: " + y);
+}
+
+// Deconstruct in switch
+String result = switch (obj) {
+    case Point(int x, int y) -> "Point at " + x + ", " + y;
+    default -> "Not a point";
+};
+
+// Nested patterns
+record Rectangle(Point topLeft, Point bottomRight) {}
+
+if (shape instanceof Rectangle(Point(int x1, int y1), Point(int x2, int y2))) {
+    int width = x2 - x1;
+    int height = y2 - y1;
+}
+----
+====
+
+For complete examples, see link:examples/java21/PatternMatchingDemo.java[PatternMatchingDemo.java]
+
+---
+
+== Other Java 21 Features (Brief)
+
+*String Templates (Preview)*: Simplified string interpolation
+*Unnamed Patterns and Variables*: Use `_` for unused variables
+*Unnamed Classes and Instance Main Methods (Preview)*: Simpler "Hello World"
+
+*JVM Improvements*:
+- Generational ZGC
+- Deprecate Windows 32-bit x86 Port
+- Prepare to Disallow Dynamic Loading of Agents
+
+---
+
+== Summary
+
+*Java 21's Main Contributions:*
+
+1. *Virtual Threads*: Revolutionary concurrency - write simple code that scales massively
+2. *Sequenced Collections*: Finally, a unified API for ordered collections
+3. *Pattern Matching for switch*: Clean, expressive type testing with guards
+4. *Record Patterns*: Elegant record deconstruction
+
+*Key Takeaways:*
+
+- Virtual Threads are THE biggest change to Java concurrency ever
+- Write synchronous code, get async performance
+- Pattern matching makes code more expressive and type-safe
+- Java 21 LTS is ready for production and widely adopted
+
+*Most Important:* Master Virtual Threads - they're revolutionary and heavily tested in interviews.
+
+*What's Next:* Java 22-25 bring refinements and new preview features, but Java 21 is the current production LTS.
+
+---
+
+*Navigation:* link:README.adoc[Home] | link:java-18-to-20.adoc[← Java 18-20] | *Java 21 (LTS)* | link:java-22-to-25.adoc[Next: Java 22-25 →]
+
+---

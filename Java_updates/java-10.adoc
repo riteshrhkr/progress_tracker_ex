@@ -1,0 +1,678 @@
+= Java 10 Features
+:toc:
+:toc-placement!:
+
+toc::[]
+
+---
+
+*Navigation:* link:README.adoc[Home] | link:java-9.adoc[← Java 9] | *Java 10* | link:java-11.adoc[Next: Java 11 (LTS) →]
+
+---
+
+== Introduction
+
+*Java 10* (March 2018) was a short-term release that introduced one of the most popular syntactic improvements to Java: *Local Variable Type Inference* (`var` keyword). While Java 10 included other features, most were JVM-internal improvements not directly relevant to daily coding.
+
+*Key Theme:* Developer productivity through reduced boilerplate
+
+*Interview Importance:* ⭐⭐⭐
+
+The `var` keyword is widely used in modern Java codebases and frequently appears in interviews. Understanding when to use it (and when NOT to use it) is essential.
+
+*Example Files:*
+
+- link:examples/java10/VarKeywordDemo.java[VarKeywordDemo.java] - Practical var usage scenarios
+
+---
+
+== Local Variable Type Inference (`var` keyword)
+
+.Overview / What it is
+[%collapsible]
+====
+*Local Variable Type Inference* allows you to declare local variables without explicitly specifying their type. The compiler *infers* the type from the initializer expression.
+
+*Mental Model:* Think of `var` as "let the compiler figure out the obvious type". It's NOT dynamic typing like JavaScript - the type is still statically determined at compile time.
+
+[source,java]
+----
+// Before Java 10
+Map<String, List<Customer>> customersByCity = new HashMap<>();
+BufferedReader reader = Files.newBufferedReader(path);
+Stream<String> lines = Files.lines(path);
+
+// Java 10+ with var
+var customersByCity = new HashMap<String, List<Customer>>();
+var reader = Files.newBufferedReader(path);
+var lines = Files.lines(path);
+----
+
+*Key Points:*
+
+- `var` is NOT a keyword - it's a *reserved type name* (you can still use "var" as a variable name, method name, etc.)
+- Only for *local variables* with initializers
+- Type is inferred at *compile time* - still strongly typed
+- Cannot be used for: fields, method parameters, return types, or variables without initializers
+
+*Java 11 Enhancement:* `var` can be used in lambda parameters to add annotations:
+
+[source,java]
+----
+// Java 11+
+list.stream()
+    .map((@NotNull var s) -> s.toUpperCase())
+    .forEach(System.out::println);
+----
+====
+
+.Why use it
+[%collapsible]
+====
+*1. Reduces Boilerplate for Obvious Types*
+
+When the type is clear from the right-hand side:
+
+[source,java]
+----
+// Before - redundant type information
+Map<String, List<Order>> ordersByCustomer = new HashMap<String, List<Order>>();
+
+// With var - cleaner, less redundant
+var ordersByCustomer = new HashMap<String, List<Order>>();
+----
+
+*2. Improves Readability with Complex Generics*
+
+[source,java]
+----
+// Before - hard to read
+Map<CustomerType, List<Map.Entry<OrderId, OrderDetails>>> complexData =
+    buildComplexDataStructure();
+
+// With var - focus on the variable name, not the type
+var complexData = buildComplexDataStructure();
+----
+
+*3. Easier Refactoring*
+
+When you change a method's return type, you don't need to update all call sites:
+
+[source,java]
+----
+// Method returns ArrayList today
+var customers = customerService.getActiveCustomers();
+
+// Tomorrow, changed to LinkedList - no call site changes needed
+// var customers = customerService.getActiveCustomers();
+----
+
+*4. Forces Better Naming*
+
+Using `var` encourages descriptive variable names:
+
+[source,java]
+----
+// Bad - unclear what 'data' is
+var data = repository.findAll();
+
+// Good - clear from the name
+var activeCustomers = repository.findAllActive();
+----
+
+*5. Works Well with Streams and Builders*
+
+[source,java]
+----
+// Stream operations
+var eligibleOrders = orders.stream()
+    .filter(order -> order.getAmount() > 100)
+    .filter(order -> order.getStatus() == PENDING)
+    .collect(Collectors.toList());
+
+// Builder pattern
+var customer = Customer.builder()
+    .name("John Doe")
+    .email("john@example.com")
+    .age(30)
+    .build();
+----
+====
+
+.When NOT to use
+[%collapsible]
+====
+*1. When Type is Not Obvious from Initializer*
+
+[source,java]
+----
+// Bad - what type is this?
+var result = process(data);
+
+// Good - explicit type makes it clear
+CustomerReport result = process(data);
+----
+
+*2. With Numeric Literals (Precision Matters)*
+
+[source,java]
+----
+// Bad - infers int, but you might need long
+var numberOfBytes = 1024 * 1024 * 1024;  // Overflow!
+
+// Good - explicit type prevents bugs
+long numberOfBytes = 1024L * 1024L * 1024L;
+----
+
+*3. With Diamond Operator and No Context*
+
+[source,java]
+----
+// Bad - infers ArrayList<Object>
+var list = new ArrayList<>();
+
+// Good - explicit type
+List<String> list = new ArrayList<>();
+// Or provide context
+var list = new ArrayList<String>();
+----
+
+*4. When You Need a Supertype*
+
+[source,java]
+----
+// Bad - infers ArrayList, but you might want List interface
+var customers = new ArrayList<Customer>();
+
+// Good - when you want to code to interface
+List<Customer> customers = new ArrayList<>();
+----
+
+*5. For Primitive Wrapper Autoboxing*
+
+[source,java]
+----
+// Bad - infers Integer, but you might want int
+var count = Integer.valueOf(42);
+
+// Good - explicit primitive
+int count = 42;
+----
+
+*6. In Complex Conditional Expressions*
+
+[source,java]
+----
+// Bad - unclear which branch type
+var value = condition ? getStringValue() : getIntValue();
+
+// Good - explicit type or refactor
+Object value = condition ? getStringValue() : getIntValue();
+----
+
+*7. Cannot Use Without Initializer*
+
+[source,java]
+----
+// Compilation error - no initializer
+var name;
+name = "John";
+
+// Must combine
+var name = "John";
+----
+
+*8. Cannot Use for Fields, Parameters, or Return Types*
+
+[source,java]
+----
+class Customer {
+    var name;  // ❌ Compilation error
+
+    var getName() {  // ❌ Compilation error
+        return name;
+    }
+
+    void setName(var name) {  // ❌ Compilation error
+        this.name = name;
+    }
+}
+----
+====
+
+.Best Practices
+[%collapsible]
+====
+*Do's:*
+
+✅ *Use var when type is obvious from right-hand side*
+
+[source,java]
+----
+var customers = new ArrayList<Customer>();
+var path = Paths.get("/tmp/data.txt");
+var builder = new StringBuilder();
+----
+
+✅ *Use var with diamond operator when providing type arguments*
+
+[source,java]
+----
+var map = new HashMap<String, Integer>();
+var list = new ArrayList<Customer>();
+----
+
+✅ *Use var for long, complex generic types*
+
+[source,java]
+----
+var complexMap = new HashMap<CustomerType, List<Map.Entry<OrderId, Order>>>();
+----
+
+✅ *Use var in for-each loops for cleaner code*
+
+[source,java]
+----
+for (var entry : map.entrySet()) {
+    System.out.println(entry.getKey() + ": " + entry.getValue());
+}
+----
+
+✅ *Use var with try-with-resources*
+
+[source,java]
+----
+try (var reader = Files.newBufferedReader(path)) {
+    // ...
+}
+----
+
+*Don'ts:*
+
+❌ *Don't use var when it reduces readability*
+
+[source,java]
+----
+// Bad
+var result = process();  // What type?
+
+// Good
+CustomerReport result = process();
+----
+
+❌ *Don't use var just to save typing*
+
+[source,java]
+----
+// Bad - int is short and clear
+var x = 10;
+
+// Good
+int x = 10;
+----
+
+❌ *Don't use var with null initializer*
+
+[source,java]
+----
+// Compilation error
+var name = null;
+
+// If needed, use explicit type
+String name = null;
+----
+
+❌ *Don't use var for public APIs*
+
+[source,java]
+----
+// Bad - makes API unclear
+public var getCustomer() { ... }  // ❌ Not allowed anyway
+
+// Good
+public Customer getCustomer() { ... }
+----
+
+❌ *Don't overuse var - balance with readability*
+
+[source,java]
+----
+// Too much var - unclear
+var a = get();
+var b = process(a);
+var c = transform(b);
+
+// Better - strategic use
+Customer customer = get();
+var validatedCustomer = validate(customer);
+var savedCustomer = repository.save(validatedCustomer);
+----
+====
+
+.Examples
+[%collapsible]
+====
+*Example 1: Collections*
+
+[source,java]
+----
+// Clean with var
+var names = new ArrayList<String>();
+var scores = new HashMap<String, Integer>();
+var uniqueIds = new HashSet<Long>();
+
+names.add("Alice");
+scores.put("Alice", 95);
+uniqueIds.add(1001L);
+----
+
+*Example 2: Stream Operations*
+
+[source,java]
+----
+var activeCustomers = customers.stream()
+    .filter(Customer::isActive)
+    .collect(Collectors.toList());
+
+var customersByCity = customers.stream()
+    .collect(Collectors.groupingBy(Customer::getCity));
+----
+
+*Example 3: File I/O*
+
+[source,java]
+----
+try (var reader = Files.newBufferedReader(path);
+     var writer = Files.newBufferedWriter(outputPath)) {
+
+    var line = reader.readLine();
+    while (line != null) {
+        writer.write(line.toUpperCase());
+        writer.newLine();
+        line = reader.readLine();
+    }
+}
+----
+
+*Example 4: For Loops*
+
+[source,java]
+----
+// For-each loop
+var orders = getOrders();
+for (var order : orders) {
+    System.out.println(order.getId());
+}
+
+// Traditional for loop (less common with var)
+for (var i = 0; i < 10; i++) {
+    System.out.println(i);
+}
+
+// Map iteration
+var userMap = getUserMap();
+for (var entry : userMap.entrySet()) {
+    var key = entry.getKey();
+    var value = entry.getValue();
+    System.out.println(key + " -> " + value);
+}
+----
+
+*Example 5: Builder Pattern*
+
+[source,java]
+----
+var customer = Customer.builder()
+    .id(1001L)
+    .name("John Doe")
+    .email("john@example.com")
+    .age(30)
+    .build();
+
+var order = Order.builder()
+    .orderId("ORD-123")
+    .customer(customer)
+    .amount(299.99)
+    .status(OrderStatus.PENDING)
+    .build();
+----
+
+*Example 6: JDBC (Before and After)*
+
+[source,java]
+----
+// Before Java 10
+Connection connection = DriverManager.getConnection(url);
+PreparedStatement statement = connection.prepareStatement(sql);
+ResultSet resultSet = statement.executeQuery();
+
+// Java 10+
+var connection = DriverManager.getConnection(url);
+var statement = connection.prepareStatement(sql);
+var resultSet = statement.executeQuery();
+----
+
+For more comprehensive examples, see link:examples/java10/VarKeywordDemo.java[VarKeywordDemo.java]
+====
+
+.Common Pitfalls
+[%collapsible]
+====
+*1. Diamond Operator Without Type Arguments*
+
+[source,java]
+----
+// ❌ Infers ArrayList<Object>
+var list = new ArrayList<>();
+
+// ✅ Provide type arguments
+var list = new ArrayList<String>();
+----
+
+*2. Numeric Literal Inference*
+
+[source,java]
+----
+// ❌ Infers int, may overflow
+var largeNumber = 5000000000;  // Compilation error!
+
+// ✅ Use explicit literal suffix
+var largeNumber = 5000000000L;
+----
+
+*3. Using var with null*
+
+[source,java]
+----
+// ❌ Cannot infer type from null
+var name = null;  // Compilation error
+
+// ✅ Use explicit type
+String name = null;
+----
+
+*4. Ternary Operator Type Confusion*
+
+[source,java]
+----
+// ❌ Unclear - infers common supertype
+var result = flag ? "text" : 123;  // Type: Serializable & Comparable<?>
+
+// ✅ Be explicit when branches differ
+String result = flag ? "text" : String.valueOf(123);
+----
+
+*5. Losing Interface Type*
+
+[source,java]
+----
+// ❌ Infers ArrayList, couples to implementation
+var customers = new ArrayList<Customer>();
+// Later: customers.trimToSize(); // Can call ArrayList-specific methods
+
+// ✅ When you want interface, use explicit type
+List<Customer> customers = new ArrayList<>();
+----
+
+*6. Array Initializer Confusion*
+
+[source,java]
+----
+// ❌ Cannot use with array initializer
+var array = {1, 2, 3};  // Compilation error
+
+// ✅ Use explicit array creation
+var array = new int[]{1, 2, 3};
+----
+
+*7. Lambda Expression Inference*
+
+[source,java]
+----
+// ❌ Cannot infer functional interface type
+var lambda = x -> x * 2;  // Compilation error
+
+// ✅ Use explicit type or method context
+Function<Integer, Integer> lambda = x -> x * 2;
+// Or use in a context where type is known
+list.stream().map(x -> x * 2);  // Type inferred from context
+----
+
+*8. Accidental Type Changes*
+
+[source,java]
+----
+// Original code
+var count = 10;  // int
+
+// Someone changes initializer
+var count = 10L;  // Now long! May break downstream code
+
+// ✅ Use explicit type when stability matters
+int count = 10;
+----
+
+*9. Overusing var in Complex Code*
+
+[source,java]
+----
+// ❌ Too much var - hard to follow
+var a = getData();
+var b = process(a);
+var c = validate(b);
+var d = transform(c);
+
+// ✅ Strategic use - balance clarity
+RawData data = getData();
+var processedData = process(data);
+var validatedData = validate(processedData);
+var finalResult = transform(validatedData);
+----
+
+*10. Loop Index Type Matters*
+
+[source,java]
+----
+// ❌ Potential issue if you need long
+for (var i = 0; i < largeArray.length; i++) {  // i is int
+    // If largeArray.length > Integer.MAX_VALUE, this breaks
+}
+
+// ✅ Use explicit long if needed
+for (long i = 0; i < veryLargeArray.length; i++) {
+    // ...
+}
+----
+====
+
+.Quick Review Questions
+[%collapsible]
+====
+1. *What is the scope of `var` keyword?*
+   - Only for local variables with initializers. Cannot use for fields, parameters, or return types.
+
+2. *Is `var` dynamic typing like JavaScript?*
+   - No! Type is inferred at compile time and is statically typed. Once inferred, the type cannot change.
+
+3. *What happens with `var list = new ArrayList<>();`?*
+   - Infers `ArrayList<Object>` which is rarely what you want. Always provide type arguments: `var list = new ArrayList<String>();`
+
+4. *Can you use `var` without an initializer?*
+   - No. `var name;` is a compilation error. Must be: `var name = "value";`
+
+5. *What type is inferred for `var x = 10;`?*
+   - `int` (primitive type, not Integer)
+
+6. *When should you avoid `var`?*
+   - When type is not obvious from initializer, when precision matters (numeric types), when you need a supertype (interface vs implementation), or when it reduces readability.
+
+7. *Can you use `var` in for-each loops?*
+   - Yes! `for (var item : collection)` is valid and often clearer.
+
+8. *What is `var` technically - keyword or reserved type name?*
+   - Reserved type name (not a keyword). You can still use "var" as method name, variable name, etc., just not as a type name.
+
+9. *How does `var` help with refactoring?*
+   - When a method's return type changes, call sites using `var` don't need updates (as long as usage is compatible).
+
+10. *What's the trade-off of using `var`?*
+    - Reduces boilerplate but can reduce readability if overused. Balance is key - use when type is obvious, avoid when it's not.
+====
+
+---
+
+== Other Java 10 Features (Brief Mentions)
+
+The following features were introduced in Java 10 but are primarily JVM-internal or operational concerns, not typically relevant for daily coding:
+
+*Application Class-Data Sharing (AppCDS)*
+- Improves startup time and reduces memory footprint
+- Operational/deployment feature, not a coding feature
+
+*Parallel Full GC for G1*
+- Performance improvement for Garbage First (G1) garbage collector
+- JVM internals, not relevant for most developers
+
+*Consolidation of JDK Forest into Single Repository*
+- Build system improvement
+- No impact on developers
+
+*Thread-Local Handshakes*
+- JVM internal improvement for stopping individual threads
+- Not exposed in Java API
+
+*Heap Allocation on Alternative Memory Devices*
+- Experimental feature for non-DRAM memory
+- Advanced/specialized use case
+
+*Experimental Java-Based JIT Compiler (Graal)*
+- Alternative JIT compiler
+- Experimental feature, evolved in later versions
+
+*Root Certificates*
+- OpenJDK now includes root certificates
+- Deployment/operational improvement
+
+---
+
+== Summary
+
+*Java 10's Main Contribution:* The `var` keyword for local variable type inference
+
+*Key Takeaways:*
+
+1. `var` reduces boilerplate when type is obvious
+2. Still strongly typed (compile-time inference)
+3. Only for local variables with initializers
+4. Use when it improves readability, avoid when it reduces clarity
+5. Watch out for diamond operator, numeric literals, and null initializers
+
+*Most Important:* Understand when to use `var` and when NOT to use it. It's about balance and readability.
+
+*What's Next:* Java 11 (LTS) brings more practical improvements like new String methods, HTTP Client API, and enhanced file operations.
+
+---
+
+*Navigation:* link:README.adoc[Home] | link:java-9.adoc[← Java 9] | *Java 10* | link:java-11.adoc[Next: Java 11 (LTS) →]
+
+---

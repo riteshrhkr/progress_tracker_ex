@@ -1,0 +1,4617 @@
+= Java 8 Features
+:toc:
+:toc-placement!:
+
+toc::[]
+
+---
+
+*Navigation:* link:README.adoc[Home] | *Java 8* | link:java-9.adoc[Next: Java 9 →]
+
+---
+
+== Introduction
+
+*Java 8* (March 2014) was one of the most significant releases in Java's history, introducing *functional programming* concepts to the language. This release fundamentally changed how Java developers write code, making it more concise, expressive, and powerful.
+
+*Key Themes:*
+
+- *Functional Programming*: Lambdas, method references, functional interfaces
+- *Stream API*: Declarative data processing with lazy evaluation
+- *Better APIs*: Optional for null-safety, modern Date-Time API
+- *Interface Evolution*: Default and static methods in interfaces
+
+*Interview Importance:* ⭐⭐⭐⭐⭐
+
+Java 8 features are *essential* for modern Java development and appear in virtually every technical interview. Deep understanding of Streams, Lambdas, and Optional is expected for intermediate to senior roles.
+
+---
+
+== Optional
+
+==== Optional<T>
+
+.Overview / What it is
+[%collapsible]
+====
+`Optional<T>` is a *container object* that may or may not contain a non-null value. Think of it as a *safe box* that either holds a treasure (your value) or is empty - but you always know which one it is before opening it.
+
+*Core Concept:*
+
+Instead of returning `null` (which can cause `NullPointerException`), methods return an `Optional` that explicitly represents the presence or absence of a value.
+
+[source,java]
+----
+// Old way - risky
+public String findUserEmail(Long userId) {
+    User user = database.findById(userId);
+    return user != null ? user.getEmail() : null;  // Can return null
+}
+
+// New way - explicit and safe
+public Optional<String> findUserEmail(Long userId) {
+    return database.findById(userId)
+                   .map(User::getEmail);  // Clearly expresses "might not exist"
+}
+----
+
+*Key Methods:*
+
+- *Creation*: `Optional.of(value)`, `Optional.ofNullable(value)`, `Optional.empty()`
+- *Checking*: `isPresent()`, `isEmpty()` (Java 11+)
+- *Retrieval*: `get()`, `orElse()`, `orElseGet()`, `orElseThrow()`
+- *Transformation*: `map()`, `flatMap()`, `filter()`
+- *Actions*: `ifPresent()`, `ifPresentOrElse()` (Java 9+)
+
+*Mental Model:*
+
+Think of Optional as a *stream with 0 or 1 element*. You can map, filter, and process it without worrying about null checks.
+====
+
+
+.Why use it
+[%collapsible]
+====
+*1. Explicit API Contracts*
+
+When a method returns `Optional<T>`, it *clearly communicates* to the caller: "This might not have a value - handle both cases."
+
+[source,java]
+----
+// Unclear - Does this return null?
+public User findUser(Long id);
+
+// Clear - This might not find a user
+public Optional<User> findUser(Long id);
+----
+
+*2. Eliminates Null Checks*
+
+Replace verbose null checking with fluent, functional chains:
+
+[source,java]
+----
+// Without Optional - nested null checks
+String city = null;
+if (user != null) {
+    Address address = user.getAddress();
+    if (address != null) {
+        city = address.getCity();
+    }
+}
+if (city == null) {
+    city = "Unknown";
+}
+
+// With Optional - clean and declarative
+String city = Optional.ofNullable(user)
+                      .map(User::getAddress)
+                      .map(Address::getCity)
+                      .orElse("Unknown");
+----
+
+*3. Encourages Functional Programming*
+
+Enables method chaining and transformation pipelines similar to Streams API.
+
+*4. Reduces NullPointerException*
+
+By forcing developers to think about the "empty" case upfront, it reduces runtime NPEs.
+
+*5. Better Composability*
+
+Optional methods (`map`, `flatMap`, `filter`) compose naturally for complex scenarios:
+
+[source,java]
+----
+// Get user's primary email if verified, otherwise use backup
+String email = getUserById(id)
+    .filter(User::isVerified)
+    .map(User::getPrimaryEmail)
+    .or(() -> getBackupEmail(id))  // Java 9+
+    .orElse("no-reply@company.com");
+----
+====
+
+
+.When not to use
+[%collapsible]
+====
+*❌ DON'T Use for:*
+
+*1. Class Fields*
+
+[source,java]
+----
+// BAD - adds unnecessary overhead and serialization issues
+public class User {
+    private Optional<String> middleName;  // ❌ Don't do this
+}
+
+// GOOD - keep fields nullable, wrap in Optional when returning
+public class User {
+    private String middleName;  // ✅ Can be null
+
+    public Optional<String> getMiddleName() {
+        return Optional.ofNullable(middleName);
+    }
+}
+----
+
+*2. Method Parameters*
+
+[source,java]
+----
+// BAD - forces callers to wrap values
+public void updateEmail(Optional<String> email) {  // ❌ Awkward API
+    email.ifPresent(this::setEmail);
+}
+
+// GOOD - accept nullable parameter, handle internally
+public void updateEmail(String email) {  // ✅ Simple API
+    Optional.ofNullable(email).ifPresent(this::setEmail);
+}
+----
+
+*3. Collections*
+
+[source,java]
+----
+// BAD - collections already represent "absence" with empty collections
+public Optional<List<User>> getUsers() {  // ❌ Unnecessary
+    return Optional.of(users);
+}
+
+// GOOD - return empty collection instead of null
+public List<User> getUsers() {  // ✅ Never return null, return empty list
+    return users != null ? users : Collections.emptyList();
+}
+----
+
+*4. Performance-Critical Code*
+
+Optional adds object allocation overhead. In tight loops or high-frequency paths, direct null checks may be more efficient.
+
+*5. Serialization Scenarios*
+
+`Optional` is not `Serializable` - avoid in DTOs or entities that need serialization.
+
+*General Rule:* Use Optional only as a *return type* to signal "this may not have a value."
+====
+
+
+.Best practices
+[%collapsible]
+====
+*✅ DO:*
+
+- *Use for return types* where absence of value is a valid outcome
+[source,java]
+----
+public Optional<User> findById(Long id)
+----
+
+- *Prefer `orElseGet()` over `orElse()`* when default value is expensive to compute
+[source,java]
+----
+// BAD - createDefaultUser() called even if optional is present
+user.orElse(createDefaultUser());
+
+// GOOD - createDefaultUser() only called if optional is empty
+user.orElseGet(() -> createDefaultUser());
+----
+
+- *Use `map()` for simple transformations*
+
+[source,java]
+----
+Optional<String> email = user.map(User::getEmail);
+----
+
+- *Use `flatMap()` when transformation returns Optional*
+[source,java]
+----
+Optional<Address> address = user.flatMap(User::getAddress);  // getAddress() returns Optional<Address>
+----
+
+- *Chain operations* for clean, readable code
+[source,java]
+----
+String result = findUser(id)
+    .filter(User::isActive)
+    .map(User::getEmail)
+    .orElseThrow(() -> new UserNotFoundException(id));
+----
+
+- *Use `ifPresent()` for side effects*
+[source,java]
+----
+user.ifPresent(u -> logger.info("Found user: {}", u.getName()));
+----
+
+*❌ DON'T:*
+
+- *Never call `get()` without checking `isPresent()`* - defeats the purpose
+
+[source,java]
+----
+// BAD - can throw NoSuchElementException
+User user = findUser(id).get();
+
+// GOOD - handle both cases
+User user = findUser(id).orElseThrow(() -> new NotFoundException());
+----
+
+- *Don't use `isPresent()` + `get()` - use functional methods instead*
+[source,java]
+----
+// BAD - imperative style
+Optional<User> opt = findUser(id);
+if (opt.isPresent()) {
+    User user = opt.get();
+    process(user);
+}
+
+// GOOD - functional style
+findUser(id).ifPresent(this::process);
+----
+
+- *Avoid creating Optional just to call `orElse()`*
+[source,java]
+----
+// BAD - unnecessary Optional
+String name = Optional.ofNullable(user).orElse("Unknown");
+
+// GOOD - simple ternary
+String name = user != null ? user : "Unknown";
+----
+
+- *Don't return `null` from methods that return Optional*
+[source,java]
+----
+// BAD - defeats the purpose
+public Optional<User> findUser(Long id) {
+    return null;  // ❌ Never do this
+}
+
+// GOOD
+public Optional<User> findUser(Long id) {
+    return Optional.empty();  // ✅ Use empty()
+}
+----
+====
+
+
+.Example
+[%collapsible]
+====
+*Simple inline example:*
+
+[source,java]
+----
+// Creating Optionals
+Optional<String> present = Optional.of("Hello");              // Must be non-null
+Optional<String> maybeNull = Optional.ofNullable(getValue()); // Can be null
+Optional<String> empty = Optional.empty();                    // Explicitly empty
+
+// Retrieving values
+String value1 = present.orElse("default");                    // "Hello"
+String value2 = empty.orElse("default");                      // "default"
+String value3 = empty.orElseGet(() -> expensiveOperation()); // Lazy evaluation
+String value4 = present.orElseThrow(NotFoundException::new);  // Throw if empty
+
+// Transformation
+Optional<Integer> length = present.map(String::length);       // Optional[5]
+Optional<String> upper = present.map(String::toUpperCase);    // Optional["HELLO"]
+Optional<String> filtered = present.filter(s -> s.length() > 3); // Optional["Hello"]
+
+// Chaining
+String result = Optional.ofNullable(user)
+    .map(User::getAddress)
+    .map(Address::getCity)
+    .map(String::toUpperCase)
+    .orElse("UNKNOWN");
+----
+
+*Complex real-world scenario:*
+
+See link:examples/java8/OptionalChaining.java[OptionalChaining.java] for a complete example demonstrating:
+
+- REST API response handling with nested Optionals
+- Chaining `map()` and `flatMap()` operations
+- Proper error handling with `orElseThrow()`
+- Combining multiple Optional sources with `or()` (Java 9+)
+- Real-world patterns for service layer code
+====
+
+
+.Common pitfalls
+[%collapsible]
+====
+*1. Calling `get()` without checking*
+
+[source,java]
+----
+// PITFALL - throws NoSuchElementException if empty
+Optional<User> user = findUser(id);
+return user.get();  // ❌ Dangerous!
+
+// FIX - use orElseThrow() with meaningful exception
+return user.orElseThrow(() -> new UserNotFoundException("User not found: " + id));
+----
+
+*2. Using `isPresent()` + `get()` instead of functional methods*
+
+[source,java]
+----
+// PITFALL - defeats the purpose of Optional
+if (user.isPresent()) {
+    System.out.println(user.get().getName());  // ❌ Verbose
+}
+
+// FIX - use ifPresent()
+user.ifPresent(u -> System.out.println(u.getName()));  // ✅ Functional
+----
+
+*3. Optional as field or parameter*
+
+[source,java]
+----
+// PITFALL - Optional not designed for this
+public class User {
+    private Optional<String> email;  // ❌ Adds overhead, serialization issues
+}
+
+public void setEmail(Optional<String> email) {  // ❌ Awkward API
+    this.email = email;
+}
+
+// FIX - use nullable field, expose as Optional
+public class User {
+    private String email;  // ✅ Simple field
+
+    public Optional<String> getEmail() {
+        return Optional.ofNullable(email);
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+}
+----
+
+*4. Misusing `orElse()` with expensive operations*
+
+[source,java]
+----
+// PITFALL - createUser() called even if optional has value
+User user = findUser(id).orElse(createUser());  // ❌ Always executes createUser()
+
+// FIX - use orElseGet() for lazy evaluation
+User user = findUser(id).orElseGet(() -> createUser());  // ✅ Only if needed
+----
+
+*5. Returning null instead of Optional.empty()*
+
+[source,java]
+----
+// PITFALL - violates Optional contract
+public Optional<User> findUser(Long id) {
+    if (id == null) {
+        return null;  // ❌ Defeats the purpose
+    }
+    return Optional.ofNullable(repository.find(id));
+}
+
+// FIX - always return Optional
+public Optional<User> findUser(Long id) {
+    if (id == null) {
+        return Optional.empty();  // ✅ Consistent API
+    }
+    return Optional.ofNullable(repository.find(id));
+}
+----
+
+*6. Confusing `map()` and `flatMap()`*
+
+[source,java]
+----
+// PITFALL - results in Optional<Optional<Address>>
+Optional<Optional<Address>> nested = user.map(User::getAddress);  // ❌ If getAddress() returns Optional
+
+// FIX - use flatMap() when function returns Optional
+Optional<Address> address = user.flatMap(User::getAddress);  // ✅ Flattens to Optional<Address>
+----
+
+*7. Optional with collections*
+
+[source,java]
+----
+// PITFALL - unnecessary wrapping
+public Optional<List<User>> getUsers() {
+    return Optional.ofNullable(users);  // ❌ Collections should never be null
+}
+
+// FIX - return empty collection
+public List<User> getUsers() {
+    return users != null ? users : Collections.emptyList();  // ✅ Never return null
+}
+----
+
+*8. Primitive Optional misuse*
+
+[source,java]
+----
+// PITFALL - boxing overhead
+Optional<Integer> age = Optional.of(25);  // ❌ Boxes int to Integer
+
+// FIX - use OptionalInt, OptionalLong, OptionalDouble
+OptionalInt age = OptionalInt.of(25);  // ✅ No boxing
+----
+====
+
+
+[NOTE]
+====
+*Quick Review:*
+
+1. *What is the main purpose of Optional?* +
+   _To explicitly represent the presence or absence of a value, eliminating null-related bugs._
+
+2. *When should you use `orElseGet()` instead of `orElse()`?* +
+   _When the default value is expensive to compute - `orElseGet()` is lazy and only evaluates if needed._
+
+3. *What's the difference between `map()` and `flatMap()` with Optional?* +
+   _`map()` wraps the result in Optional. `flatMap()` is used when the mapping function already returns Optional (prevents Optional<Optional<T>>)._
+
+4. *Why shouldn't Optional be used as a class field?* +
+   _It adds unnecessary object overhead, isn't Serializable, and fields can simply be nullable with Optional exposed in getters._
+
+5. *What's wrong with this code: `optional.isPresent() ? optional.get() : "default"`?* +
+   _It's imperative style that defeats Optional's purpose. Use `optional.orElse("default")` instead._
+
+6. *Interview Question: How would you chain three Optional-returning methods safely?* +
+   _Use `flatMap()` for chaining: `opt.flatMap(this::method1).flatMap(this::method2).flatMap(this::method3)`_
+
+7. *When is it acceptable to call `get()` on an Optional?* +
+   _Almost never in production code. If you're certain it's present, use `orElseThrow()` with a meaningful exception instead._
+====
+
+---
+
+== Streams API
+
+==== Streams API
+
+.Overview / What it is
+[%collapsible]
+====
+The *Streams API* is a powerful abstraction for processing sequences of elements in a *declarative, functional style*. Think of a Stream as an *assembly line* where data flows through a series of operations (filter, transform, collect) without you manually controlling the iteration.
+
+*Core Concept:*
+
+A Stream is NOT a data structure - it's a *pipeline of operations* applied to a data source (collection, array, generator function). You describe *what* you want to do with the data, not *how* to do it.
+
+[source,java]
+----
+// Old way - imperative (HOW to do it)
+List<String> result = new ArrayList<>();
+for (Employee emp : employees) {
+    if (emp.getSalary() > 50000) {           // Filter
+        String name = emp.getName().toUpperCase();  // Transform
+        result.add(name);                     // Collect
+    }
+}
+
+// New way - declarative (WHAT to do)
+List<String> result = employees.stream()
+    .filter(emp -> emp.getSalary() > 50000)   // Filter
+    .map(emp -> emp.getName().toUpperCase())  // Transform
+    .collect(Collectors.toList());            // Collect
+----
+
+*Key Characteristics:*
+
+1. *Lazy Evaluation*: Intermediate operations don't execute until a terminal operation is called
+2. *Pipeline Pattern*: Chain multiple operations in a readable, fluent style
+3. *Internal Iteration*: The Stream handles iteration - you don't write loops
+4. *Immutability*: Stream operations don't modify the source - they create new streams
+5. *One-time Use*: A stream can only be consumed once
+
+*Stream Pipeline Structure:*
+
+[source,java]
+----
+Source → Intermediate Operations → Terminal Operation → Result
+         (filter, map, sorted)     (collect, forEach)
+----
+
+*Mental Model:*
+
+Imagine a *factory assembly line*:
+- *Source*: Raw materials enter the line
+- *Intermediate operations*: Each station transforms the product (still moving through)
+- *Terminal operation*: Final packaging and shipping (line stops, product delivered)
+
+*Common Operations:*
+
+- *Intermediate* (return Stream): `filter()`, `map()`, `flatMap()`, `distinct()`, `sorted()`, `limit()`, `skip()`, `peek()`
+- *Terminal* (return result): `collect()`, `forEach()`, `reduce()`, `count()`, `anyMatch()`, `findFirst()`, `toArray()`
+====
+
+
+.Why use it
+[%collapsible]
+====
+*1. Readability - Code Expresses Intent*
+
+Streams read like English sentences describing what you want:
+
+[source,java]
+----
+// Without Streams - procedural noise obscures intent
+List<String> premiumActiveUsers = new ArrayList<>();
+for (User user : users) {
+    if (user.isPremium() && user.isActive()) {
+        premiumActiveUsers.add(user.getEmail());
+    }
+}
+Collections.sort(premiumActiveUsers);
+
+// With Streams - crystal clear intent
+List<String> premiumActiveUsers = users.stream()
+    .filter(User::isPremium)
+    .filter(User::isActive)
+    .map(User::getEmail)
+    .sorted()
+    .collect(Collectors.toList());
+----
+
+*2. Parallelization Made Simple*
+
+Convert sequential processing to parallel with one word change:
+
+[source,java]
+----
+// Sequential processing
+long count = hugeList.stream()
+    .filter(expensivePredicate)
+    .count();
+
+// Parallel processing - automatic work distribution
+long count = hugeList.parallelStream()  // Just change this!
+    .filter(expensivePredicate)
+    .count();
+----
+
+*3. Lazy Evaluation - Performance Optimization*
+
+Operations are optimized automatically - no wasted work:
+
+[source,java]
+----
+// Only processes until first match is found (short-circuiting)
+Optional<Employee> firstHighEarner = employees.stream()
+    .filter(e -> e.getSalary() > 100000)  // Stops after first match
+    .findFirst();
+
+// Operations fuse together - single pass through data
+employees.stream()
+    .filter(...)   // These three operations
+    .map(...)      // execute together in
+    .filter(...)   // one pass, not three!
+    .collect(...);
+----
+
+*4. Functional Composition*
+
+Break complex logic into small, reusable pieces:
+
+[source,java]
+----
+// Define reusable predicates
+Predicate<Employee> isHighEarner = e -> e.getSalary() > 80000;
+Predicate<Employee> isInEngineering = e -> e.getDept().equals("Engineering");
+Predicate<Employee> isSenior = e -> e.getYearsOfService() > 5;
+
+// Compose them elegantly
+List<Employee> seniorEngineers = employees.stream()
+    .filter(isInEngineering.and(isSenior))  // Compose predicates
+    .sorted(Comparator.comparing(Employee::getSalary).reversed())
+    .collect(Collectors.toList());
+----
+
+*5. Rich Collectors - Complex Operations Simplified*
+
+Built-in collectors handle complex aggregations:
+
+[source,java]
+----
+// Group employees by department
+Map<String, List<Employee>> byDept = employees.stream()
+    .collect(Collectors.groupingBy(Employee::getDepartment));
+
+// Calculate average salary per department
+Map<String, Double> avgSalaryByDept = employees.stream()
+    .collect(Collectors.groupingBy(
+        Employee::getDepartment,
+        Collectors.averagingDouble(Employee::getSalary)
+    ));
+
+// Partition into two groups
+Map<Boolean, List<Employee>> partitioned = employees.stream()
+    .collect(Collectors.partitioningBy(e -> e.getSalary() > 60000));
+----
+
+*6. Eliminates Boilerplate*
+
+Common patterns become one-liners:
+
+[source,java]
+----
+// Sum all salaries - one line
+double totalSalary = employees.stream()
+    .mapToDouble(Employee::getSalary)
+    .sum();
+
+// Get unique departments - one line
+Set<String> departments = employees.stream()
+    .map(Employee::getDepartment)
+    .collect(Collectors.toSet());
+----
+====
+
+
+.When not to use
+[%collapsible]
+====
+*❌ DON'T Use Streams When:*
+
+*1. Simple Iterations Are Clearer*
+
+[source,java]
+----
+// BAD - overkill for simple iteration
+names.stream().forEach(name -> System.out.println(name));
+
+// GOOD - traditional loop is clearer
+for (String name : names) {
+    System.out.println(name);
+}
+
+// Or use method reference if you must
+names.forEach(System.out::println);
+----
+
+*2. You Need to Modify the Source*
+
+[source,java]
+----
+// BAD - side effects in streams (anti-pattern)
+list.stream()
+    .forEach(item -> item.setValue(item.getValue() * 2));  // ❌ Modifying objects
+
+// GOOD - use traditional loop for mutations
+for (Item item : list) {
+    item.setValue(item.getValue() * 2);
+}
+----
+
+*3. Debugging Complex Logic*
+
+[source,java]
+----
+// HARD TO DEBUG - where did it fail?
+result = data.stream()
+    .filter(complexPredicate)
+    .map(complexTransformation)
+    .flatMap(moreComplexity)
+    .collect(Collectors.toList());
+
+// EASIER TO DEBUG - step through, inspect variables
+List<Result> result = new ArrayList<>();
+for (Data d : data) {
+    if (complexPredicate.test(d)) {
+        Result r = complexTransformation.apply(d);
+        // Can inspect 'r' here, set breakpoints easily
+        result.add(r);
+    }
+}
+----
+
+*4. Small Collections (< 100 elements)*
+
+[source,java]
+----
+// BAD - stream overhead not worth it
+List<Integer> small = Arrays.asList(1, 2, 3, 4, 5);
+int sum = small.stream().mapToInt(i -> i).sum();  // Overkill
+
+// GOOD - simple loop is faster
+int sum = 0;
+for (int i : small) {
+    sum += i;
+}
+----
+
+*5. Performance-Critical Hot Paths*
+
+Streams add overhead (object allocation, abstraction layers). In tight loops called millions of times, traditional loops may be faster.
+
+*6. Need Index Access*
+
+[source,java]
+----
+// AWKWARD - streams don't provide index easily
+IntStream.range(0, list.size())
+    .forEach(i -> System.out.println(i + ": " + list.get(i)));
+
+// NATURAL - traditional loop with index
+for (int i = 0; i < list.size(); i++) {
+    System.out.println(i + ": " + list.get(i));
+}
+----
+
+*7. Early Returns or Breaks with Complex Logic*
+
+[source,java]
+----
+// AWKWARD - can't break early with complex conditions
+boolean found = list.stream()
+    .filter(...)
+    .findFirst()
+    .isPresent();  // Awkward if logic is complex
+
+// CLEARER - early return in loop
+for (Item item : list) {
+    if (complexCondition(item)) {
+        return true;  // Clear early exit
+    }
+}
+return false;
+----
+
+*8. Stateful Operations*
+
+[source,java]
+----
+// BAD - maintaining state across stream operations
+AtomicInteger counter = new AtomicInteger(0);  // ❌ External state
+list.stream()
+    .filter(x -> counter.incrementAndGet() < 10)  // Dangerous with parallel streams
+    .collect(...);
+
+// GOOD - use limit() or traditional loop
+list.stream()
+    .limit(10)  // Built-in operation
+    .collect(...);
+----
+
+*General Rule:* If a traditional loop is clearer, more maintainable, or significantly faster - use it. Streams are a tool, not a religion.
+====
+
+
+.Best practices
+[%collapsible]
+====
+*✅ DO:*
+
+- *Prefer method references over lambdas* when they're clearer
+[source,java]
+----
+// GOOD - method reference
+.map(Employee::getName)
+
+// LESS CLEAR - lambda
+.map(e -> e.getName())
+----
+
+- *Keep lambdas short* (1-2 lines) - extract complex logic to methods
+[source,java]
+----
+// BAD - complex lambda
+.filter(e -> e.getDept().equals("IT") &&
+            e.getSalary() > 50000 &&
+            e.getYearsOfService() > 3)
+
+// GOOD - extracted method
+.filter(this::isSeniorITEmployee)
+
+private boolean isSeniorITEmployee(Employee e) {
+    return e.getDept().equals("IT")
+        && e.getSalary() > 50000
+        && e.getYearsOfService() > 3;
+}
+----
+
+- *Avoid side effects* in stream operations
+[source,java]
+----
+// BAD - side effects (modifying external state)
+List<String> names = new ArrayList<>();
+employees.stream()
+    .forEach(e -> names.add(e.getName()));  // ❌ Side effect
+
+// GOOD - pure functional approach
+List<String> names = employees.stream()
+    .map(Employee::getName)
+    .collect(Collectors.toList());  // ✅ No side effects
+----
+
+- *Use specialized streams* for primitives (avoid boxing)
+[source,java]
+----
+// BAD - boxing overhead
+int sum = list.stream()
+    .map(Integer::intValue)
+    .reduce(0, Integer::sum);
+
+// GOOD - IntStream (no boxing)
+int sum = list.stream()
+    .mapToInt(Integer::intValue)
+    .sum();
+----
+
+- *Chain operations logically* - filters first, then transformations
+[source,java]
+----
+// GOOD - filter early to reduce work
+employees.stream()
+    .filter(e -> e.isActive())           // Reduce dataset first
+    .map(e -> expensiveTransform(e))     // Then transform
+    .collect(Collectors.toList());
+----
+
+- *Use `collect()` wisely* - choose the right collector
+[source,java]
+----
+// Collect to List
+.collect(Collectors.toList())
+
+// Collect to Set (removes duplicates)
+.collect(Collectors.toSet())
+
+// Collect to Map
+.collect(Collectors.toMap(Employee::getId, Employee::getName))
+
+// Join strings
+.collect(Collectors.joining(", "))
+
+// Group by
+.collect(Collectors.groupingBy(Employee::getDepartment))
+----
+
+- *Use `Optional` integration* for null-safe operations
+[source,java]
+----
+Optional<Employee> highest = employees.stream()
+    .max(Comparator.comparing(Employee::getSalary));
+----
+
+*❌ DON'T:*
+
+- *Never reuse a stream* - it's one-time use only
+[source,java]
+----
+// BAD - throws IllegalStateException
+Stream<String> stream = list.stream();
+stream.forEach(System.out::println);
+stream.count();  // ❌ Stream already consumed!
+
+// GOOD - create new stream
+list.stream().forEach(System.out::println);
+long count = list.stream().count();
+----
+
+- *Don't use parallel streams blindly* - measure first
+[source,java]
+----
+// BAD - parallel overhead may exceed benefit for small collections
+smallList.parallelStream()  // ❌ Probably slower
+    .filter(...)
+    .collect(...);
+
+// GOOD - use parallel for large datasets with expensive operations
+hugelist.parallelStream()  // ✅ May benefit
+    .filter(expensiveOperation)
+    .collect(...);
+----
+
+- *Avoid stateful lambda expressions*
+[source,java]
+----
+// BAD - external mutable state
+List<Integer> results = new ArrayList<>();
+stream.filter(x -> {
+    results.add(x);  // ❌ Modifying external state
+    return x > 10;
+});
+
+// GOOD - use peek() for side effects (debugging only)
+stream.peek(x -> System.out.println("Processing: " + x))
+    .filter(x -> x > 10)
+    .collect(Collectors.toList());
+----
+
+- *Don't overcomplicate* - if a loop is clearer, use a loop
+[source,java]
+----
+// BAD - unnecessarily complex
+IntStream.range(0, 10)
+    .mapToObj(i -> "Item " + i)
+    .forEach(System.out::println);
+
+// GOOD - simple and clear
+for (int i = 0; i < 10; i++) {
+    System.out.println("Item " + i);
+}
+----
+
+- *Never modify the source during streaming*
+[source,java]
+----
+// BAD - ConcurrentModificationException or unpredictable behavior
+list.stream()
+    .filter(x -> {
+        list.remove(x);  // ❌ NEVER modify source
+        return true;
+    });
+
+// GOOD - collect to new list, then modify
+List<Item> toRemove = list.stream()
+    .filter(someCondition)
+    .collect(Collectors.toList());
+list.removeAll(toRemove);
+----
+====
+
+
+.Example
+[%collapsible]
+====
+*Simple inline examples:*
+
+[source,java]
+----
+// Creating streams
+Stream<String> streamFromList = list.stream();
+Stream<String> streamFromArray = Arrays.stream(array);
+Stream<String> streamOf = Stream.of("a", "b", "c");
+IntStream range = IntStream.range(1, 10);
+Stream<String> generated = Stream.generate(() -> "element").limit(10);
+
+// Filtering
+List<Integer> evens = numbers.stream()
+    .filter(n -> n % 2 == 0)
+    .collect(Collectors.toList());
+
+// Mapping
+List<String> upperNames = names.stream()
+    .map(String::toUpperCase)
+    .collect(Collectors.toList());
+
+// FlatMap - flattening nested collections
+List<List<Integer>> nested = Arrays.asList(
+    Arrays.asList(1, 2),
+    Arrays.asList(3, 4)
+);
+List<Integer> flat = nested.stream()
+    .flatMap(Collection::stream)  // Flattens to [1,2,3,4]
+    .collect(Collectors.toList());
+
+// Sorting
+List<String> sorted = names.stream()
+    .sorted()
+    .collect(Collectors.toList());
+
+// Distinct
+List<Integer> unique = numbers.stream()
+    .distinct()
+    .collect(Collectors.toList());
+
+// Limit and Skip
+List<Integer> first5 = numbers.stream()
+    .limit(5)
+    .collect(Collectors.toList());
+
+List<Integer> skip3 = numbers.stream()
+    .skip(3)
+    .collect(Collectors.toList());
+
+// Matching
+boolean anyMatch = numbers.stream().anyMatch(n -> n > 10);
+boolean allMatch = numbers.stream().allMatch(n -> n > 0);
+boolean noneMatch = numbers.stream().noneMatch(n -> n < 0);
+
+// Finding
+Optional<Integer> first = numbers.stream().findFirst();
+Optional<Integer> any = numbers.stream().findAny();
+
+// Reduction
+int sum = numbers.stream().reduce(0, Integer::sum);
+Optional<Integer> max = numbers.stream().reduce(Integer::max);
+
+// Specialized collectors
+String joined = names.stream().collect(Collectors.joining(", "));
+Map<String, Integer> nameToLength = names.stream()
+    .collect(Collectors.toMap(s -> s, String::length));
+----
+
+*Complex real-world scenarios:*
+
+See link:examples/java8/StreamsRealWorld.java[StreamsRealWorld.java] for complete examples demonstrating:
+
+- Employee data processing (filtering, mapping, collecting)
+- Grouping and partitioning operations
+- Advanced collectors (groupingBy, partitioningBy)
+- FlatMap for nested data structures
+- Reduction operations (sum, average, custom reducers)
+- Parallel streams with performance comparison
+- Combining multiple stream operations
+- Real-world business logic patterns
+====
+
+
+.Common pitfalls
+[%collapsible]
+====
+*1. Reusing a stream*
+
+[source,java]
+----
+// PITFALL - stream already consumed
+Stream<String> stream = list.stream();
+long count = stream.count();  // OK
+stream.forEach(System.out::println);  // ❌ IllegalStateException
+
+// FIX - create new stream each time
+long count = list.stream().count();  // ✅
+list.stream().forEach(System.out::println);  // ✅
+----
+
+*2. Misunderstanding lazy evaluation*
+
+[source,java]
+----
+// PITFALL - intermediate operations don't execute without terminal operation
+Stream<String> stream = list.stream()
+    .filter(s -> {
+        System.out.println("Filtering: " + s);  // Never prints!
+        return s.length() > 3;
+    });
+// Nothing happens yet - no terminal operation
+
+// FIX - add terminal operation
+list.stream()
+    .filter(s -> {
+        System.out.println("Filtering: " + s);  // Now it prints
+        return s.length() > 3;
+    })
+    .collect(Collectors.toList());  // ✅ Terminal operation triggers execution
+----
+
+*3. Assuming parallel streams are always faster*
+
+[source,java]
+----
+// PITFALL - parallel overhead exceeds benefit
+List<Integer> small = Arrays.asList(1, 2, 3, 4, 5);
+int sum = small.parallelStream()  // ❌ Slower than sequential!
+    .mapToInt(i -> i)
+    .sum();
+
+// FIX - use parallel only for large datasets with expensive operations
+List<Integer> huge = getLargeDataset();  // 1M+ elements
+int sum = huge.parallelStream()  // ✅ May be faster
+    .filter(expensiveComputation)
+    .mapToInt(i -> i)
+    .sum();
+----
+
+*4. Side effects in parallel streams*
+
+[source,java]
+----
+// PITFALL - race condition
+List<Integer> results = new ArrayList<>();
+IntStream.range(0, 1000)
+    .parallel()
+    .forEach(i -> results.add(i));  // ❌ Not thread-safe!
+
+// FIX - use collect() instead
+List<Integer> results = IntStream.range(0, 1000)
+    .parallel()
+    .boxed()
+    .collect(Collectors.toList());  // ✅ Thread-safe
+----
+
+*5. Confusing `map()` and `flatMap()`*
+
+[source,java]
+----
+// PITFALL - map() creates Stream<Stream<String>>
+List<List<String>> nested = Arrays.asList(
+    Arrays.asList("a", "b"),
+    Arrays.asList("c", "d")
+);
+Stream<Stream<String>> wrong = nested.stream()
+    .map(List::stream);  // ❌ Nested streams
+
+// FIX - flatMap() flattens to Stream<String>
+List<String> flat = nested.stream()
+    .flatMap(List::stream)  // ✅ [a, b, c, d]
+    .collect(Collectors.toList());
+----
+
+*6. Incorrect use of `reduce()`*
+
+[source,java]
+----
+// PITFALL - wrong identity value
+int product = numbers.stream()
+    .reduce(0, (a, b) -> a * b);  // ❌ Always 0! (0 * anything = 0)
+
+// FIX - correct identity value
+int product = numbers.stream()
+    .reduce(1, (a, b) -> a * b);  // ✅ Identity for multiplication is 1
+----
+
+*7. Forgetting about boxing overhead*
+
+[source,java]
+----
+// PITFALL - boxing/unboxing overhead
+int sum = list.stream()
+    .map(i -> i * 2)  // Boxes to Integer
+    .reduce(0, Integer::sum);  // Unboxes and boxes again
+
+// FIX - use IntStream
+int sum = list.stream()
+    .mapToInt(i -> i * 2)  // Primitive stream, no boxing
+    .sum();  // ✅
+----
+
+*8. Modifying the source collection*
+
+[source,java]
+----
+// PITFALL - ConcurrentModificationException or undefined behavior
+list.stream()
+    .filter(s -> {
+        if (s.equals("remove")) {
+            list.remove(s);  // ❌ Modifying source during iteration
+        }
+        return true;
+    })
+    .collect(Collectors.toList());
+
+// FIX - collect items to remove, then remove them
+List<String> toRemove = list.stream()
+    .filter(s -> s.equals("remove"))
+    .collect(Collectors.toList());
+list.removeAll(toRemove);  // ✅
+----
+
+*9. Incorrect `Collectors.toMap()` usage*
+
+[source,java]
+----
+// PITFALL - duplicate keys throw IllegalStateException
+List<Employee> employees = getEmployees();
+Map<String, Employee> map = employees.stream()
+    .collect(Collectors.toMap(
+        Employee::getDepartment,  // ❌ Duplicate departments!
+        e -> e
+    ));
+
+// FIX - handle duplicates explicitly
+Map<String, Employee> map = employees.stream()
+    .collect(Collectors.toMap(
+        Employee::getDepartment,
+        e -> e,
+        (existing, replacement) -> existing  // ✅ Keep first
+    ));
+----
+
+*10. Infinite streams without limit*
+
+[source,java]
+----
+// PITFALL - never terminates
+Stream.generate(() -> "infinite")
+    .forEach(System.out::println);  // ❌ Runs forever!
+
+// FIX - add limit()
+Stream.generate(() -> "finite")
+    .limit(10)  // ✅
+    .forEach(System.out::println);
+----
+====
+
+
+[NOTE]
+====
+*Quick Review:*
+
+1. *What's the difference between intermediate and terminal operations?* +
+   _Intermediate operations (filter, map) return a Stream and are lazy - they don't execute until a terminal operation (collect, forEach) is called._
+
+2. *Why does this fail: `Stream<String> s = list.stream(); s.count(); s.forEach(...);`?* +
+   _Streams can only be consumed once. After `count()` is called, the stream is closed and cannot be reused._
+
+3. *When should you use `flatMap()` instead of `map()`?* +
+   _Use `flatMap()` when your mapping function returns a Stream/Collection and you want to flatten the result into a single stream instead of a stream of streams._
+
+4. *What's wrong with using `parallelStream()` on a small collection?* +
+   _The overhead of parallelization (thread management, splitting, merging) can exceed any performance benefit for small datasets._
+
+5. *How does lazy evaluation improve performance?* +
+   _Operations are fused together (one pass), short-circuiting occurs (stops when answer is found), and only necessary elements are processed._
+
+6. *Interview Question: Convert this imperative code to streams:*
+
+[source,java]
+----
+List<String> result = new ArrayList<>();
+for (User u : users) {
+    if (u.getAge() > 18) {
+        result.add(u.getName().toUpperCase());
+    }
+}
+----
+
+   _Answer:_
+
+[source,java]
+----
+List<String> result = users.stream()
+    .filter(u -> u.getAge() > 18)
+    .map(u -> u.getName().toUpperCase())
+    .collect(Collectors.toList());
+----
+
+7. *What's the identity value for `reduce()` and why does it matter?* +
+   _The identity value is the starting value that doesn't change the result (0 for addition, 1 for multiplication, empty string for concatenation). Wrong identity gives wrong results (e.g., 0 for multiplication always returns 0)._
+
+8. *Why should you avoid side effects in stream operations?* +
+   _Side effects break functional programming principles, cause issues with parallel streams (race conditions), and make code harder to reason about and debug._
+====
+
+---
+
+== Lambda Expressions
+
+==== Lambda Expressions
+
+.Overview / What it is
+[%collapsible]
+====
+A *lambda expression* is a concise way to represent an *anonymous function* - a block of code that can be passed around as if it were an object. Think of it as *"behavior as a parameter"* - you're passing what to do, not just what data to use.
+
+*Core Concept:*
+
+Before Java 8, if you wanted to pass behavior (like "how to sort" or "how to filter"), you had to create a class or anonymous inner class. Lambdas let you write that behavior inline, cleanly and concisely.
+
+[source,java]
+----
+// Old way - verbose anonymous class
+button.addActionListener(new ActionListener() {
+    @Override
+    public void actionClick(ActionEvent e) {
+        System.out.println("Button clicked!");
+    }
+});
+
+// New way - concise lambda
+button.addActionListener(e -> System.out.println("Button clicked!"));
+----
+
+*Lambda Syntax:*
+
+[source,java]
+----
+// General form
+(parameters) -> expression
+(parameters) -> { statements; }
+
+// Examples
+() -> 42                                    // No parameters
+x -> x * 2                                  // Single parameter (parentheses optional)
+(x, y) -> x + y                            // Multiple parameters
+(String s) -> s.length()                   // Explicit type
+(x, y) -> { return x + y; }                // Block body (explicit return)
+----
+
+*Key Components:*
+
+1. *Parameter list*: `(x, y)` - can be empty, single, or multiple
+2. *Arrow token*: `->` - separates parameters from body
+3. *Body*: Expression or block of statements
+
+*Functional Interfaces:*
+
+Lambdas work with *functional interfaces* - interfaces with exactly one abstract method (SAM - Single Abstract Method).
+
+[source,java]
+----
+@FunctionalInterface
+interface Calculator {
+    int calculate(int a, int b);  // Single abstract method
+}
+
+// Using lambda to implement it
+Calculator add = (a, b) -> a + b;
+Calculator multiply = (a, b) -> a * b;
+
+System.out.println(add.calculate(5, 3));      // 8
+System.out.println(multiply.calculate(5, 3)); // 15
+----
+
+*Built-in Functional Interfaces* (java.util.function):
+
+[source,java]
+----
+// Predicate<T> - takes T, returns boolean
+Predicate<String> isEmpty = s -> s.isEmpty();
+
+// Function<T,R> - takes T, returns R
+Function<String, Integer> length = s -> s.length();
+
+// Consumer<T> - takes T, returns void
+Consumer<String> print = s -> System.out.println(s);
+
+// Supplier<T> - takes nothing, returns T
+Supplier<Double> random = () -> Math.random();
+
+// BiFunction<T,U,R> - takes T and U, returns R
+BiFunction<Integer, Integer, Integer> add = (a, b) -> a + b;
+----
+
+*Mental Model:*
+
+Think of a lambda as a *"recipe card"* that describes how to do something. Instead of doing the work immediately, you hand the recipe to someone else (a method) who will execute it when needed.
+
+*Variable Capture (Closure):*
+
+Lambdas can access variables from the enclosing scope, but they must be *effectively final* (never reassigned after initialization).
+
+[source,java]
+----
+String prefix = "Hello, ";  // Effectively final
+
+Function<String, String> greeter = name -> prefix + name;
+// Lambda "captures" prefix from outer scope
+
+System.out.println(greeter.apply("World"));  // "Hello, World"
+
+// prefix = "Hi, ";  // ❌ Would cause compilation error - not effectively final
+----
+====
+
+
+.Why use it
+[%collapsible]
+====
+*1. Dramatically Reduces Boilerplate*
+
+Compare the verbosity:
+
+[source,java]
+----
+// Anonymous class - 5 lines for simple logic
+Collections.sort(names, new Comparator<String>() {
+    @Override
+    public int compare(String a, String b) {
+        return a.compareToIgnoreCase(b);
+    }
+});
+
+// Lambda - 1 line for same logic
+Collections.sort(names, (a, b) -> a.compareToIgnoreCase(b));
+
+// Even better with method reference
+Collections.sort(names, String::compareToIgnoreCase);
+----
+
+*2. Enables Functional Programming*
+
+Pass behavior as parameters, compose functions, create pipelines:
+
+[source,java]
+----
+// Filter, transform, collect - behavior at each step
+List<String> result = names.stream()
+    .filter(s -> s.startsWith("A"))        // Lambda: filtering behavior
+    .map(s -> s.toUpperCase())             // Lambda: transformation behavior
+    .sorted((a, b) -> a.compareTo(b))      // Lambda: comparison behavior
+    .collect(Collectors.toList());
+----
+
+*3. Improves Readability*
+
+Code reads more like natural language:
+
+[source,java]
+----
+// Clear intent - "execute this with each employee"
+employees.forEach(emp -> System.out.println(emp.getName()));
+
+// Clear intent - "find employee where salary > 100k"
+Optional<Employee> highEarner = employees.stream()
+    .filter(emp -> emp.getSalary() > 100000)
+    .findFirst();
+----
+
+*4. Lazy Evaluation Support*
+
+Lambdas enable deferred execution - compute only when needed:
+
+[source,java]
+----
+// Without lambda - always computes, even if not needed
+String result = findValue().orElse(expensiveComputation());  // Always runs
+
+// With lambda - computes only if needed
+String result = findValue().orElseGet(() -> expensiveComputation());  // Lazy
+----
+
+*5. Better API Design*
+
+Create flexible, reusable APIs:
+
+[source,java]
+----
+// Flexible retry mechanism - behavior is customizable
+public void retry(int times, Runnable operation) {
+    for (int i = 0; i < times; i++) {
+        try {
+            operation.run();  // Execute the behavior passed in
+            return;
+        } catch (Exception e) {
+            if (i == times - 1) throw e;
+        }
+    }
+}
+
+// Different behaviors passed to same method
+retry(3, () -> database.connect());
+retry(3, () -> api.fetchData());
+----
+
+*6. Parallelization*
+
+Lambdas are stateless and composable, making parallelization simple:
+
+[source,java]
+----
+// Sequential
+long count = data.stream()
+    .filter(x -> x > 10)
+    .count();
+
+// Parallel - just change one word
+long count = data.parallelStream()
+    .filter(x -> x > 10)  // Same lambda works in parallel
+    .count();
+----
+====
+
+
+.When not to use
+[%collapsible]
+====
+*❌ DON'T Use Lambdas When:*
+
+*1. Logic is Complex (>2-3 lines)*
+
+[source,java]
+----
+// BAD - complex logic in lambda
+employees.stream()
+    .filter(emp -> {
+        if (emp.getDepartment().equals("Engineering")) {
+            if (emp.getYearsOfService() > 5) {
+                if (emp.getPerformanceRating() >= 4.0) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    })
+    .collect(Collectors.toList());
+
+// GOOD - extract to named method
+employees.stream()
+    .filter(this::isSeniorEngineer)  // Clear, testable, reusable
+    .collect(Collectors.toList());
+
+private boolean isSeniorEngineer(Employee emp) {
+    return emp.getDepartment().equals("Engineering")
+        && emp.getYearsOfService() > 5
+        && emp.getPerformanceRating() >= 4.0;
+}
+----
+
+*2. Need to Reuse the Logic*
+
+[source,java]
+----
+// BAD - duplicated lambda logic
+List<Employee> engineers = employees.stream()
+    .filter(e -> e.getDepartment().equals("Engineering"))
+    .collect(Collectors.toList());
+
+List<Employee> seniorEngineers = employees.stream()
+    .filter(e -> e.getDepartment().equals("Engineering"))  // Duplicated!
+    .filter(e -> e.getYearsOfService() > 5)
+    .collect(Collectors.toList());
+
+// GOOD - define reusable predicate
+Predicate<Employee> isEngineer = e -> e.getDepartment().equals("Engineering");
+Predicate<Employee> isSenior = e -> e.getYearsOfService() > 5;
+
+List<Employee> engineers = employees.stream()
+    .filter(isEngineer)
+    .collect(Collectors.toList());
+
+List<Employee> seniorEngineers = employees.stream()
+    .filter(isEngineer.and(isSenior))  // Compose predicates
+    .collect(Collectors.toList());
+----
+
+*3. Need to Handle Checked Exceptions*
+
+[source,java]
+----
+// BAD - doesn't compile (lambda can't throw checked exceptions directly)
+// files.forEach(file -> readFile(file));  // ❌ readFile() throws IOException
+
+// WORKAROUND 1 - wrap in try-catch (verbose)
+files.forEach(file -> {
+    try {
+        readFile(file);
+    } catch (IOException e) {
+        throw new UncheckedIOException(e);
+    }
+});
+
+// WORKAROUND 2 - extract to method (cleaner)
+files.forEach(this::readFileSafely);
+
+private void readFileSafely(File file) {
+    try {
+        readFile(file);
+    } catch (IOException e) {
+        throw new UncheckedIOException(e);
+    }
+}
+----
+
+*4. Debugging is Critical*
+
+[source,java]
+----
+// HARD TO DEBUG - can't set breakpoint inside expression
+int sum = numbers.stream()
+    .filter(x -> x > 10)
+    .mapToInt(x -> x * 2)  // Can't easily inspect 'x' here
+    .sum();
+
+// EASIER TO DEBUG - can set breakpoints, inspect variables
+int sum = 0;
+for (int x : numbers) {
+    if (x > 10) {      // Breakpoint here
+        sum += x * 2;  // Inspect x and sum
+    }
+}
+----
+
+*5. Side Effects are Needed*
+
+[source,java]
+----
+// BAD - side effects in lambda (anti-pattern)
+List<String> processed = new ArrayList<>();
+items.forEach(item -> processed.add(process(item)));  // ❌ Side effect
+
+// GOOD - use proper stream operations
+List<String> processed = items.stream()
+    .map(this::process)
+    .collect(Collectors.toList());  // ✅ Functional
+----
+
+*6. Performance is Critical and Overhead Matters*
+
+For extremely tight loops called millions of times, lambda overhead (object allocation) might be measurable. Profile first!
+
+*7. Team Unfamiliar with Functional Style*
+
+If your team isn't comfortable with lambdas, overly functional code can hurt maintainability. Balance between modern style and team capability.
+====
+
+
+.Best practices
+[%collapsible]
+====
+*✅ DO:*
+
+- *Keep lambdas short* (1-2 lines max)
+  ```java
+  // GOOD - short and clear
+  names.sort((a, b) -> a.compareTo(b));
+
+  // BAD - too long
+  names.sort((a, b) -> {
+      String aNormalized = a.trim().toLowerCase();
+      String bNormalized = b.trim().toLowerCase();
+      return aNormalized.compareTo(bNormalized);
+  });
+
+  // BETTER - extract to method
+  names.sort(this::compareNormalized);
+  ```
+
+- *Prefer method references* when they're clearer
+  ```java
+  // Lambda
+  employees.forEach(e -> System.out.println(e));
+
+  // Method reference - clearer
+  employees.forEach(System.out::println);
+
+  // Lambda
+  names.stream().map(s -> s.toUpperCase());
+
+  // Method reference - clearer
+  names.stream().map(String::toUpperCase);
+  ```
+
+- *Use descriptive parameter names*
+  ```java
+  // BAD - unclear
+  employees.stream().filter(e -> e.s() > 50000);
+
+  // GOOD - clear intent
+  employees.stream().filter(emp -> emp.getSalary() > 50000);
+
+  // BETTER - even clearer for complex predicates
+  employees.stream().filter(employee ->
+      employee.getSalary() > 50000
+  );
+  ```
+
+- *Extract complex logic to named methods*
+  ```java
+  // BAD - complex logic inline
+  .filter(e -> e.getDept().equals("IT") && e.getSalary() > 70000 && e.isActive())
+
+  // GOOD - extracted and named
+  .filter(this::isEligibleForBonus)
+
+  private boolean isEligibleForBonus(Employee e) {
+      return e.getDept().equals("IT")
+          && e.getSalary() > 70000
+          && e.isActive();
+  }
+  ```
+
+- *Use standard functional interfaces* when possible
+  ```java
+  // Use built-in interfaces
+  Predicate<String> isEmpty = String::isEmpty;
+  Function<String, Integer> toLength = String::length;
+  Consumer<String> print = System.out::println;
+  Supplier<Double> random = Math::random;
+  ```
+
+- *Avoid specifying types* unless necessary (type inference)
+  ```java
+  // Unnecessary type specification
+  BiFunction<Integer, Integer, Integer> add = (Integer a, Integer b) -> a + b;
+
+  // Let compiler infer types
+  BiFunction<Integer, Integer, Integer> add = (a, b) -> a + b;
+  ```
+
+- *Use `@FunctionalInterface`* annotation for your interfaces
+  ```java
+  @FunctionalInterface
+  interface StringProcessor {
+      String process(String input);
+
+      // Compiler ensures only one abstract method
+      // void anotherMethod();  // ❌ Would cause compilation error
+  }
+  ```
+
+*❌ DON'T:*
+
+- *Don't modify external variables* (not effectively final)
+  ```java
+  // BAD - compilation error
+  int count = 0;
+  items.forEach(item -> count++);  // ❌ count must be effectively final
+
+  // GOOD - use proper reduction
+  long count = items.stream().count();
+  ```
+
+- *Don't use lambdas for side effects in streams*
+  ```java
+  // BAD - forEach with side effects
+  List<String> results = new ArrayList<>();
+  stream.forEach(item -> results.add(process(item)));  // ❌ Side effect
+
+  // GOOD - use collect
+  List<String> results = stream
+      .map(this::process)
+      .collect(Collectors.toList());  // ✅ Functional
+  ```
+
+- *Don't create overly complex lambda chains*
+  ```java
+  // BAD - hard to read
+  result = data.stream()
+      .filter(x -> x.getA() != null && x.getA().getB() != null)
+      .map(x -> x.getA().getB().getC())
+      .filter(c -> c.getValue() > 100)
+      .map(c -> c.transform())
+      .collect(Collectors.toList());
+
+  // BETTER - extract intermediate steps or use flatMap/Optional
+  ```
+
+- *Don't ignore exceptions in lambdas*
+  ```java
+  // BAD - swallowing exceptions
+  files.forEach(file -> {
+      try {
+          process(file);
+      } catch (Exception e) {
+          // Silent failure ❌
+      }
+  });
+
+  // GOOD - proper error handling
+  files.forEach(file -> {
+      try {
+          process(file);
+      } catch (Exception e) {
+          logger.error("Failed to process: " + file, e);
+          throw new RuntimeException(e);
+      }
+  });
+  ```
+
+- *Don't use return in expression body*
+  ```java
+  // BAD - unnecessary return in expression
+  Function<Integer, Integer> square = x -> { return x * x; };
+
+  // GOOD - expression form (implicit return)
+  Function<Integer, Integer> square = x -> x * x;
+
+  // Block form only when you need statements
+  Function<Integer, Integer> square = x -> {
+      System.out.println("Squaring: " + x);
+      return x * x;
+  };
+  ```
+====
+
+
+.Example
+[%collapsible]
+====
+*Simple inline examples:*
+
+[source,java]
+----
+// === Lambda Syntax Variations ===
+
+// No parameters
+Runnable r = () -> System.out.println("Hello");
+
+// Single parameter (parentheses optional)
+Consumer<String> print = s -> System.out.println(s);
+Consumer<String> print2 = (s) -> System.out.println(s);  // Same
+
+// Multiple parameters
+BiFunction<Integer, Integer, Integer> add = (a, b) -> a + b;
+
+// Explicit types
+BiFunction<Integer, Integer, Integer> multiply = (Integer a, Integer b) -> a * b;
+
+// Block body
+Function<Integer, Integer> factorial = n -> {
+    int result = 1;
+    for (int i = 1; i <= n; i++) {
+        result *= i;
+    }
+    return result;
+};
+
+// === Common Use Cases ===
+
+// Comparator
+List<String> names = Arrays.asList("Charlie", "Alice", "Bob");
+names.sort((a, b) -> a.compareTo(b));
+// Or even simpler with method reference:
+names.sort(String::compareTo);
+
+// Predicate
+List<Integer> numbers = Arrays.asList(1, 2, 3, 4, 5, 6);
+List<Integer> evens = numbers.stream()
+    .filter(n -> n % 2 == 0)
+    .collect(Collectors.toList());
+
+// Function
+List<Integer> lengths = names.stream()
+    .map(s -> s.length())
+    .collect(Collectors.toList());
+
+// Consumer
+names.forEach(name -> System.out.println("Hello, " + name));
+
+// Supplier
+Supplier<String> uuidGenerator = () -> UUID.randomUUID().toString();
+String id = uuidGenerator.get();
+
+// === Composing Functions ===
+
+Predicate<Integer> isEven = n -> n % 2 == 0;
+Predicate<Integer> greaterThanTen = n -> n > 10;
+
+// Combine predicates
+Predicate<Integer> evenAndGreaterThanTen = isEven.and(greaterThanTen);
+Predicate<Integer> evenOrGreaterThanTen = isEven.or(greaterThanTen);
+Predicate<Integer> notEven = isEven.negate();
+
+// Compose functions
+Function<Integer, Integer> multiplyByTwo = x -> x * 2;
+Function<Integer, Integer> addThree = x -> x + 3;
+
+Function<Integer, Integer> composed = multiplyByTwo.andThen(addThree);
+// composed.apply(5) = (5 * 2) + 3 = 13
+
+Function<Integer, Integer> composed2 = multiplyByTwo.compose(addThree);
+// composed2.apply(5) = (5 + 3) * 2 = 16
+
+// === Variable Capture ===
+
+String prefix = "Mr. ";  // Effectively final
+Function<String, String> addPrefix = name -> prefix + name;
+System.out.println(addPrefix.apply("Smith"));  // "Mr. Smith"
+
+// Local variables used in lambda must be effectively final
+int multiplier = 10;
+Function<Integer, Integer> scale = x -> x * multiplier;  // OK
+
+// multiplier = 20;  // ❌ Would cause error - no longer effectively final
+----
+
+*Complex real-world scenarios:*
+
+See link:examples/java8/LambdaComparison.java[LambdaComparison.java] for complete examples demonstrating:
+
+- *Before/After refactoring*: Legacy code → Lambda style
+- *Event handling*: GUI listeners with lambdas
+- *Custom functional interfaces*: Building reusable abstractions
+- *Strategy pattern*: Replacing strategy objects with lambdas
+- *Template method pattern*: Parameterizing behavior
+- *Exception handling*: Dealing with checked exceptions in lambdas
+- *Performance comparison*: Lambda vs anonymous class
+- *Real-world scenarios*: Validation, processing pipelines, callbacks
+====
+
+
+.Common pitfalls
+[%collapsible]
+====
+*1. Modifying non-final variables*
+
+[source,java]
+----
+// PITFALL - compilation error
+int count = 0;
+items.forEach(item -> count++);  // ❌ Variable used in lambda must be final or effectively final
+
+// FIX 1 - use stream operations
+long count = items.stream().count();
+
+// FIX 2 - use wrapper (not recommended)
+AtomicInteger count = new AtomicInteger(0);
+items.forEach(item -> count.incrementAndGet());  // Works but ugly
+----
+
+*2. Returning from lambda vs returning from enclosing method*
+
+[source,java]
+----
+// PITFALL - return only exits lambda, not method
+public boolean hasEven(List<Integer> numbers) {
+    numbers.forEach(n -> {
+        if (n % 2 == 0) {
+            return;  // ❌ Only exits forEach lambda, not hasEven()
+        }
+    });
+    return false;
+}
+
+// FIX - use appropriate stream operation
+public boolean hasEven(List<Integer> numbers) {
+    return numbers.stream().anyMatch(n -> n % 2 == 0);  // ✅
+}
+----
+
+*3. Confused about when to use `{}` and `return`*
+
+[source,java]
+----
+// PITFALL - missing return in block form
+Function<Integer, Integer> square = x -> {
+    x * x;  // ❌ Doesn't return anything!
+};
+
+// FIX 1 - add return
+Function<Integer, Integer> square = x -> {
+    return x * x;  // ✅
+};
+
+// FIX 2 - use expression form (no braces)
+Function<Integer, Integer> square = x -> x * x;  // ✅
+----
+
+*4. Unnecessary type declarations*
+
+[source,java]
+----
+// PITFALL - verbose type declarations
+BiFunction<Integer, Integer, Integer> add = (Integer a, Integer b) -> {
+    return a + b;
+};
+
+// FIX - let compiler infer types
+BiFunction<Integer, Integer, Integer> add = (a, b) -> a + b;  // ✅ Cleaner
+----
+
+*5. Checked exceptions in lambdas*
+
+[source,java]
+----
+// PITFALL - can't throw checked exceptions
+List<String> lines = files.stream()
+    .map(file -> Files.readAllLines(file.toPath()))  // ❌ Throws IOException
+    .flatMap(List::stream)
+    .collect(Collectors.toList());
+
+// FIX 1 - wrap in try-catch
+List<String> lines = files.stream()
+    .map(file -> {
+        try {
+            return Files.readAllLines(file.toPath());
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    })
+    .flatMap(List::stream)
+    .collect(Collectors.toList());
+
+// FIX 2 - create wrapper method
+List<String> lines = files.stream()
+    .map(this::readAllLinesSafely)
+    .flatMap(List::stream)
+    .collect(Collectors.toList());
+
+private List<String> readAllLinesSafely(File file) {
+    try {
+        return Files.readAllLines(file.toPath());
+    } catch (IOException e) {
+        throw new UncheckedIOException(e);
+    }
+}
+----
+
+*6. `this` reference in lambdas vs anonymous classes*
+
+[source,java]
+----
+class Processor {
+    private String name = "Processor";
+
+    public void processWithAnonymous() {
+        Runnable r = new Runnable() {
+            private String name = "Runnable";
+
+            @Override
+            public void run() {
+                System.out.println(this.name);  // "Runnable" - refers to Runnable instance
+            }
+        };
+        r.run();
+    }
+
+    public void processWithLambda() {
+        Runnable r = () -> {
+            System.out.println(this.name);  // "Processor" - refers to Processor instance
+        };
+        r.run();
+    }
+
+    // PITFALL: 'this' in lambda refers to enclosing class, not lambda itself
+    // Lambda doesn't have its own 'this' - it's lexically scoped
+}
+----
+
+*7. Overusing lambdas for complex logic*
+
+[source,java]
+----
+// PITFALL - too complex for inline lambda
+List<Employee> result = employees.stream()
+    .filter(e -> {
+        if (e.getDepartment() == null) return false;
+        if (e.getDepartment().equals("IT")) {
+            if (e.getYearsOfService() > 5) {
+                if (e.getSalary() > 70000) {
+                    return e.getPerformanceRating() >= 4.0;
+                }
+            }
+        }
+        return false;
+    })
+    .collect(Collectors.toList());
+
+// FIX - extract to named method
+List<Employee> result = employees.stream()
+    .filter(this::isSeniorITEmployee)  // ✅ Clear and testable
+    .collect(Collectors.toList());
+
+private boolean isSeniorITEmployee(Employee e) {
+    return e.getDepartment() != null
+        && e.getDepartment().equals("IT")
+        && e.getYearsOfService() > 5
+        && e.getSalary() > 70000
+        && e.getPerformanceRating() >= 4.0;
+}
+----
+
+*8. Expecting lambda to be Serializable*
+
+[source,java]
+----
+// PITFALL - not all lambdas are serializable
+Function<String, String> toUpper = s -> s.toUpperCase();
+// Can't serialize this by default
+
+// FIX - cast to Serializable (only if interface extends Serializable)
+Comparator<String> comp = (Comparator<String> & Serializable)
+    (a, b) -> a.compareTo(b);
+----
+
+*9. Performance assumptions*
+
+[source,java]
+----
+// PITFALL - assuming lambda is always slower than anonymous class
+// Reality: JVM optimizes lambdas well, often same or better performance
+
+// Lambda (optimized via invokedynamic)
+list.forEach(item -> process(item));
+
+// Anonymous class (traditional bytecode)
+list.forEach(new Consumer<Item>() {
+    public void accept(Item item) {
+        process(item);
+    }
+});
+
+// Modern JVMs optimize lambdas very efficiently - don't avoid them for performance
+// without measuring!
+----
+
+*10. Null pointer in lambda body*
+
+[source,java]
+----
+// PITFALL - NPE inside lambda is hard to debug
+employees.stream()
+    .map(e -> e.getAddress().getCity())  // ❌ NPE if address is null
+    .collect(Collectors.toList());
+
+// FIX - null-safe with Optional
+employees.stream()
+    .map(e -> Optional.ofNullable(e.getAddress())
+        .map(Address::getCity)
+        .orElse("Unknown"))
+    .collect(Collectors.toList());
+----
+====
+
+
+[NOTE]
+====
+*Quick Review:*
+
+1. *What is a lambda expression?* +
+   _A concise way to represent an anonymous function that can be passed as a parameter. It enables treating behavior as data._
+
+2. *What is a functional interface?* +
+   _An interface with exactly one abstract method (SAM - Single Abstract Method). Annotated with `@FunctionalInterface` to ensure this contract._
+
+3. *What does "effectively final" mean?* +
+   _A variable that is never reassigned after initialization, even though it's not explicitly declared `final`. Required for variables used in lambdas._
+
+4. **What's wrong with this: `(x) -> { x * 2 }`?** +
+   _Missing `return` statement in block body. Either use expression form `(x) -> x * 2` or add return: `(x) -> { return x * 2; }`_
+
+5. *How does `this` behave differently in lambdas vs anonymous classes?* +
+   _In anonymous classes, `this` refers to the anonymous class instance. In lambdas, `this` refers to the enclosing class instance (lexical scoping)._
+
+6. *Interview Question: Refactor this to use lambda:* +
+   ```java
+   List<String> result = new ArrayList<>();
+   for (Employee e : employees) {
+       if (e.getSalary() > 50000) {
+           result.add(e.getName());
+       }
+   }
+   ```
+   _Answer:_
+   ```java
+   List<String> result = employees.stream()
+       .filter(e -> e.getSalary() > 50000)
+       .map(Employee::getName)
+       .collect(Collectors.toList());
+   ```
+
+7. *What are the 4 main built-in functional interfaces?* +
+   _`Predicate<T>` (T → boolean), `Function<T,R>` (T → R), `Consumer<T>` (T → void), `Supplier<T>` (() → T)_
+
+8. *When should you extract a lambda to a named method?* +
+   _When the logic is >2-3 lines, needs to be reused, requires testing, or when clarity would improve with a descriptive name._
+
+9. *Why can't you modify local variables inside a lambda?* +
+   _Lambdas may be executed in different threads or at different times. Variables must be effectively final to ensure thread safety and prevent confusing behavior._
+
+10. *How do you handle checked exceptions in lambdas?* +
+    _Either wrap in try-catch with unchecked exception, or extract to a helper method that handles the exception._
+====
+
+---
+
+== Method References
+
+==== Method References
+
+.Overview / What it is
+[%collapsible]
+====
+*Method references* are a shorthand notation for lambdas that simply call an existing method. Think of them as *"lambda shortcuts"* - when your lambda does nothing but call a method, use a method reference instead.
+
+*Core Concept:*
+
+When a lambda expression just calls an existing method, you can replace it with a method reference using the `::` operator. This makes code more concise and readable.
+
+[source,java]
+----
+// Lambda that calls a method
+list.forEach(item -> System.out.println(item));
+
+// Method reference - more concise
+list.forEach(System.out::println);
+
+// Lambda that calls a method
+names.stream().map(s -> s.toUpperCase());
+
+// Method reference - clearer intent
+names.stream().map(String::toUpperCase);
+----
+
+*The `::` Operator:*
+
+The double colon `::` is the method reference operator. It separates the class/object from the method name.
+
+*Four Types of Method References:*
+
+[source,java]
+----
+// 1. Static method reference
+//    ClassName::staticMethodName
+Function<String, Integer> parser = Integer::parseInt;
+// Equivalent to: s -> Integer.parseInt(s)
+
+// 2. Instance method reference (on a particular object)
+//    object::instanceMethodName
+String prefix = "Hello, ";
+Function<String, String> greeter = prefix::concat;
+// Equivalent to: s -> prefix.concat(s)
+
+// 3. Instance method reference (on an arbitrary object of a particular type)
+//    ClassName::instanceMethodName
+Function<String, String> toUpper = String::toUpperCase;
+// Equivalent to: s -> s.toUpperCase()
+
+// 4. Constructor reference
+//    ClassName::new
+Supplier<List<String>> listFactory = ArrayList::new;
+// Equivalent to: () -> new ArrayList<>()
+----
+
+*Mental Model:*
+
+Think of method references as *"pointers to methods"*. Instead of writing out the full lambda syntax, you're just saying "use this existing method here."
+
+*When to Use Method References vs Lambdas:*
+
+[source,java]
+----
+// Use method reference when lambda just calls a method
+names.forEach(System.out::println);          // ✅ Clear
+
+// Use lambda when you need additional logic
+names.forEach(name -> {                      // ✅ Appropriate
+    System.out.println("Name: " + name);
+});
+
+// Don't force method reference if lambda is clearer
+list.filter(s -> s.length() > 5)             // ✅ Clear
+// vs
+list.filter(s -> isLongString(s))            // Could use method reference
+list.filter(this::isLongString)              // ✅ If method exists
+----
+
+*Key Characteristics:*
+
+1. *More concise* than equivalent lambdas
+2. *Same functionality* as lambdas - just syntax sugar
+3. *Clearer intent* when method name is descriptive
+4. *Type inference* - compiler figures out the functional interface
+====
+
+
+.Why use it
+[%collapsible]
+====
+*1. Improved Readability - Descriptive Method Names*
+
+Method references leverage descriptive names to make code self-documenting:
+
+[source,java]
+----
+// Lambda - what does this do?
+employees.stream()
+    .filter(e -> e.getSalary() > 50000)
+    .forEach(e -> process(e));
+
+// Method reference - clear intent
+employees.stream()
+    .filter(e -> e.getSalary() > 50000)
+    .forEach(this::process);  // "process each employee"
+
+// Even better with extracted predicate
+employees.stream()
+    .filter(this::isHighEarner)  // Very clear!
+    .forEach(this::process);
+----
+
+*2. Less Boilerplate*
+
+Significantly reduces code when you're just calling methods:
+
+[source,java]
+----
+// Lambdas - verbose
+names.stream()
+    .map(name -> name.toUpperCase())
+    .map(name -> name.trim())
+    .forEach(name -> System.out.println(name));
+
+// Method references - concise
+names.stream()
+    .map(String::toUpperCase)
+    .map(String::trim)
+    .forEach(System.out::println);
+----
+
+*3. Encourages Method Extraction*
+
+Method references encourage better design by extracting logic into named methods:
+
+[source,java]
+----
+// Inline lambda - logic buried
+employees.stream()
+    .filter(e -> e.getDept().equals("IT") && e.getSalary() > 70000)
+    .collect(Collectors.toList());
+
+// Extracted to method - reusable and testable
+employees.stream()
+    .filter(this::isEligibleForBonus)  // Named method reference
+    .collect(Collectors.toList());
+
+private boolean isEligibleForBonus(Employee e) {
+    return e.getDept().equals("IT") && e.getSalary() > 70000;
+}
+----
+
+*4. Consistency with Existing APIs*
+
+Works seamlessly with existing methods - no need to create wrapper lambdas:
+
+[source,java]
+----
+// Constructor references for factory patterns
+Stream.of("a", "b", "c")
+    .collect(Collectors.toCollection(ArrayList::new));  // Direct constructor reference
+
+// Static method references
+List<String> numbers = Arrays.asList("1", "2", "3");
+numbers.stream()
+    .map(Integer::parseInt)  // Use existing static method
+    .forEach(System.out::println);
+----
+
+*5. Better for Parallel Processing*
+
+Method references are stateless, making them ideal for parallel streams:
+
+[source,java]
+----
+// Safe for parallel processing
+data.parallelStream()
+    .map(String::toUpperCase)     // Pure function
+    .filter(String::isEmpty)       // Stateless
+    .forEach(System.out::println); // No side effects on shared state
+----
+
+*6. Supports Composition*
+
+Method references compose well with functional interfaces:
+
+[source,java]
+----
+// Comparator chaining with method references
+employees.sort(
+    Comparator.comparing(Employee::getDepartment)
+             .thenComparing(Employee::getName)
+             .thenComparing(Employee::getSalary)
+);
+----
+====
+
+
+.When not to use
+[%collapsible]
+====
+*❌ DON'T Use Method References When:*
+
+*1. Lambda Has Additional Logic*
+
+[source,java]
+----
+// BAD - can't use method reference
+names.forEach(name -> System.out.println("Name: " + name));
+
+// Can't be replaced with method reference because of string concatenation
+// names.forEach(System.out::println);  // ❌ Loses "Name: " prefix
+----
+
+*2. Parameter Transformation is Needed*
+
+[source,java]
+----
+// BAD - parameters need manipulation
+List<String> numbers = Arrays.asList("1", "2", "3");
+numbers.stream()
+    .map(s -> Integer.parseInt(s) * 2);  // ✅ Lambda needed
+
+// Can't use Integer::parseInt alone because we need to multiply
+----
+
+*3. Multiple Parameters with Different Order*
+
+[source,java]
+----
+// BAD - parameter order doesn't match
+BiFunction<String, String, Boolean> contains =
+    (text, substring) -> substring.contains(text);  // Reversed order!
+
+// Can't use method reference because parameter order is wrong
+// String::contains expects (this, substring), not (substring, this)
+----
+
+*4. Method Reference is Less Clear*
+
+[source,java]
+----
+// Sometimes lambda is clearer
+list.stream().filter(s -> s.length() > 5);  // ✅ Clear intent
+
+// Method reference version requires helper method
+list.stream().filter(this::isLongerThanFive);  // Less direct
+
+private boolean isLongerThanFive(String s) {
+    return s.length() > 5;  // Extra method for simple logic
+}
+----
+
+*5. Ambiguous Method Overloads*
+
+[source,java]
+----
+// PROBLEM - multiple overloaded methods
+class Printer {
+    void print(String s) { System.out.println("String: " + s); }
+    void print(Integer i) { System.out.println("Integer: " + i); }
+}
+
+// Compiler can't determine which overload to use
+// Printer::print  // ❌ Ambiguous
+
+// Lambda is clearer
+Function<String, Void> printString = s -> {
+    printer.print(s);
+    return null;
+};
+----
+
+*6. Exception Handling Required*
+
+[source,java]
+----
+// BAD - method throws checked exception
+files.stream()
+    .map(File::readAllBytes);  // ❌ Throws IOException
+
+// Need lambda with try-catch
+files.stream()
+    .map(file -> {
+        try {
+            return Files.readAllBytes(file.toPath());
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    });
+----
+
+*7. Need to Reference Multiple Methods*
+
+[source,java]
+----
+// BAD - need multiple operations
+employees.stream()
+    .forEach(e -> {
+        e.updateSalary();
+        e.notify();
+    });
+
+// Can't replace with single method reference
+----
+
+*General Rule:* Use method references when they make code clearer. If a lambda is more straightforward, use the lambda.
+====
+
+
+.Best practices
+[%collapsible]
+====
+*✅ DO:*
+
+- *Prefer method references over lambdas* when they're clearer
+  ```java
+  // GOOD - method reference is clearer
+  names.stream().map(String::toUpperCase);
+
+  // OKAY - lambda is fine but more verbose
+  names.stream().map(s -> s.toUpperCase());
+  ```
+
+- *Use descriptive method names* to make references self-documenting
+  ```java
+  // GOOD - method name describes intent
+  employees.stream()
+      .filter(this::isEligibleForPromotion)
+      .forEach(this::promoteEmployee);
+
+  // BAD - unclear method names
+  employees.stream()
+      .filter(this::check)
+      .forEach(this::process);
+  ```
+
+- *Extract complex logic* to methods for reusability
+  ```java
+  // GOOD - extracted and reusable
+  .filter(this::meetsPromotionCriteria)
+
+  private boolean meetsPromotionCriteria(Employee e) {
+      return e.getYearsOfService() > 3
+          && e.getPerformanceRating() >= 4.0
+          && e.hasCompletedTraining();
+  }
+  ```
+
+- *Use constructor references* for object creation
+  ```java
+  // GOOD - constructor reference
+  Stream.of("a", "b", "c")
+      .collect(Collectors.toCollection(ArrayList::new));
+
+  // OKAY - lambda works but verbose
+  Stream.of("a", "b", "c")
+      .collect(Collectors.toCollection(() -> new ArrayList<>()));
+  ```
+
+- *Combine with Comparator.comparing()* for sorting
+  ```java
+  // GOOD - readable and composable
+  employees.sort(
+      Comparator.comparing(Employee::getDepartment)
+               .thenComparing(Employee::getSalary)
+  );
+  ```
+
+- *Use for standard operations* (printing, parsing, etc.)
+  ```java
+  // GOOD - standard operations with method references
+  list.forEach(System.out::println);
+  strings.stream().map(Integer::parseInt);
+  numbers.stream().forEach(System.out::println);
+  ```
+
+*❌ DON'T:*
+
+- *Don't force method references* if lambda is clearer
+  ```java
+  // BAD - forced method reference requires helper method
+  list.filter(this::isLongerThan5);
+
+  // GOOD - simple lambda is direct
+  list.filter(s -> s.length() > 5);
+  ```
+
+- *Don't create methods just for method references* (if used once)
+  ```java
+  // BAD - single-use helper method
+  .filter(this::isExactlyTenCharacters)
+
+  private boolean isExactlyTenCharacters(String s) {
+      return s.length() == 10;  // Used only once
+  }
+
+  // GOOD - inline lambda for simple, one-off logic
+  .filter(s -> s.length() == 10)
+  ```
+
+- *Don't use when parameter manipulation is needed*
+  ```java
+  // BAD - can't use method reference
+  // .map(Integer::parseInt * 2)  // ❌ Doesn't work
+
+  // GOOD - lambda for manipulation
+  .map(s -> Integer.parseInt(s) * 2)
+  ```
+
+- *Don't mix styles inconsistently*
+  ```java
+  // BAD - inconsistent style
+  names.stream()
+      .map(String::toUpperCase)      // Method reference
+      .filter(s -> s.length() > 5)   // Lambda
+      .forEach(s -> System.out.println(s));  // Lambda (could be method ref)
+
+  // GOOD - consistent style
+  names.stream()
+      .map(String::toUpperCase)
+      .filter(s -> s.length() > 5)   // Lambda appropriate here
+      .forEach(System.out::println);  // Method reference
+  ```
+
+- *Avoid with ambiguous overloaded methods*
+  ```java
+  // BAD - compiler can't determine which overload
+  // list.forEach(printer::print);  // Multiple print() methods
+
+  // GOOD - explicit lambda
+  list.forEach(item -> printer.print(item));
+  ```
+====
+
+
+.Example
+[%collapsible]
+====
+*Simple inline examples:*
+
+[source,java]
+----
+// === TYPE 1: Static Method References ===
+// ClassName::staticMethodName
+
+// Parsing
+Function<String, Integer> parser = Integer::parseInt;
+int num = parser.apply("123");  // 123
+
+// Math operations
+Function<Double, Double> sqrt = Math::sqrt;
+double result = sqrt.apply(16.0);  // 4.0
+
+// Comparison
+Comparator<Integer> comparator = Integer::compare;
+
+// === TYPE 2: Instance Method References (Bound) ===
+// object::instanceMethodName
+
+String prefix = "Hello, ";
+Function<String, String> greeter = prefix::concat;
+System.out.println(greeter.apply("World"));  // Hello, World
+
+List<String> names = Arrays.asList("Alice", "Bob");
+names.forEach(System.out::println);  // Prints each name
+
+// === TYPE 3: Instance Method References (Unbound) ===
+// ClassName::instanceMethodName
+
+// First parameter becomes the object
+Function<String, String> toUpper = String::toUpperCase;
+System.out.println(toUpper.apply("hello"));  // HELLO
+
+BiPredicate<String, String> startsWith = String::startsWith;
+boolean result = startsWith.test("Hello", "He");  // true
+
+// === TYPE 4: Constructor References ===
+// ClassName::new
+
+// No-arg constructor
+Supplier<List<String>> listFactory = ArrayList::new;
+List<String> list = listFactory.get();
+
+// Constructor with parameters
+Function<Integer, List<String>> listWithSize = ArrayList::new;
+List<String> sized = listWithSize.apply(10);
+
+// Array constructor
+IntFunction<String[]> arrayCreator = String[]::new;
+String[] array = arrayCreator.apply(5);
+
+// === Common Use Cases ===
+
+// Sorting
+List<String> names = Arrays.asList("Charlie", "Alice", "Bob");
+names.sort(String::compareToIgnoreCase);
+
+// Mapping
+List<Integer> lengths = names.stream()
+    .map(String::length)
+    .collect(Collectors.toList());
+
+// Filtering with extracted method
+List<String> longNames = names.stream()
+    .filter(this::isLongName)
+    .collect(Collectors.toList());
+
+// Grouping
+Map<Integer, List<String>> byLength = names.stream()
+    .collect(Collectors.groupingBy(String::length));
+
+// Comparator chaining
+List<Employee> employees = getEmployees();
+employees.sort(
+    Comparator.comparing(Employee::getDepartment)
+             .thenComparing(Employee::getName)
+);
+
+// Collectors with constructor reference
+Set<String> set = names.stream()
+    .collect(Collectors.toCollection(HashSet::new));
+
+// === Conversion Examples ===
+
+// Lambda → Method Reference
+// FROM: list.forEach(item -> System.out.println(item))
+// TO:   list.forEach(System.out::println)
+
+// FROM: .map(s -> s.toUpperCase())
+// TO:   .map(String::toUpperCase)
+
+// FROM: .map(x -> Math.sqrt(x))
+// TO:   .map(Math::sqrt)
+
+// FROM: () -> new ArrayList<>()
+// TO:   ArrayList::new
+----
+
+*Complex real-world scenarios:*
+
+See link:examples/java8/MethodReferencesDemo.java[MethodReferencesDemo.java] for complete examples demonstrating:
+
+- *All 4 types* of method references with detailed explanations
+- *Before/After comparisons*: Lambda → Method Reference
+- *Real-world use cases*: Sorting, filtering, mapping, grouping
+- *Common patterns*: Comparator chaining, factory methods, collectors
+- *When to use* vs when to use lambdas
+- *Edge cases*: Overloaded methods, exception handling
+- *Performance comparison*: Method reference vs lambda
+- *Practical exercises*: Transform lambdas to method references
+====
+
+
+.Common pitfalls
+[%collapsible]
+====
+*1. Confusing bound vs unbound instance method references*
+
+[source,java]
+----
+// PITFALL - understanding which object the method is called on
+
+// Bound reference - called on specific object
+String prefix = "Hello ";
+Function<String, String> bound = prefix::concat;
+// Equivalent to: s -> prefix.concat(s)
+System.out.println(bound.apply("World"));  // "Hello World"
+
+// Unbound reference - first parameter is the object
+Function<String, String> unbound = String::toUpperCase;
+// Equivalent to: s -> s.toUpperCase()
+System.out.println(unbound.apply("hello"));  // "HELLO"
+----
+
+*2. Wrong functional interface for method signature*
+
+[source,java]
+----
+// PITFALL - method signature doesn't match functional interface
+
+// String::length returns int, takes no params
+Function<String, Integer> length = String::length;  // ✅ Correct
+
+// Wrong - trying to use as Consumer
+// Consumer<String> consumer = String::length;  // ❌ Consumer returns void
+
+// Wrong - trying to use as Predicate
+// Predicate<String> pred = String::length;  // ❌ Predicate returns boolean
+----
+
+*3. Overloaded methods causing ambiguity*
+
+[source,java]
+----
+// PITFALL - compiler can't determine which overload
+
+class Printer {
+    void print(String s) { }
+    void print(int i) { }
+}
+
+Printer p = new Printer();
+// Ambiguous - which print() method?
+// Consumer<String> c = p::print;  // ❌ Compilation error
+
+// FIX - use explicit lambda
+Consumer<String> c = s -> p.print(s);  // ✅ Clear which method
+----
+
+*4. Constructor reference with wrong number of parameters*
+
+[source,java]
+----
+// PITFALL - constructor parameters don't match
+
+class Person {
+    Person(String name, int age) { }
+}
+
+// Wrong - Person constructor needs 2 parameters
+// Supplier<Person> factory = Person::new;  // ❌ No no-arg constructor
+
+// Correct - BiFunction takes 2 parameters
+BiFunction<String, Integer, Person> factory = Person::new;  // ✅
+Person p = factory.apply("Alice", 25);
+----
+
+*5. Array constructor reference confusion*
+
+[source,java]
+----
+// PITFALL - wrong type for array constructor
+
+// Wrong - Function expects return type of String[], not String
+// Function<Integer, String> arrayMaker = String[]::new;  // ❌
+
+// Correct - IntFunction for array creation
+IntFunction<String[]> arrayMaker = String[]::new;  // ✅
+String[] arr = arrayMaker.apply(10);
+----
+
+*6. Method reference on null object*
+
+[source,java]
+----
+// PITFALL - NullPointerException at method reference creation
+
+String nullString = null;
+// NPE when creating the reference, not when calling it
+// Function<String, String> concat = nullString::concat;  // ❌ NPE here
+
+// FIX - check for null before creating reference
+String prefix = getPrefixOrDefault();
+Function<String, String> concat = prefix::concat;  // ✅ Safe if prefix not null
+----
+
+*7. Static method reference with instance expectation*
+
+[source,java]
+----
+// PITFALL - using static reference where instance is expected
+
+// String.valueOf is static
+Function<Integer, String> toString = String::valueOf;  // ✅ Correct
+
+// But trying to use on instance is wrong
+List<Integer> numbers = Arrays.asList(1, 2, 3);
+// numbers.forEach(String::valueOf);  // ❌ Doesn't make sense
+numbers.forEach(System.out::println);  // ✅ Use instance method
+----
+
+*8. Forgetting unbound references need the object as first parameter*
+
+[source,java]
+----
+// PITFALL - unbound reference requires object as parameter
+
+// String::concat is unbound - needs String as first parameter
+BiFunction<String, String, String> concat = String::concat;  // ✅
+String result = concat.apply("Hello", " World");  // Hello World
+
+// Wrong - trying to use as Function
+// Function<String, String> concat = String::concat;  // ❌ Needs 2 params
+----
+
+*9. Method reference with checked exceptions*
+
+[source,java]
+----
+// PITFALL - referenced method throws checked exception
+
+// File::delete throws IOException
+// Consumer<File> deleter = File::delete;  // ❌ Checked exception
+
+// FIX - wrap in lambda with try-catch
+Consumer<File> deleter = file -> {
+    try {
+        Files.delete(file.toPath());
+    } catch (IOException e) {
+        throw new UncheckedIOException(e);
+    }
+};
+----
+
+*10. Generic type erasure issues*
+
+[source,java]
+----
+// PITFALL - generic types erased at runtime
+
+class Container<T> {
+    void process(T item) { }
+}
+
+Container<String> container = new Container<>();
+// This compiles but loses type information
+Consumer<Object> processor = container::process;  // ⚠️ Type erasure
+
+// Better - keep type safety with explicit type
+Consumer<String> typedProcessor = container::process;  // ✅
+----
+
+*11. Expecting method reference to be lazily evaluated*
+
+[source,java]
+----
+// PITFALL - method reference captures at creation time
+
+List<String> list = new ArrayList<>();
+list.add("initial");
+
+Consumer<String> adder = list::add;  // Captures 'list' reference now
+
+// Later, even if list is reassigned, adder still uses original list
+list = new ArrayList<>();  // Different list
+adder.accept("test");  // Still adds to original list!
+----
+====
+
+
+[NOTE]
+====
+*Quick Review:*
+
+1. *What is a method reference?* +
+   _A shorthand notation for a lambda expression that only calls an existing method. Uses the `::` operator._
+
+2. *What are the 4 types of method references?* +
+   _1) Static (`ClassName::staticMethod`), 2) Bound instance (`object::instanceMethod`), 3) Unbound instance (`ClassName::instanceMethod`), 4) Constructor (`ClassName::new`)_
+
+3. *What's the difference between bound and unbound instance method references?* +
+   _Bound references call the method on a specific object (`prefix::concat`). Unbound references use the first parameter as the object (`String::toUpperCase`)._
+
+4. *Convert this lambda to a method reference: `s -> s.length()`* +
+   _`String::length`_
+
+5. *Convert this lambda to a method reference: `() -> new ArrayList<>()`* +
+   _`ArrayList::new`_
+
+6. *When should you use a lambda instead of a method reference?* +
+   _When you need additional logic, parameter transformation, exception handling, or when the lambda is clearer than creating a helper method._
+
+7. *What's wrong with this: `Function<String, String> f = String::concat`?* +
+   _`String::concat` needs 2 parameters (the string to concat to, and the string to concat). Should be `BiFunction<String, String, String>`._
+
+8. *How do you create an array using constructor reference?* +
+   _`IntFunction<String[]> arrayMaker = String[]::new;` then `arrayMaker.apply(size);`_
+
+9. *Interview Question: Which is better and why?* +
+   ```java
+   list.forEach(item -> System.out.println(item))  // A
+   list.forEach(System.out::println)               // B
+   ```
+   _B is better - more concise and clear. Method references should be preferred when they're just calling a single method._
+
+10. *What happens when you use a method reference on a null object?* +
+    _`NullPointerException` is thrown when creating the method reference, not when calling it._
+====
+
+---
+
+== Default Methods
+
+==== Default Methods in Interfaces
+
+.Overview / What it is
+[%collapsible]
+====
+*Default methods* allow you to add new methods to interfaces with a default implementation, enabling *interface evolution without breaking existing implementations*. Think of them as *"backward-compatible interface updates"*.
+
+*Core Concept:*
+
+Before Java 8, adding a new method to an interface would break all existing implementations. Default methods solve this by providing a default implementation directly in the interface.
+
+[source,java]
+----
+// Before Java 8 - can't add new methods without breaking implementations
+interface OldInterface {
+    void existingMethod();
+    // void newMethod();  // ❌ Would break all implementations!
+}
+
+// Java 8 - can add methods with default implementation
+interface ModernInterface {
+    void existingMethod();
+
+    // New method with default implementation - doesn't break existing code
+    default void newMethod() {
+        System.out.println("Default implementation");
+    }
+}
+----
+
+*Syntax:*
+
+[source,java]
+----
+interface MyInterface {
+    // Abstract method (must be implemented)
+    void abstractMethod();
+
+    // Default method (can be overridden)
+    default void defaultMethod() {
+        System.out.println("Default behavior");
+    }
+
+    // Static method (cannot be overridden)
+    static void staticMethod() {
+        System.out.println("Static behavior");
+    }
+}
+----
+
+*Mental Model:*
+
+Think of default methods as *"optional add-ons"* to an interface. Implementations get the default behavior for free, but can override it if they want custom behavior.
+
+*Key Characteristics:*
+
+1. *Have implementation* in the interface (unlike abstract methods)
+2. *Can be overridden* by implementing classes (unlike static methods)
+3. *Enable interface evolution* without breaking backward compatibility
+4. *Support multiple inheritance of behavior* (class can implement multiple interfaces)
+
+*Why Were They Added?*
+
+To add methods like `forEach()`, `stream()`, etc., to the Collections API without breaking existing code:
+
+[source,java]
+----
+// Java 8 added default methods to List interface
+interface List<E> extends Collection<E> {
+    // Existing methods...
+
+    // New default methods added in Java 8
+    default void forEach(Consumer<? super E> action) {
+        for (E e : this) {
+            action.accept(e);
+        }
+    }
+
+    default Stream<E> stream() {
+        return StreamSupport.stream(spliterator(), false);
+    }
+}
+
+// All existing List implementations (ArrayList, LinkedList, etc.)
+// automatically get these methods without any changes!
+----
+====
+
+
+.Why use it
+[%collapsible]
+====
+*1. Interface Evolution Without Breaking Changes*
+
+Add new functionality to interfaces without forcing all implementations to update:
+
+[source,java]
+----
+// Version 1 - original interface
+interface PaymentProcessor {
+    void processPayment(double amount);
+}
+
+// Version 2 - adding new features without breaking existing implementations
+interface PaymentProcessor {
+    void processPayment(double amount);
+
+    // New method with default implementation
+    default void processRefund(double amount) {
+        System.out.println("Processing refund: $" + amount);
+        // Default refund logic
+    }
+
+    default boolean validatePayment(double amount) {
+        return amount > 0;
+    }
+}
+
+// Existing implementations still work without modification!
+class CreditCardProcessor implements PaymentProcessor {
+    public void processPayment(double amount) {
+        // Original implementation
+    }
+    // Gets processRefund() and validatePayment() for free
+}
+----
+
+*2. Code Reuse Across Implementations*
+
+Share common logic across multiple implementations:
+
+[source,java]
+----
+interface Loggable {
+    // Abstract method - must be implemented
+    String getLogMessage();
+
+    // Default method - shared logging logic
+    default void log() {
+        System.out.println("[" + getCurrentTime() + "] " + getLogMessage());
+    }
+
+    default String getCurrentTime() {
+        return java.time.LocalTime.now().toString();
+    }
+}
+
+// Multiple classes can reuse logging behavior
+class UserService implements Loggable {
+    public String getLogMessage() {
+        return "User service operation";
+    }
+    // log() method available without implementation
+}
+
+class PaymentService implements Loggable {
+    public String getLogMessage() {
+        return "Payment service operation";
+    }
+    // log() method available without implementation
+}
+----
+
+*3. Multiple Inheritance of Behavior*
+
+Classes can inherit behavior from multiple interfaces:
+
+[source,java]
+----
+interface Flyable {
+    default void fly() {
+        System.out.println("Flying through the air");
+    }
+}
+
+interface Swimmable {
+    default void swim() {
+        System.out.println("Swimming through water");
+    }
+}
+
+// Class inherits behavior from multiple interfaces
+class Duck implements Flyable, Swimmable {
+    // Gets both fly() and swim() methods
+}
+
+Duck duck = new Duck();
+duck.fly();   // Inherited from Flyable
+duck.swim();  // Inherited from Swimmable
+----
+
+*4. API Design Flexibility*
+
+Create richer interfaces with utility methods:
+
+[source,java]
+----
+interface Validator<T> {
+    // Abstract method
+    boolean validate(T value);
+
+    // Default utility methods
+    default boolean validateAll(Collection<T> values) {
+        return values.stream().allMatch(this::validate);
+    }
+
+    default boolean validateAny(Collection<T> values) {
+        return values.stream().anyMatch(this::validate);
+    }
+
+    default List<T> filterValid(Collection<T> values) {
+        return values.stream()
+                    .filter(this::validate)
+                    .collect(Collectors.toList());
+    }
+}
+----
+
+*5. Backward Compatibility for Libraries*
+
+Library authors can add features without breaking client code:
+
+[source,java]
+----
+// Library v1.0
+public interface DataRepository {
+    List<Data> findAll();
+}
+
+// Library v2.0 - adds streaming capability
+public interface DataRepository {
+    List<Data> findAll();
+
+    // New method doesn't break v1.0 clients
+    default Stream<Data> stream() {
+        return findAll().stream();
+    }
+}
+----
+====
+
+
+.When not to use
+[%collapsible]
+====
+*❌ DON'T Use Default Methods When:*
+
+*1. Abstract Method is More Appropriate*
+
+[source,java]
+----
+// BAD - default method for core functionality
+interface Shape {
+    default double calculateArea() {
+        return 0;  // ❌ Meaningless default
+    }
+}
+
+// GOOD - abstract method forces implementation
+interface Shape {
+    double calculateArea();  // ✅ Must be implemented properly
+}
+----
+
+*2. Implementation Varies Significantly*
+
+[source,java]
+----
+// BAD - default is too generic to be useful
+interface DatabaseConnection {
+    default void connect() {
+        // ❌ What connection string? What database type?
+        System.out.println("Connecting...");
+    }
+}
+
+// GOOD - force specific implementation
+interface DatabaseConnection {
+    void connect();  // ✅ Each DB type implements differently
+}
+----
+
+*3. Encouraging Bad Design*
+
+[source,java]
+----
+// BAD - using default methods to bypass proper implementation
+interface Service {
+    default void initialize() {
+        // Empty default - implementations might forget to override
+    }
+
+    default void cleanup() {
+        // Empty default - cleanup might be missed
+    }
+}
+
+// GOOD - force implementations to handle lifecycle
+interface Service {
+    void initialize();  // ✅ Must be implemented
+    void cleanup();     // ✅ Must be implemented
+}
+----
+
+*4. State Management Required*
+
+[source,java]
+----
+// BAD - interfaces can't have instance state
+interface Counter {
+    default void increment() {
+        // ❌ No instance field to increment
+        // count++;  // Doesn't work
+    }
+}
+
+// GOOD - use abstract class if state is needed
+abstract class Counter {
+    private int count = 0;  // ✅ State
+
+    public void increment() {
+        count++;
+    }
+}
+----
+
+*5. Override Would Always Be Needed*
+
+[source,java]
+----
+// BAD - default is never actually used
+interface Identifiable {
+    default Long getId() {
+        return null;  // ❌ Every implementation will override this
+    }
+}
+
+// GOOD - make it abstract if no meaningful default exists
+interface Identifiable {
+    Long getId();  // ✅ Must be implemented
+}
+----
+
+*General Rule:* Use default methods for *optional behavior* or *utility methods*, not for core functionality that should be implemented by each class.
+====
+
+
+.Best practices
+[%collapsible]
+====
+*✅ DO:*
+
+- *Use for optional behavior* or utility methods
+  ```java
+  interface Collection<E> {
+      // Core methods (abstract)
+      int size();
+      boolean isEmpty();
+
+      // Optional convenience methods (default)
+      default boolean isNotEmpty() {
+          return !isEmpty();
+      }
+  }
+  ```
+
+- *Document the default behavior* clearly
+  ```java
+  interface Processor {
+      /**
+       * Processes the input data.
+       * Default implementation logs the operation.
+       * Override for custom processing logic.
+       */
+      default void process(String data) {
+          log("Processing: " + data);
+      }
+  }
+  ```
+
+- *Call other interface methods* from defaults
+  ```java
+  interface Repository<T> {
+      List<T> findAll();
+
+      // Default method uses abstract method
+      default long count() {
+          return findAll().size();
+      }
+
+      default boolean isEmpty() {
+          return findAll().isEmpty();
+      }
+  }
+  ```
+
+- *Provide meaningful defaults* that work for most cases
+  ```java
+  interface Configurable {
+      default int getTimeout() {
+          return 30;  // Sensible default: 30 seconds
+      }
+
+      default int getRetryCount() {
+          return 3;  // Sensible default: 3 retries
+      }
+  }
+  ```
+
+- *Use `@implSpec` JavaDoc tag* to document implementation requirements
+  ```java
+  interface Sortable {
+      /**
+       * @implSpec The default implementation uses natural ordering.
+       * Implementations with custom sort logic should override.
+       */
+      default void sort(List<?> items) {
+          Collections.sort((List) items);
+      }
+  }
+  ```
+
+- *Resolve conflicts explicitly* when implementing multiple interfaces
+  ```java
+  class MyClass implements InterfaceA, InterfaceB {
+      @Override
+      public void conflictingMethod() {
+          // Explicitly choose which default to use
+          InterfaceA.super.conflictingMethod();
+      }
+  }
+  ```
+
+*❌ DON'T:*
+
+- *Don't override Object methods* as default methods
+  ```java
+  interface Bad {
+      // ❌ Can't override Object methods with default
+      // default String toString() { }
+      // default boolean equals(Object obj) { }
+      // default int hashCode() { }
+  }
+  ```
+
+- *Don't use defaults for core contract methods*
+  ```java
+  // BAD - core methods should be abstract
+  interface Repository<T> {
+      default T save(T entity) {
+          return entity;  // ❌ Meaningless default
+      }
+  }
+
+  // GOOD
+  interface Repository<T> {
+      T save(T entity);  // ✅ Must be implemented
+  }
+  ```
+
+- *Don't create complex inheritance hierarchies*
+  ```java
+  // BAD - overly complex
+  interface A { default void m() { } }
+  interface B extends A { default void m() { } }
+  interface C extends B { default void m() { } }
+
+  // GOOD - keep it simple
+  interface Simple {
+      default void m() { }
+  }
+  ```
+
+- *Don't forget to handle diamond problem*
+  ```java
+  interface A { default void m() { System.out.println("A"); } }
+  interface B { default void m() { System.out.println("B"); } }
+
+  // BAD - compilation error without resolution
+  // class C implements A, B { }  // ❌ Ambiguous
+
+  // GOOD - explicitly resolve
+  class C implements A, B {
+      @Override
+      public void m() {
+          A.super.m();  // Choose A's implementation
+      }
+  }
+  ```
+
+- *Don't rely on default methods for critical functionality*
+  ```java
+  // BAD - security-critical method with default
+  interface Authenticator {
+      default boolean authenticate(String credentials) {
+          return true;  // ❌ Dangerous default
+      }
+  }
+
+  // GOOD - force implementation
+  interface Authenticator {
+      boolean authenticate(String credentials);  // ✅ Must be implemented
+  }
+  ```
+====
+
+
+.Example
+[%collapsible]
+====
+*Simple inline examples:*
+
+[source,java]
+----
+// === Basic Default Method ===
+
+interface Greeting {
+    // Abstract method
+    String getName();
+
+    // Default method
+    default void greet() {
+        System.out.println("Hello, " + getName());
+    }
+}
+
+class Person implements Greeting {
+    private String name;
+
+    public Person(String name) { this.name = name; }
+
+    public String getName() { return name; }
+    // greet() inherited from interface
+}
+
+Person person = new Person("Alice");
+person.greet();  // "Hello, Alice"
+
+// === Overriding Default Method ===
+
+class FormalPerson implements Greeting {
+    private String name;
+
+    public FormalPerson(String name) { this.name = name; }
+
+    public String getName() { return name; }
+
+    // Override default method
+    @Override
+    public void greet() {
+        System.out.println("Good day, " + getName());
+    }
+}
+
+// === Multiple Interfaces ===
+
+interface Flyable {
+    default void move() {
+        System.out.println("Flying");
+    }
+}
+
+interface Swimmable {
+    default void move() {
+        System.out.println("Swimming");
+    }
+}
+
+class Duck implements Flyable, Swimmable {
+    // Must resolve conflict
+    @Override
+    public void move() {
+        Flyable.super.move();  // Choose Flyable's implementation
+    }
+}
+
+// === Static Methods in Interfaces ===
+
+interface MathUtils {
+    static int add(int a, int b) {
+        return a + b;
+    }
+
+    static int multiply(int a, int b) {
+        return a * b;
+    }
+}
+
+// Call static methods on interface
+int sum = MathUtils.add(5, 3);
+int product = MathUtils.multiply(5, 3);
+
+// === Calling Super Default Method ===
+
+interface Vehicle {
+    default void start() {
+        System.out.println("Vehicle starting");
+    }
+}
+
+class Car implements Vehicle {
+    @Override
+    public void start() {
+        System.out.println("Car starting");
+        Vehicle.super.start();  // Call default implementation
+    }
+}
+----
+
+*Complex real-world scenarios:*
+
+See link:examples/java8/DefaultMethodsConflict.java[DefaultMethodsConflict.java] for complete examples demonstrating:
+
+- *Interface evolution*: Adding features without breaking existing code
+- *Diamond problem*: Multiple interfaces with same default method
+- *Conflict resolution*: Explicitly choosing which default to use
+- *Static methods*: Utility methods in interfaces
+- *Real-world patterns*: Logging, validation, lifecycle methods
+- *Before/After*: Legacy code vs Java 8 approach
+- *Best practices*: When to use defaults vs abstract methods
+====
+
+
+.Common pitfalls
+[%collapsible]
+====
+*1. Diamond problem without resolution*
+
+[source,java]
+----
+// PITFALL - compilation error
+
+interface A {
+    default void m() { System.out.println("A"); }
+}
+
+interface B {
+    default void m() { System.out.println("B"); }
+}
+
+// ❌ Compilation error: inherits unrelated defaults for m() from A and B
+// class C implements A, B { }
+
+// FIX - explicitly resolve
+class C implements A, B {
+    @Override
+    public void m() {
+        A.super.m();  // Choose A's version
+        // or B.super.m();
+        // or provide completely new implementation
+    }
+}
+----
+
+*2. Trying to override Object methods*
+
+[source,java]
+----
+// PITFALL - can't override Object methods with default
+
+interface BadInterface {
+    // ❌ Compilation error
+    // default String toString() {
+    //     return "BadInterface";
+    // }
+
+    // ❌ Compilation error
+    // default boolean equals(Object obj) {
+    //     return true;
+    // }
+}
+
+// These methods are final in Object and can't be overridden in interfaces
+----
+
+*3. Assuming default methods have state*
+
+[source,java]
+----
+// PITFALL - interfaces can't have instance state
+
+interface Counter {
+    // ❌ No instance fields in interfaces
+    // int count = 0;
+
+    default void increment() {
+        // ❌ What to increment?
+        // count++;
+    }
+}
+
+// FIX - use abstract class if state is needed
+abstract class Counter {
+    private int count = 0;  // ✅ State allowed
+
+    public void increment() {
+        count++;
+    }
+}
+----
+
+*4. Forgetting to resolve conflicts*
+
+[source,java]
+----
+// PITFALL - implicit resolution doesn't work
+
+interface X {
+    default String getValue() { return "X"; }
+}
+
+interface Y {
+    default String getValue() { return "Y"; }
+}
+
+// ❌ Must explicitly choose
+class Z implements X, Y {
+    // Compilation error without override
+
+    // FIX
+    @Override
+    public String getValue() {
+        return X.super.getValue();  // or Y.super.getValue()
+    }
+}
+----
+
+*5. Class method vs default method priority confusion*
+
+[source,java]
+----
+// PITFALL - class methods always win over default methods
+
+interface MyInterface {
+    default void method() {
+        System.out.println("Interface");
+    }
+}
+
+class Parent {
+    public void method() {
+        System.out.println("Parent");
+    }
+}
+
+class Child extends Parent implements MyInterface {
+    // No override needed - Parent's method wins
+}
+
+Child c = new Child();
+c.method();  // Prints "Parent", not "Interface"
+// Rule: Class hierarchy wins over interface defaults
+----
+
+*6. Calling static interface method incorrectly*
+
+[source,java]
+----
+// PITFALL - static methods called on interface, not instance
+
+interface Utils {
+    static void helper() {
+        System.out.println("Helper");
+    }
+}
+
+class MyClass implements Utils {
+    void test() {
+        // ❌ Can't call via this or class name
+        // helper();
+        // MyClass.helper();
+
+        // ✅ Must use interface name
+        Utils.helper();
+    }
+}
+----
+
+*7. Providing meaningless defaults*
+
+[source,java]
+----
+// PITFALL - default that's never useful
+
+interface DatabaseConnection {
+    default void connect(String url, String user, String password) {
+        // ❌ Meaningless default
+        System.out.println("Connecting...");
+    }
+}
+
+// FIX - make it abstract if no good default exists
+interface DatabaseConnection {
+    void connect(String url, String user, String password);  // ✅
+}
+----
+
+*8. Default method calling non-existent methods*
+
+[source,java]
+----
+// PITFALL - default method depends on method that doesn't exist
+
+interface Processor {
+    default void process() {
+        log("Processing");  // ❌ log() doesn't exist
+    }
+}
+
+// FIX - ensure all dependencies exist
+interface Processor {
+    void log(String message);  // Abstract method
+
+    default void process() {
+        log("Processing");  // ✅ Now it exists
+    }
+}
+----
+====
+
+
+[NOTE]
+====
+*Quick Review:*
+
+1. *What is a default method?* +
+   _A method in an interface that has a default implementation. Allows adding new methods to interfaces without breaking existing implementations._
+
+2. *What keyword is used to define a default method?* +
+   _The `default` keyword before the return type._
+
+3. *Can default methods have instance variables?* +
+   _No. Interfaces cannot have instance state. Default methods can only call other interface methods._
+
+4. *What is the diamond problem?* +
+   _When a class implements two interfaces that both have a default method with the same signature. Must be resolved explicitly._
+
+5. *How do you call a specific interface's default method from a class?* +
+   _Using `InterfaceName.super.methodName()`_
+
+6. *Class method vs interface default method - which wins?* +
+   _Class methods always take priority over interface default methods._
+
+7. *Can you override Object methods (toString, equals, hashCode) with default methods?* +
+   _No. Object methods are final in that context and cannot be overridden as default methods._
+
+8. *Interview Question: Why were default methods added to Java 8?* +
+   _To evolve interfaces like Collection without breaking existing implementations. Allowed adding methods like `forEach()` and `stream()` to existing interfaces._
+
+9. *Can static methods in interfaces be inherited?* +
+   _No. Static methods in interfaces cannot be inherited. They must be called using the interface name._
+
+10. *When should you use abstract methods instead of default methods?* +
+    _When there's no sensible default implementation, when the method is core functionality, or when each implementation will vary significantly._
+====
+
+---
+
+== Date-Time API
+
+==== Date-Time API (java.time)
+
+.Overview / What it is
+[%collapsible]
+====
+The *Date-Time API* (`java.time` package) is a modern, comprehensive replacement for the old `java.util.Date` and `Calendar` classes. Think of it as *"dates and times done right"* - immutable, thread-safe, and intuitive.
+
+*Core Concept:*
+
+The old date/time classes (`Date`, `Calendar`, `SimpleDateFormat`) were poorly designed - mutable, not thread-safe, and confusing. Java 8 introduced a completely new API inspired by Joda-Time that addresses all these issues.
+
+[source,java]
+----
+// Old way - confusing and mutable
+Date date = new Date();
+SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+String formatted = sdf.format(date);  // Not thread-safe!
+
+// New way - clear and immutable
+LocalDate date = LocalDate.now();
+String formatted = date.format(DateTimeFormatter.ISO_DATE);  // Thread-safe!
+----
+
+*Main Classes:*
+
+[source,java]
+----
+// Date without time or timezone
+LocalDate date = LocalDate.of(2024, 10, 24);
+LocalDate today = LocalDate.now();
+
+// Time without date or timezone
+LocalTime time = LocalTime.of(14, 30, 0);
+LocalTime now = LocalTime.now();
+
+// Date + Time without timezone
+LocalDateTime dateTime = LocalDateTime.of(2024, 10, 24, 14, 30);
+LocalDateTime nowDT = LocalDateTime.now();
+
+// Date + Time with timezone
+ZonedDateTime zonedDT = ZonedDateTime.now(ZoneId.of("America/New_York"));
+
+// Date-based amount of time (years, months, days)
+Period period = Period.ofDays(5);
+
+// Time-based amount of time (hours, minutes, seconds)
+Duration duration = Duration.ofHours(2);
+
+// A point in time (timestamp)
+Instant instant = Instant.now();
+----
+
+*Mental Model:*
+
+Think of the classes as *building blocks*:
+- *Local* classes: No timezone (your "wall clock" time)
+- *Zoned* classes: With timezone (for global coordination)
+- *Period*: Calendar-based durations (3 months, 2 days)
+- *Duration*: Time-based durations (5 hours, 30 minutes)
+- *Instant*: A point on the timeline (timestamp)
+
+*Key Characteristics:*
+
+1. *Immutable*: All classes are immutable and thread-safe
+2. *Fluent API*: Method chaining for readable code
+3. *Clear naming*: `LocalDate`, `ZonedDateTime` - names tell you what they do
+4. *Domain-driven*: Separate classes for different use cases
+5. *ISO-8601 based*: Standard international date/time format
+
+*Why It Was Added:*
+
+The old `java.util.Date` had numerous problems:
+- Mutable (not thread-safe)
+- Poor API design (month starts at 0)
+- Confusing timezone handling
+- Year starts at 1900
+- No support for date arithmetic
+====
+
+
+.Why use it
+[%collapsible]
+====
+*1. Immutability and Thread Safety*
+
+All java.time classes are immutable - safe to share across threads:
+
+[source,java]
+----
+// Old way - mutable, not thread-safe
+Date date = new Date();
+date.setTime(1234567890L);  // Modifies the object!
+
+// New way - immutable, thread-safe
+LocalDate date = LocalDate.now();
+LocalDate tomorrow = date.plusDays(1);  // Returns new object, original unchanged
+----
+
+*2. Clear and Intuitive API*
+
+Method names and behavior match expectations:
+
+[source,java]
+----
+// Old way - confusing
+Calendar cal = Calendar.getInstance();
+int month = cal.get(Calendar.MONTH);  // January = 0 (?!)
+int year = cal.get(Calendar.YEAR);    // OK
+int day = cal.get(Calendar.DAY_OF_MONTH);
+
+// New way - intuitive
+LocalDate date = LocalDate.now();
+int month = date.getMonthValue();  // January = 1 (natural!)
+int year = date.getYear();
+int day = date.getDayOfMonth();
+----
+
+*3. Domain-Driven Design*
+
+Different classes for different needs - use the right tool:
+
+[source,java]
+----
+// Just need a date? Use LocalDate
+LocalDate birthday = LocalDate.of(1990, 5, 15);
+
+// Just need time? Use LocalTime
+LocalTime meetingTime = LocalTime.of(14, 30);
+
+// Need both? Use LocalDateTime
+LocalDateTime appointment = LocalDateTime.of(2024, 10, 24, 14, 30);
+
+// Need timezone? Use ZonedDateTime
+ZonedDateTime webinar = ZonedDateTime.of(2024, 10, 24, 14, 0, 0, 0,
+                                          ZoneId.of("America/New_York"));
+----
+
+*4. Rich Date/Time Arithmetic*
+
+Easy manipulation without complex calendar logic:
+
+[source,java]
+----
+// Old way - complex
+Calendar cal = Calendar.getInstance();
+cal.add(Calendar.DAY_OF_MONTH, 5);
+cal.add(Calendar.MONTH, -2);
+
+// New way - fluent and clear
+LocalDate date = LocalDate.now()
+    .plusDays(5)
+    .minusMonths(2);
+
+// Calculate difference
+LocalDate start = LocalDate.of(2024, 1, 1);
+LocalDate end = LocalDate.of(2024, 12, 31);
+Period period = Period.between(start, end);
+System.out.println(period.getMonths() + " months");  // 11 months
+----
+
+*5. Proper Timezone Handling*
+
+Clear distinction between local and zoned times:
+
+[source,java]
+----
+// Local time (no timezone)
+LocalDateTime local = LocalDateTime.now();
+
+// Convert to specific timezone
+ZonedDateTime nyTime = local.atZone(ZoneId.of("America/New_York"));
+ZonedDateTime tokyoTime = nyTime.withZoneSameInstant(ZoneId.of("Asia/Tokyo"));
+
+System.out.println("NY: " + nyTime);
+System.out.println("Tokyo: " + tokyoTime);  // Automatically converted
+----
+
+*6. Thread-Safe Formatting*
+
+Unlike SimpleDateFormat, formatters are thread-safe:
+
+[source,java]
+----
+// Old way - not thread-safe (must create per thread)
+SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+String formatted = sdf.format(new Date());
+
+// New way - thread-safe (can be shared)
+DateTimeFormatter formatter = DateTimeFormatter.ISO_DATE;
+String formatted = LocalDate.now().format(formatter);
+
+// Custom format (also thread-safe)
+DateTimeFormatter custom = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+String customFormatted = LocalDate.now().format(custom);
+----
+
+*7. Better Parsing*
+
+Parse dates safely with error handling:
+
+[source,java]
+----
+// Parse with built-in formatters
+LocalDate date = LocalDate.parse("2024-10-24");
+
+// Parse with custom format
+DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+LocalDate customDate = LocalDate.parse("24/10/2024", formatter);
+
+// Safe parsing with try-catch
+try {
+    LocalDate parsed = LocalDate.parse("invalid");
+} catch (DateTimeParseException e) {
+    // Handle parse error
+}
+----
+====
+
+
+.When not to use
+[%collapsible]
+====
+*❌ DON'T Use java.time When:*
+
+*1. Working with Legacy APIs*
+
+[source,java]
+----
+// BAD - java.time doesn't work with old API
+public void legacyMethod(Date date) {
+    // Can't pass LocalDate directly
+}
+
+// GOOD - convert when needed
+LocalDate localDate = LocalDate.now();
+Date legacyDate = Date.from(localDate.atStartOfDay(ZoneId.systemDefault()).toInstant());
+legacyMethod(legacyDate);
+----
+
+*2. Database That Doesn't Support java.time*
+
+[source,java]
+----
+// Some older JDBC drivers don't support java.time
+// May need to convert to java.sql.Date or Timestamp
+
+// Conversion needed
+LocalDate localDate = LocalDate.now();
+java.sql.Date sqlDate = java.sql.Date.valueOf(localDate);
+----
+
+*3. Serialization Requirements*
+
+[source,java]
+----
+// BAD - java.time classes are Serializable but may have issues with some frameworks
+
+// GOOD - convert to standard format for serialization
+LocalDateTime dateTime = LocalDateTime.now();
+String isoString = dateTime.format(DateTimeFormatter.ISO_DATE_TIME);
+// Serialize the string instead
+----
+
+*4. Android Before API 26*
+
+[source,java]
+----
+// On Android API < 26, java.time requires ThreeTenABP library
+// Consider using legacy Date/Calendar or include the backport library
+----
+
+*5. Simple Timestamp Storage*
+
+[source,java]
+----
+// BAD - overkill for simple timestamp
+ZonedDateTime timestamp = ZonedDateTime.now();  // Too much overhead
+
+// GOOD - use Instant for simple timestamps
+Instant timestamp = Instant.now();
+long epochMilli = timestamp.toEpochMilli();
+----
+
+*General Rule:* Use java.time for all new code. Only use old Date/Calendar when interfacing with legacy systems.
+====
+
+
+.Best practices
+[%collapsible]
+====
+*✅ DO:*
+
+- *Use the right class for your use case*
+  ```java
+  // Just date? LocalDate
+  LocalDate birthday = LocalDate.of(1990, 5, 15);
+
+  // Just time? LocalTime
+  LocalTime alarm = LocalTime.of(7, 30);
+
+  // Date and time without timezone? LocalDateTime
+  LocalDateTime meeting = LocalDateTime.now();
+
+  // Need timezone awareness? ZonedDateTime
+  ZonedDateTime webinar = ZonedDateTime.now(ZoneId.of("America/New_York"));
+
+  // Timestamp? Instant
+  Instant timestamp = Instant.now();
+  ```
+
+- *Store in UTC, display in local timezone*
+  ```java
+  // Store as Instant (UTC)
+  Instant stored = Instant.now();
+
+  // Display in user's timezone
+  ZonedDateTime userTime = stored.atZone(ZoneId.systemDefault());
+  ```
+
+- *Use ISO-8601 format for persistence*
+  ```java
+  // Persist as ISO string
+  String stored = localDateTime.format(DateTimeFormatter.ISO_DATE_TIME);
+
+  // Parse back
+  LocalDateTime parsed = LocalDateTime.parse(stored);
+  ```
+
+- *Use built-in formatters when possible*
+  ```java
+  // Pre-defined formatters (thread-safe)
+  DateTimeFormatter.ISO_DATE
+  DateTimeFormatter.ISO_TIME
+  DateTimeFormatter.ISO_DATE_TIME
+  DateTimeFormatter.RFC_1123_DATE_TIME
+  ```
+
+- *Handle timezone conversions explicitly*
+  ```java
+  ZonedDateTime ny = ZonedDateTime.now(ZoneId.of("America/New_York"));
+  ZonedDateTime tokyo = ny.withZoneSameInstant(ZoneId.of("Asia/Tokyo"));
+  ```
+
+- *Use Period for date-based intervals, Duration for time-based*
+  ```java
+  // Date-based (months, days)
+  Period period = Period.ofMonths(3);
+  LocalDate future = LocalDate.now().plus(period);
+
+  // Time-based (hours, minutes, seconds)
+  Duration duration = Duration.ofHours(2);
+  LocalTime later = LocalTime.now().plus(duration);
+  ```
+
+*❌ DON'T:*
+
+- *Don't mix Local and Zoned without good reason*
+  ```java
+  // BAD - losing timezone information
+  ZonedDateTime zoned = ZonedDateTime.now(ZoneId.of("America/New_York"));
+  LocalDateTime local = zoned.toLocalDateTime();  // Loses timezone!
+
+  // GOOD - keep timezone or convert explicitly
+  ZonedDateTime tokyo = zoned.withZoneSameInstant(ZoneId.of("Asia/Tokyo"));
+  ```
+
+- *Don't use Duration with dates or Period with times*
+  ```java
+  // BAD - Duration with LocalDate doesn't make sense
+  // LocalDate.now().plus(Duration.ofHours(2));  // Compilation error
+
+  // GOOD - use appropriate type
+  LocalDate.now().plusDays(2);  // Or Period.ofDays(2)
+  LocalTime.now().plus(Duration.ofHours(2));
+  ```
+
+- *Don't create new formatters unnecessarily*
+  ```java
+  // BAD - creates new formatter each time
+  for (LocalDate date : dates) {
+      String formatted = date.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+  }
+
+  // GOOD - reuse formatter
+  DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+  for (LocalDate date : dates) {
+      String formatted = date.format(formatter);
+  }
+  ```
+
+- *Don't forget null checks when parsing*
+  ```java
+  // BAD - no error handling
+  LocalDate date = LocalDate.parse(userInput);
+
+  // GOOD - handle parse errors
+  try {
+      LocalDate date = LocalDate.parse(userInput);
+  } catch (DateTimeParseException e) {
+      // Handle invalid date
+  }
+  ```
+
+- *Don't assume timezone names*
+  ```java
+  // BAD - "EST" is ambiguous
+  // ZoneId.of("EST");  // Could fail
+
+  // GOOD - use IANA timezone database names
+  ZoneId.of("America/New_York");
+  ```
+====
+
+
+.Example
+[%collapsible]
+====
+*Simple inline examples:*
+
+[source,java]
+----
+// === Creating dates and times ===
+
+LocalDate date = LocalDate.of(2024, 10, 24);
+LocalDate today = LocalDate.now();
+
+LocalTime time = LocalTime.of(14, 30, 0);
+LocalTime now = LocalTime.now();
+
+LocalDateTime dateTime = LocalDateTime.of(2024, 10, 24, 14, 30);
+LocalDateTime nowDT = LocalDateTime.now();
+
+ZonedDateTime zonedDT = ZonedDateTime.now(ZoneId.of("America/New_York"));
+
+Instant instant = Instant.now();
+
+// === Date arithmetic ===
+
+LocalDate tomorrow = LocalDate.now().plusDays(1);
+LocalDate nextWeek = LocalDate.now().plusWeeks(1);
+LocalDate nextMonth = LocalDate.now().plusMonths(1);
+LocalDate nextYear = LocalDate.now().plusYears(1);
+
+LocalDate yesterday = LocalDate.now().minusDays(1);
+
+// Chaining
+LocalDate future = LocalDate.now()
+    .plusMonths(2)
+    .plusDays(15);
+
+// === Time arithmetic ===
+
+LocalTime later = LocalTime.now().plusHours(2);
+LocalTime earlier = LocalTime.now().minusMinutes(30);
+
+// === Period and Duration ===
+
+Period period = Period.ofDays(5);
+Period twoMonths = Period.ofMonths(2);
+Period complex = Period.of(1, 2, 15);  // 1 year, 2 months, 15 days
+
+Duration duration = Duration.ofHours(2);
+Duration fiveMinutes = Duration.ofMinutes(5);
+Duration nanos = Duration.ofNanos(1000);
+
+// === Calculating differences ===
+
+LocalDate start = LocalDate.of(2024, 1, 1);
+LocalDate end = LocalDate.of(2024, 12, 31);
+Period between = Period.between(start, end);
+System.out.println(between.getMonths() + " months");
+
+LocalTime startTime = LocalTime.of(9, 0);
+LocalTime endTime = LocalTime.of(17, 0);
+Duration workDay = Duration.between(startTime, endTime);
+System.out.println(workDay.toHours() + " hours");
+
+// === Formatting ===
+
+LocalDate date = LocalDate.now();
+String iso = date.format(DateTimeFormatter.ISO_DATE);  // 2024-10-24
+String custom = date.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));  // 24/10/2024
+
+// === Parsing ===
+
+LocalDate parsed = LocalDate.parse("2024-10-24");
+LocalDate customParsed = LocalDate.parse("24/10/2024",
+    DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+
+// === Timezone conversions ===
+
+ZonedDateTime ny = ZonedDateTime.now(ZoneId.of("America/New_York"));
+ZonedDateTime tokyo = ny.withZoneSameInstant(ZoneId.of("Asia/Tokyo"));
+
+// === Querying ===
+
+LocalDate date = LocalDate.now();
+int year = date.getYear();
+int month = date.getMonthValue();  // 1-12
+int day = date.getDayOfMonth();
+DayOfWeek dayOfWeek = date.getDayOfWeek();
+
+boolean isLeapYear = date.isLeapYear();
+
+// === Comparison ===
+
+LocalDate date1 = LocalDate.of(2024, 10, 24);
+LocalDate date2 = LocalDate.of(2024, 10, 25);
+
+boolean isBefore = date1.isBefore(date2);  // true
+boolean isAfter = date1.isAfter(date2);    // false
+boolean isEqual = date1.isEqual(date2);    // false
+
+// === Temporal Adjusters ===
+
+LocalDate date = LocalDate.now();
+LocalDate firstDayOfMonth = date.with(TemporalAdjusters.firstDayOfMonth());
+LocalDate lastDayOfMonth = date.with(TemporalAdjusters.lastDayOfMonth());
+LocalDate nextMonday = date.with(TemporalAdjusters.next(DayOfWeek.MONDAY));
+----
+
+*Complex real-world scenarios:*
+
+See link:examples/java8/DateTimeScenarios.java[DateTimeScenarios.java] for complete examples demonstrating:
+
+- *Business date calculations*: Working days, excluding weekends/holidays
+- *Timezone conversions*: Meeting scheduler across timezones
+- *Date ranges and iterations*: Processing date ranges
+- *Formatting and parsing*: Custom formats, locale-specific
+- *Age calculations*: Precise age from birthday
+- *Duration calculations*: Time tracking, elapsed time
+- *Legacy conversion*: Converting between old Date and new LocalDate
+- *Real-world patterns*: Scheduling, reporting, billing periods
+====
+
+
+.Common pitfalls
+[%collapsible]
+====
+*1. Using LocalDateTime when ZonedDateTime is needed*
+
+[source,java]
+----
+// PITFALL - LocalDateTime doesn't handle DST or timezone changes
+
+// Meeting at 9 AM in New York
+LocalDateTime meeting = LocalDateTime.of(2024, 3, 10, 9, 0);  // ❌ No timezone!
+
+// FIX - use ZonedDateTime for timezone-aware times
+ZonedDateTime meeting = ZonedDateTime.of(2024, 3, 10, 9, 0, 0, 0,
+    ZoneId.of("America/New_York"));  // ✅ Handles DST
+----
+
+*2. Confusing Period and Duration*
+
+[source,java]
+----
+// PITFALL - using wrong type for calculation
+
+// ❌ Can't add Duration to LocalDate
+// LocalDate.now().plus(Duration.ofHours(24));  // Compilation error
+
+// ✅ Use Period for dates, Duration for times
+LocalDate.now().plus(Period.ofDays(1));  // For dates
+LocalTime.now().plus(Duration.ofHours(24));  // For times
+----
+
+*3. Losing timezone information*
+
+[source,java]
+----
+// PITFALL - converting ZonedDateTime to LocalDateTime loses timezone
+
+ZonedDateTime zoned = ZonedDateTime.now(ZoneId.of("America/New_York"));
+LocalDateTime local = zoned.toLocalDateTime();  // ❌ Lost timezone!
+
+// Converting back - which timezone?
+ZonedDateTime back = local.atZone(ZoneId.systemDefault());  // ❌ Might be wrong
+
+// FIX - keep ZonedDateTime or convert explicitly
+ZonedDateTime tokyo = zoned.withZoneSameInstant(ZoneId.of("Asia/Tokyo"));  // ✅
+----
+
+*4. Month value confusion*
+
+[source,java]
+----
+// PITFALL - confusing Month enum with int value
+
+LocalDate date = LocalDate.of(2024, Month.JANUARY, 1);  // ✅ January
+LocalDate date2 = LocalDate.of(2024, 1, 1);  // ✅ Also January (1-based!)
+
+// Old Calendar was 0-based (January = 0), java.time is 1-based
+----
+
+*5. Not handling parse exceptions*
+
+[source,java]
+----
+// PITFALL - parsing without error handling
+
+String userInput = getUserInput();
+LocalDate date = LocalDate.parse(userInput);  // ❌ Can throw exception
+
+// FIX - handle DateTimeParseException
+try {
+    LocalDate date = LocalDate.parse(userInput);
+} catch (DateTimeParseException e) {
+    // Show error to user
+}
+----
+
+*6. Incorrect date arithmetic across month boundaries*
+
+[source,java]
+----
+// PITFALL - assuming all months have same number of days
+
+LocalDate date = LocalDate.of(2024, 1, 31);
+LocalDate nextMonth = date.plusMonths(1);  // ❌ Feb 31? -> Feb 29 (2024 is leap year)
+
+System.out.println(nextMonth);  // 2024-02-29 (adjusted to last day of Feb)
+// Be aware of this behavior!
+----
+
+*7. Using Instant for user-facing dates*
+
+[source,java]
+----
+// PITFALL - Instant is in UTC, not user's timezone
+
+Instant now = Instant.now();
+System.out.println(now);  // Shows UTC time, confusing for users
+
+// FIX - convert to user's timezone
+ZonedDateTime userTime = now.atZone(ZoneId.systemDefault());
+System.out.println(userTime);  // Shows in user's timezone
+----
+
+*8. Reusing DateTimeFormatter in wrong locale*
+
+[source,java]
+----
+// PITFALL - formatter with wrong locale
+
+DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMMM");  // Uses default locale
+String month = LocalDate.now().format(formatter);  // Might be "October" or "Oktober"
+
+// FIX - specify locale explicitly
+DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMMM", Locale.US);
+String month = LocalDate.now().format(formatter);  // Always English
+----
+
+*9. Comparing LocalDateTime and ZonedDateTime*
+
+[source,java]
+----
+// PITFALL - can't directly compare different types
+
+LocalDateTime local = LocalDateTime.now();
+ZonedDateTime zoned = ZonedDateTime.now();
+// local.equals(zoned);  // ❌ Compilation error - different types
+
+// FIX - convert to same type
+boolean equal = local.isEqual(zoned.toLocalDateTime());  // ✅
+----
+
+*10. Null handling*
+
+[source,java]
+----
+// PITFALL - java.time doesn't handle null gracefully
+
+LocalDate date = null;
+// date.plusDays(1);  // ❌ NullPointerException
+
+// FIX - check for null or use Optional
+Optional<LocalDate> optionalDate = Optional.ofNullable(date);
+optionalDate.ifPresent(d -> System.out.println(d.plusDays(1)));
+----
+====
+
+
+[NOTE]
+====
+*Quick Review:*
+
+1. *What's the main difference between LocalDateTime and ZonedDateTime?* +
+   _LocalDateTime has no timezone information (wall clock time). ZonedDateTime includes timezone and handles DST._
+
+2. *What's the difference between Period and Duration?* +
+   _Period is for date-based amounts (years, months, days). Duration is for time-based amounts (hours, minutes, seconds)._
+
+3. *How do you get the current date without time?* +
+   _`LocalDate.now()`_
+
+4. *Are java.time classes thread-safe?* +
+   _Yes, all java.time classes are immutable and thread-safe._
+
+5. *How do you convert LocalDate to Date (legacy)?* +
+   _`Date.from(localDate.atStartOfDay(ZoneId.systemDefault()).toInstant())`_
+
+6. *What format does LocalDate.parse() expect by default?* +
+   _ISO-8601 format: "2024-10-24" (yyyy-MM-dd)_
+
+7. *How do you add 3 months to a LocalDate?* +
+   _`localDate.plusMonths(3)` or `localDate.plus(Period.ofMonths(3))`_
+
+8. *Interview Question: Calculate age from birthday* +
+   ```java
+   LocalDate birthday = LocalDate.of(1990, 5, 15);
+   Period age = Period.between(birthday, LocalDate.now());
+   int years = age.getYears();
+   ```
+
+9. *How do you convert between timezones?* +
+   _`zonedDateTime.withZoneSameInstant(ZoneId.of("America/New_York"))`_
+
+10. *When should you use Instant instead of LocalDateTime?* +
+    _Use Instant for timestamps, machine time, or when storing UTC times. Use LocalDateTime for user-facing dates/times without timezone._
+====
+
+---
+
+== Other Notable Features
+
+Java 8 introduced several other important features that are worth mentioning:
+
+*CompletableFuture*:: Asynchronous programming support with composable futures
+
+*Functional Interfaces*:: `@FunctionalInterface` annotation, common interfaces (`Predicate`, `Function`, `Consumer`, `Supplier`)
+
+*Nashorn JavaScript Engine*:: Replaced Rhino (deprecated in Java 11, removed in Java 15)
+
+*Type Annotations*:: Annotations can be used in more places (`@NonNull`, `@Nullable`)
+
+*Repeating Annotations*:: Same annotation can be applied multiple times
+
+*PermGen Removal*:: Metaspace replaced PermGen space (JVM improvement)
+
+*Base64 Support*:: `java.util.Base64` for encoding/decoding
+
+*Collection Improvements*:: `forEach()`, `removeIf()`, `replaceAll()`, `sort()`, `merge()`, `compute()`, etc.
+
+These features will be covered briefly as they relate to main topics, but the six major features above form the core of Java 8's transformation.
+
+---
+
+[TIP]
+====
+*Study Tips for Java 8:*
+
+1. *Hands-on Practice*: Java 8 features are best learned by doing. Run all examples and create variations.
+
+2. *Focus on Streams + Lambdas*: These two features work together and are the most commonly asked in interviews.
+
+3. *Understand "Why"*: Don't just memorize syntax. Understand why each feature was introduced and what problems it solves.
+
+4. *Common Interview Question*: "Refactor this imperative code to use Java 8 features." Practice this pattern.
+
+5. *Real-world Application*: Think about how you'd use these features in your current projects.
+====
+
+---
+
+*Next:* link:java-9.adoc[Java 9 Features] →
+
+*Back to:* link:README.adoc[Index]

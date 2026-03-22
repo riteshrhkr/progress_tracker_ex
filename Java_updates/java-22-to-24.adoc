@@ -1,0 +1,380 @@
+= Java 22-24 Features (Non-LTS Releases)
+:toc:
+:toc-placement!:
+
+toc::[]
+
+---
+
+*Navigation:* link:README.adoc[Home] | link:java-21.adoc[← Java 21 (LTS)] | *Java 22-24* | link:java-25.adoc[Next: Java 25 (LTS) →]
+
+---
+
+== Introduction
+
+*Java 22-24* are non-LTS releases between Java 21 (LTS) and Java 25 (LTS). These versions contain primarily preview and incubator features that are still evolving. Most production codebases skip these and jump from Java 21 (LTS) to Java 25 (LTS).
+
+*Key Themes:*
+
+- *Preview Features*: Many features are in preview/incubator status
+- *Refinements*: Improvements preparing for Java 25 LTS
+- *Experimental*: New APIs and language features still evolving
+- *Production Readiness*: Limited - most organizations skip to Java 25 LTS
+
+*Interview Importance:* ⭐⭐☆☆☆
+
+These versions are rarely asked about in interviews. Focus on LTS versions (Java 8, 11, 17, 21, 25) instead.
+
+---
+
+== Java 22 Features (March 2024)
+
+=== Unnamed Variables and Patterns (JEP 456 - FINALIZED)
+
+Use `_` for unused variables, making intent clear.
+
+[source,java]
+----
+// Unused variable in pattern matching
+if (obj instanceof Point(int x, int _)) {
+    // Only care about x coordinate
+    System.out.println("x: " + x);
+}
+
+// Unused lambda parameter
+list.forEach(_ -> System.out.println("Item"));
+
+// Unused exception variable
+try {
+    performTask();
+} catch (IOException _) {
+    // Don't need the exception
+    System.out.println("IO error occurred");
+}
+
+// Unused loop variable
+for (int i = 0, _ = runOnce(); i < 10; i++) {
+    // Only care about i
+}
+----
+
+*When to use*: When a variable is required syntactically but you don't use it.
+
+=== Statements before super() (JEP 447 - FINALIZED)
+
+Allow statements before `super()` or `this()` in constructors.
+
+[source,java]
+----
+class PositiveNumber {
+    PositiveNumber(int value) {
+        if (value <= 0) {
+            throw new IllegalArgumentException("Must be positive");
+        }
+        // Previously, you couldn't have any logic before super()
+    }
+}
+
+// Validation before calling super
+class ValidatedSubclass extends Parent {
+    ValidatedSubclass(String value) {
+        String validated = Objects.requireNonNull(value, "Value required");
+        String trimmed = validated.trim();
+        super(trimmed);  // Can now call super() after statements
+    }
+}
+----
+
+*Why useful*: Allows validation and preprocessing before constructor delegation.
+
+=== String Templates (Preview - Second Preview)
+
+String interpolation (still in preview from Java 21).
+
+[source,java]
+----
+// Still preview in Java 22
+String name = "Alice";
+int age = 30;
+
+// Using STR template processor
+String message = STR."Hello, \{name}! You are \{age} years old.";
+
+// Formatted template processor
+String formatted = FMT."Price: %.2f\{price}";
+----
+
+*Note*: Still preview - not production-ready. Syntax may change.
+
+=== Foreign Function & Memory API (JEP 454 - FINALIZED)
+
+Access native code and memory outside the Java heap (advanced use case).
+
+*Most developers won't use this* - for libraries and low-level programming only.
+
+=== Class-File API (JEP 457 - Preview)
+
+Parse, generate, and transform Java class files.
+
+*Most developers won't use this* - for bytecode manipulation libraries only.
+
+---
+
+== Java 23 Features (September 2024)
+
+=== Primitive Types in Patterns (Preview)
+
+Pattern matching with primitive types.
+
+[source,java]
+----
+// Preview feature
+Object obj = 42;
+
+String result = switch (obj) {
+    case int i when i > 0 -> "Positive: " + i;
+    case int i when i < 0 -> "Negative: " + i;
+    case int i -> "Zero";
+    default -> "Not an int";
+};
+----
+
+*Status*: Preview - syntax may change.
+
+=== Module Import Declarations (Preview)
+
+Import all exported packages from a module.
+
+[source,java]
+----
+// Preview feature
+import module java.sql;  // Imports all packages from java.sql module
+
+// Instead of:
+// import java.sql.*;
+// import javax.sql.*;
+----
+
+*Usefulness*: Limited - most developers don't use modules heavily.
+
+=== Markdown in Javadoc (Preview)
+
+Write Javadoc comments using Markdown syntax.
+
+[source,java]
+----
+/**
+ * /// This is a Markdown Javadoc comment
+ *
+ * ## Overview
+ *
+ * This method does **important** things:
+ * - First thing
+ * - Second thing
+ *
+ * ```java
+ * example.doSomething();
+ * ```
+ */
+public void doSomething() { }
+----
+
+*Usefulness*: Nicer syntax for documentation, but still preview.
+
+=== Simplified Main Methods (Third Preview)
+
+Simplified "Hello World" for beginners (unnamed classes).
+
+[source,java]
+----
+// Preview feature
+void main() {
+    System.out.println("Hello, World!");
+}
+
+// Instead of:
+// public class HelloWorld {
+//     public static void main(String[] args) {
+//         System.out.println("Hello, World!");
+//     }
+// }
+----
+
+*Target audience*: Beginners learning Java.
+
+---
+
+== Java 24 Features (March 2025 - Expected)
+
+*Status*: Still in development. Features below are proposed/preview.
+
+=== Potential Features:
+
+*1. String Templates (may finalize)*
+- Third or fourth preview
+- May become standard if stable
+
+*2. Scoped Values (may finalize)*
+- Alternative to ThreadLocal for virtual threads
+- Better performance with virtual threads
+
+[source,java]
+----
+// Preview/incubator
+final static ScopedValue<User> CURRENT_USER = ScopedValue.newInstance();
+
+ScopedValue.where(CURRENT_USER, user).run(() -> {
+    // CURRENT_USER available in this scope
+    processRequest();
+});
+----
+
+*3. Structured Concurrency (may finalize)*
+- Manage related concurrent tasks as a unit
+- Cleaner error handling for concurrent operations
+
+[source,java]
+----
+// Preview/incubator
+try (var scope = new StructuredTaskScope.ShutdownOnFailure()) {
+    Future<String> user = scope.fork(() -> fetchUser());
+    Future<Integer> order = scope.fork(() -> fetchOrder());
+
+    scope.join();
+    scope.throwIfFailed();
+
+    // Both completed successfully
+    return new Result(user.resultNow(), order.resultNow());
+}
+----
+
+*4. Vector API (Incubator)*
+- SIMD operations for performance
+- Most developers won't use this directly
+
+---
+
+---
+
+== Should You Use Java 22-24?
+
+=== Production Use: ❌ Generally No
+
+*Reasons to avoid*:
+
+1. *No LTS support* - Short support lifecycle (6 months each)
+2. *Preview features* - May change or be removed
+3. *Stability* - Not battle-tested like LTS versions
+4. *Tooling* - IDE and library support may be incomplete
+5. *Upgrade treadmill* - Must upgrade every 6 months
+
+[source,java]
+----
+// ❌ Don't do this in production
+// Many features are preview and may change!
+String message = STR."Hello, \{name}!";  // Preview - may change
+----
+
+=== When Java 22-24 Makes Sense:
+
+✅ *Experimentation and learning* - Try new features
+✅ *Providing feedback* - Help shape Java 25 LTS
+✅ *Internal tools* - Non-critical applications
+✅ *Staying current* - Understanding Java's direction
+
+=== Recommended Approach:
+
+*For most developers*:
+
+1. *Use Java 21 (LTS)* in production - Current LTS
+2. *Learn Java 17 (LTS)* - Many companies still on this
+3. *Experiment with Java 22-24* - Understand what's coming
+4. *Upgrade to Java 25 (LTS)* - September 2025 release
+
+---
+
+== Interview Perspective
+
+*What interviewers care about*:
+
+✅ *Java 8* - Still baseline for many companies
+✅ *Java 11* - First LTS after Java 8, widely adopted
+✅ *Java 17* - Current standard LTS (2021)
+✅ *Java 21* - LTS (2023), cutting-edge features
+✅ *Java 25* - Latest LTS (2025), modern features
+
+❌ *Java 22-24* - Almost never asked about
+
+*Exception*: If company explicitly uses Java 22+ or asks about "latest Java features", then:
+
+- Focus on *unnamed variables* (Java 22 - finalized)
+- Mention *string templates* (preview, may finalize)
+- Know *statements before super()* (Java 22 - finalized)
+
+But generally, deep knowledge of preview features is NOT expected.
+
+---
+
+== Key Finalized Features Worth Knowing
+
+From Java 22-25, only a few features are finalized and stable:
+
+*1. Unnamed Variables and Patterns (Java 22)* ✅
+[source,java]
+----
+if (obj instanceof Point(int x, int _)) { }  // Ignore y coordinate
+----
+
+*2. Statements Before super() (Java 22)* ✅
+[source,java]
+----
+SubClass(String value) {
+    String validated = validate(value);  // OK now!
+    super(validated);
+}
+----
+
+Everything else is preview/incubator and subject to change.
+
+---
+
+== Summary
+
+*Java 22-24 in a nutshell*:
+
+1. *Java 22* (March 2024)
+   - Unnamed variables ✅ (finalized)
+   - Statements before super() ✅ (finalized)
+   - String templates (preview)
+   - Foreign Function & Memory API ✅ (finalized but advanced)
+
+2. *Java 23* (September 2024)
+   - Primitive patterns (preview)
+   - Module imports (preview)
+   - Markdown Javadoc (preview)
+   - Simplified main (preview)
+
+3. *Java 24* (March 2025)
+   - String templates (preview continues)
+   - Scoped values (preview)
+   - Structured concurrency (preview)
+
+*Key Takeaways*:
+
+- Most features are preview/experimental
+- Not recommended for production (no LTS)
+- These are stepping stones to Java 25 LTS
+- Interviewers rarely ask about these versions
+
+*Action Items*:
+
+✅ Master Java 8, 11, 17, 21, 25 (LTS versions)
+✅ Experiment with Java 22-24 for learning
+❌ Don't use Java 22-24 in production
+✅ Upgrade to Java 25 LTS (September 2025)
+
+---
+
+*Navigation:* link:README.adoc[Home] | link:java-21.adoc[← Java 21 (LTS)] | *Java 22-24* | link:java-25.adoc[Next: Java 25 (LTS) →]
+
+---

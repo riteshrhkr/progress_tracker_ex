@@ -1,0 +1,941 @@
+= Java 25 Features (LTS)
+:toc:
+:toc-placement!:
+
+toc::[]
+
+---
+
+*Navigation:* link:README.adoc[Home] | link:java-22-to-24.adoc[← Java 22-24] | *Java 25 (LTS)*
+
+---
+
+== Introduction
+
+*Java 25* is a **Long-Term Support (LTS)** release, succeeding Java 21 LTS. Released in September 2025, it will receive at least **8 years of support** from Oracle. This makes it the **fifth LTS release** after Java 8, 11, 17, and 21.
+
+*Key Themes:*
+
+- *Finalized Features*: Seven features graduated from preview/incubator to production-ready
+- *Performance*: Compact Object Headers, Generational Shenandoah GC
+- *Developer Experience*: Simplified main methods, flexible constructors, module imports
+- *Concurrency*: Scoped Values finalized for virtual threads
+- *Production Ready*: Suitable for long-term production use
+
+*Interview Importance:* ⭐⭐⭐⭐⭐
+
+As an LTS release, Java 25 will be heavily adopted and frequently asked about in interviews over the next several years.
+
+---
+
+== Scoped Values (JEP 506 - FINALIZED)
+
+.Overview / What it is
+[%collapsible]
+====
+*Scoped Values* enable sharing of immutable data within and across threads. They are a modern alternative to `ThreadLocal`, optimized for **virtual threads**.
+
+*Mental Model:* "Context that flows with execution, not with threads."
+
+**Why it exists:** `ThreadLocal` has performance problems with virtual threads (millions of threads = millions of thread-locals). Scoped Values are lightweight and designed for immutability.
+
+[source,java]
+----
+// Define a scoped value
+public static final ScopedValue<User> CURRENT_USER = ScopedValue.newInstance();
+
+// Set value for a scope
+ScopedValue.where(CURRENT_USER, user).run(() -> {
+    // Value available in this scope
+    processRequest();  // Can access CURRENT_USER here
+});
+
+// Outside the scope, value is not available
+====
+
+.Why use it
+[%collapsible]
+====
+*Benefits over ThreadLocal:*
+
+1. *Optimized for virtual threads* - Lightweight, millions of scopes possible
+2. *Immutable by design* - Cannot be changed within a scope
+3. *Automatic cleanup* - No memory leaks, scope-based lifecycle
+4. *Clear intent* - Explicitly shows data is contextual
+5. *Better performance* - No per-thread overhead
+
+**Before (ThreadLocal):**
+[source,java]
+----
+public class UserContext {
+    private static final ThreadLocal<User> CURRENT_USER = new ThreadLocal<>();
+
+    public static void setUser(User user) {
+        CURRENT_USER.set(user);
+    }
+
+    public static User getUser() {
+        return CURRENT_USER.get();
+    }
+
+    public static void clear() {
+        CURRENT_USER.remove();  // Must remember to clean up!
+    }
+}
+
+// Usage - error-prone
+try {
+    UserContext.setUser(user);
+    processRequest();
+} finally {
+    UserContext.clear();  // Easy to forget!
+}
+----
+
+**After (Scoped Values):**
+[source,java]
+----
+public class UserContext {
+    public static final ScopedValue<User> CURRENT_USER = ScopedValue.newInstance();
+}
+
+// Usage - automatic cleanup
+ScopedValue.where(UserContext.CURRENT_USER, user).run(() -> {
+    processRequest();
+});  // Automatically cleaned up
+----
+====
+
+.When NOT to use
+[%collapsible]
+====
+❌ *Mutable state* - Scoped Values are immutable
+❌ *Platform threads only* - ThreadLocal is fine for traditional thread pools
+❌ *Need inheritance* - InheritableThreadLocal not directly replaceable
+❌ *Legacy code* - If already using ThreadLocal and not using virtual threads
+
+[source,java]
+----
+// ❌ Wrong - trying to mutate
+ScopedValue.where(COUNTER, 0).run(() -> {
+    // Can't do: COUNTER.set(COUNTER.get() + 1)
+    // Scoped values are immutable!
+});
+
+// ✅ Right - create new scope with new value
+ScopedValue.where(COUNTER, 0).run(() -> {
+    int newValue = COUNTER.get() + 1;
+    ScopedValue.where(COUNTER, newValue).run(() -> {
+        // Inner scope with new value
+    });
+});
+----
+====
+
+.Best practices
+[%collapsible]
+====
+*Do's:*
+
+✅ Use with virtual threads for request-scoped data
+✅ Make scoped values `public static final`
+✅ Use meaningful names (CURRENT_USER, REQUEST_ID, TRANSACTION)
+✅ Keep values immutable
+✅ Use for cross-cutting concerns (security, logging, tracing)
+
+*Don'ts:*
+
+❌ Don't try to mutate scoped values
+❌ Don't use for mutable state
+❌ Don't use if not using virtual threads
+❌ Don't capture in lambdas if scope will end
+
+[source,java]
+----
+// ✅ Good - request context
+public static final ScopedValue<RequestContext> REQUEST_CONTEXT =
+    ScopedValue.newInstance();
+
+// ✅ Good - security context
+public static final ScopedValue<SecurityContext> SECURITY_CONTEXT =
+    ScopedValue.newInstance();
+
+// ✅ Good - transaction ID
+public static final ScopedValue<String> TRANSACTION_ID =
+    ScopedValue.newInstance();
+----
+====
+
+.Common pitfalls
+[%collapsible]
+====
+*Pitfall 1: Trying to access outside scope*
+
+[source,java]
+----
+// ❌ Wrong
+ScopedValue.where(CURRENT_USER, user).run(() -> {
+    // OK here
+});
+// Not available here - throws NoSuchElementException
+User user = CURRENT_USER.get();
+
+// ✅ Right - check if bound
+User user = CURRENT_USER.orElse(null);
+----
+
+*Pitfall 2: Forgetting immutability*
+
+[source,java]
+----
+// ❌ Wrong - mutable object
+record MutableUser(String name, List<String> roles) {}
+ScopedValue.where(CURRENT_USER, mutableUser).run(() -> {
+    // Someone might modify the roles list!
+    CURRENT_USER.get().roles().add("ADMIN");
+});
+
+// ✅ Right - immutable object
+record User(String name, List<String> roles) {
+    public User {
+        roles = List.copyOf(roles);  // Defensive copy
+    }
+}
+----
+
+*Pitfall 3: Not using with virtual threads*
+
+[source,java]
+----
+// ❌ Wrong - platform threads, just use ThreadLocal
+ExecutorService executor = Executors.newFixedThreadPool(10);
+// Scoped values don't provide benefit here
+
+// ✅ Right - virtual threads
+ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
+// Scoped values excel here
+----
+====
+
+.Quick review
+[%collapsible]
+====
+1. What problem do Scoped Values solve?
+2. How are Scoped Values different from ThreadLocal?
+3. Can you mutate a Scoped Value?
+4. What happens when you access a Scoped Value outside its scope?
+5. Why are Scoped Values important for virtual threads?
+6. How do you create a Scoped Value?
+7. How do you bind a value to a Scoped Value?
+8. Can Scoped Values be inherited by child threads?
+9. When should you use ThreadLocal instead of Scoped Values?
+10. What is the lifecycle of a Scoped Value?
+====
+
+---
+
+== Flexible Constructor Bodies (JEP 513 - FINALIZED)
+
+.Overview / What it is
+[%collapsible]
+====
+*Flexible Constructor Bodies* allow statements and validation logic **before** calling `super()` or `this()` in constructors.
+
+*Mental Model:* "Validate first, then delegate."
+
+**Previously:** You couldn't do ANY logic before `super()` or `this()` - they had to be the first statement.
+
+[source,java]
+----
+// ✅ Now allowed in Java 25
+public class PositiveNumber {
+    private final int value;
+
+    public PositiveNumber(int value) {
+        if (value <= 0) {
+            throw new IllegalArgumentException("Must be positive");
+        }
+        this.value = value;  // Can initialize after validation
+    }
+}
+
+// ✅ Now allowed - preprocessing before super()
+public class ValidatedUser extends Person {
+    public ValidatedUser(String name) {
+        String trimmed = Objects.requireNonNull(name).trim();
+        if (trimmed.isEmpty()) {
+            throw new IllegalArgumentException("Name required");
+        }
+        super(trimmed);  // Call super() after validation
+    }
+}
+----
+====
+
+.Why use it
+[%collapsible]
+====
+*Benefits:*
+
+1. *Cleaner validation* - Validate parameters before construction
+2. *No workaround hacks* - Eliminate helper methods just for validation
+3. *Better error messages* - Fail fast with context
+4. *Preprocessing* - Transform inputs before delegation
+5. *Type safety* - Catch errors at construction time
+
+**Before (workarounds):**
+[source,java]
+----
+// ❌ Old way - ugly helper method
+public class PositiveNumber {
+    private final int value;
+
+    public PositiveNumber(int value) {
+        this(validate(value));  // Helper just for validation
+    }
+
+    private PositiveNumber(int validatedValue, boolean dummy) {
+        this.value = validatedValue;
+    }
+
+    private static int validate(int value) {
+        if (value <= 0) throw new IllegalArgumentException();
+        return value;
+    }
+}
+----
+
+**After (Java 25):**
+[source,java]
+----
+// ✅ New way - natural validation
+public class PositiveNumber {
+    private final int value;
+
+    public PositiveNumber(int value) {
+        if (value <= 0) {
+            throw new IllegalArgumentException("Must be positive: " + value);
+        }
+        this.value = value;
+    }
+}
+----
+====
+
+.When NOT to use
+[%collapsible]
+====
+❌ *Complex initialization logic* - Keep constructors simple
+❌ *Side effects* - Don't perform I/O or external calls
+❌ *Mutable state access* - Object not fully constructed yet
+❌ *Calling instance methods* - `this` not available yet
+
+[source,java]
+----
+// ❌ Wrong - too complex
+public User(String data) {
+    String[] parts = parseComplexFormat(data);  // Too much logic
+    String name = parts[0];
+    validateName(name);
+    String email = parts[1];
+    validateEmail(email);
+    super(name, email);
+}
+
+// ✅ Right - simple validation
+public User(String name, String email) {
+    Objects.requireNonNull(name, "Name required");
+    Objects.requireNonNull(email, "Email required");
+    super(name, email);
+}
+----
+====
+
+.Best practices
+[%collapsible]
+====
+*Do's:*
+
+✅ Use for simple validation
+✅ Use for null checks
+✅ Use for range checks
+✅ Use for preprocessing (trim, normalize)
+✅ Throw meaningful exceptions
+
+*Don'ts:*
+
+❌ Don't perform complex logic
+❌ Don't access instance state
+❌ Don't call instance methods
+❌ Don't perform I/O operations
+❌ Don't make external calls
+
+[source,java]
+----
+// ✅ Good examples
+public BankAccount(double initialBalance) {
+    if (initialBalance < 0) {
+        throw new IllegalArgumentException("Balance cannot be negative");
+    }
+    super(initialBalance);
+}
+
+public Email(String address) {
+    String normalized = Objects.requireNonNull(address).trim().toLowerCase();
+    if (!normalized.contains("@")) {
+        throw new IllegalArgumentException("Invalid email");
+    }
+    super(normalized);
+}
+
+public Range(int min, int max) {
+    if (min > max) {
+        throw new IllegalArgumentException("min must be <= max");
+    }
+    super(min, max);
+}
+----
+====
+
+.Common pitfalls
+[%collapsible]
+====
+*Pitfall 1: Accessing `this` before super()*
+
+[source,java]
+----
+// ❌ Wrong - this not available yet
+public User(String name) {
+    String processed = this.processName(name);  // Error!
+    super(processed);
+}
+
+// ✅ Right - use static method
+public User(String name) {
+    String processed = processName(name);
+    super(processed);
+}
+
+private static String processName(String name) {
+    return name.trim().toUpperCase();
+}
+----
+
+*Pitfall 2: Complex logic in constructor*
+
+[source,java]
+----
+// ❌ Wrong - too complex
+public User(String json) {
+    JsonObject obj = JsonParser.parse(json);  // Parsing
+    String name = obj.getString("name");
+    validateName(name);  // Validation
+    String email = obj.getString("email");
+    validateEmail(email);  // More validation
+    super(name, email);
+}
+
+// ✅ Right - factory method
+public static User fromJson(String json) {
+    JsonObject obj = JsonParser.parse(json);
+    String name = obj.getString("name");
+    String email = obj.getString("email");
+    return new User(name, email);  // Simple constructor
+}
+
+public User(String name, String email) {
+    Objects.requireNonNull(name);
+    Objects.requireNonNull(email);
+    super(name, email);
+}
+----
+====
+
+.Quick review
+[%collapsible]
+====
+1. What can you do before calling `super()` in Java 25?
+2. Why is this feature useful for validation?
+3. Can you call instance methods before `super()`?
+4. Can you access `this` before calling `super()`?
+5. What's a good use case for this feature?
+6. What kind of logic should you avoid before `super()`?
+7. How does this improve on the old workarounds?
+8. Can you throw exceptions before `super()`?
+9. Should you perform I/O operations before `super()`?
+10. What happens if validation fails before `super()`?
+====
+
+---
+
+== Module Import Declarations (JEP 511 - FINALIZED)
+
+.Overview / What it is
+[%collapsible]
+====
+*Module Import Declarations* allow importing all exported packages from a module with a single statement.
+
+*Mental Model:* "Import a whole module, not individual packages."
+
+[source,java]
+----
+// ✅ New in Java 25 - import entire module
+import module java.sql;
+
+// Instead of:
+// import java.sql.*;
+// import javax.sql.*;
+// import java.sql.Date;
+// ...etc
+----
+
+This imports all packages exported by the `java.sql` module.
+====
+
+.Why use it
+[%collapsible]
+====
+*Benefits:*
+
+1. *Convenience* - One line instead of many
+2. *Completeness* - Get everything the module exports
+3. *Module-aware* - Works with Java module system
+4. *Cleaner* - Especially for test code using many packages
+
+**Before:**
+[source,java]
+----
+// Multiple package imports
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import javax.sql.DataSource;
+// ...many more
+----
+
+**After:**
+[source,java]
+----
+// Single module import
+import module java.sql;
+
+// All exported types available
+Connection conn = DriverManager.getConnection(url);
+----
+====
+
+.When NOT to use
+[%collapsible]
+====
+❌ *Production code* - Explicit imports better for clarity
+❌ *Small usage* - If only using 1-2 types from module
+❌ *Name conflicts* - May import types you don't want
+❌ *Not using modules* - Only works with modular JDK
+
+[source,java]
+----
+// ❌ Wrong - only using one type
+import module java.sql;
+
+public class App {
+    public void logTime() {
+        System.out.println(java.sql.Date.valueOf(LocalDate.now()));
+    }
+}
+
+// ✅ Right - explicit import better
+import java.sql.Date;
+
+public class App {
+    public void logTime() {
+        System.out.println(Date.valueOf(LocalDate.now()));
+    }
+}
+----
+====
+
+.Best practices
+[%collapsible]
+====
+*Do's:*
+
+✅ Use in test code with heavy module usage
+✅ Use for exploratory/prototyping code
+✅ Use for internal tools
+✅ Understand what packages are exported
+
+*Don'ts:*
+
+❌ Don't use in production application code
+❌ Don't use if only need a few types
+❌ Don't use without understanding module exports
+❌ Don't mix with wildcard package imports
+
+[source,java]
+----
+// ✅ Good - test code
+import module java.sql;
+import module java.xml;
+
+@Test
+void testDatabaseXmlExport() {
+    // Use many types from both modules
+}
+
+// ❌ Bad - production code
+import module java.sql;  // Too broad
+
+public class UserRepository {
+    // Unclear what's being used
+}
+
+// ✅ Better - production code
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+
+public class UserRepository {
+    // Clear dependencies
+}
+----
+====
+
+.Quick review
+[%collapsible]
+====
+1. What does `import module java.sql` do?
+2. How is it different from `import java.sql.*`?
+3. When is module import most useful?
+4. Should you use module imports in production code?
+5. What happens if two modules export packages with same-named types?
+6. Can you import modules that don't exist?
+7. What's imported when you import a module?
+8. Can you combine module imports with regular imports?
+9. What's the primary use case for module imports?
+10. Why might you avoid module imports in library code?
+====
+
+---
+
+== Compact Source Files and Instance Main Methods (JEP 512 - FINALIZED)
+
+.Overview / What it is
+[%collapsible]
+====
+*Simplified Main Methods* make writing "Hello World" and simple programs easier for beginners. Also known as "unnamed classes" or "implicit classes".
+
+*Mental Model:* "Scripts that are still Java."
+
+**Traditional Java:**
+[source,java]
+----
+public class HelloWorld {
+    public static void main(String[] args) {
+        System.out.println("Hello, World!");
+    }
+}
+----
+
+**Java 25 (simplified):**
+[source,java]
+----
+void main() {
+    System.out.println("Hello, World!");
+}
+----
+
+That's it! No class, no `public`, no `static`, no `String[] args`.
+====
+
+.Why use it
+[%collapsible]
+====
+*Benefits:*
+
+1. *Beginner-friendly* - Less boilerplate for learning
+2. *Scripting* - Quick scripts and tools
+3. *Prototyping* - Fast experimentation
+4. *Teaching* - Focus on logic, not ceremony
+
+**Evolution of Java Hello World:**
+[source,java]
+----
+// Java 1.0 (1996)
+public class HelloWorld {
+    public static void main(String[] args) {
+        System.out.println("Hello, World!");
+    }
+}
+
+// Java 25 (2025)
+void main() {
+    println("Hello, World!");  // Even println is simplified!
+}
+----
+
+The simplified form is automatically wrapped in a class behind the scenes.
+====
+
+.When NOT to use
+[%collapsible]
+====
+❌ *Production applications* - Use proper classes
+❌ *Large programs* - Need structure and organization
+❌ *Libraries* - Need explicit APIs
+❌ *Team projects* - Need clear structure
+
+This feature is specifically designed for:
+- Educational purposes
+- Simple scripts
+- Quick prototypes
+- Learning Java
+
+[source,java]
+----
+// ❌ Wrong - production application
+void main() {
+    // 500 lines of business logic
+    // Multiple classes needed
+    // Database access
+    // REST APIs
+    // ...
+}
+
+// ✅ Right - simple script
+void main() {
+    var files = Files.list(Path.of("."))
+        .filter(p -> p.toString().endsWith(".java"))
+        .toList();
+    println("Java files: " + files.size());
+}
+----
+====
+
+.Best practices
+[%collapsible]
+====
+*Do's:*
+
+✅ Use for teaching Java basics
+✅ Use for simple scripts
+✅ Use for quick prototypes
+✅ Use for code examples
+✅ Use for learning experiments
+
+*Don'ts:*
+
+❌ Don't use for production code
+❌ Don't use for multi-class applications
+❌ Don't use for libraries
+❌ Don't use if you need packages
+❌ Don't use if you need explicit class names
+
+[source,java]
+----
+// ✅ Good - learning example
+void main() {
+    var numbers = List.of(1, 2, 3, 4, 5);
+    var sum = numbers.stream().mapToInt(Integer::intValue).sum();
+    println("Sum: " + sum);
+}
+
+// ✅ Good - quick script
+void main(String[] args) {
+    if (args.length == 0) {
+        println("Usage: prog <directory>");
+        return;
+    }
+    var count = Files.walk(Path.of(args[0])).count();
+    println("Files: " + count);
+}
+----
+====
+
+.Quick review
+[%collapsible]
+====
+1. What's the simplest Java program you can write in Java 25?
+2. Do you need a class declaration with simplified main?
+3. Do you need the `public static` modifiers?
+4. Do you need the `String[] args` parameter?
+5. Who is the primary audience for this feature?
+6. Should you use this in production applications?
+7. What happens to the simplified main behind the scenes?
+8. Can you still use traditional main methods?
+9. Can simplified main methods access command-line arguments?
+10. Is `println` a new Java feature?
+====
+
+---
+
+== Key Derivation Function API (JEP 510 - FINALIZED)
+
+.Overview / What it is
+[%collapsible]
+====
+*Key Derivation Function (KDF) API* provides a standard way to derive cryptographic keys from passwords or other secret material.
+
+*Mental Model:* "Turn passwords into strong encryption keys."
+
+[source,java]
+----
+// Derive a key from a password
+KDF kdf = KDF.getInstance("PBKDF2WithHmacSHA256");
+SecretKey key = kdf.deriveKey(
+    password.toCharArray(),
+    salt,
+    iterations,
+    256  // key length in bits
+);
+----
+
+*Note:* This is a specialized cryptography API. Most developers won't use it directly.
+====
+
+.When to use
+[%collapsible]
+====
+*Use cases:*
+
+- Password-based encryption
+- Deriving keys for file encryption
+- Key stretching for password storage
+- Cryptographic key generation from user input
+
+*Most developers* use libraries like Spring Security or don't handle crypto directly.
+
+*Interview note:* Unlikely to be asked about this unless applying for security-focused role.
+====
+
+---
+
+## Performance Improvements (JEP 519, JEP 521)
+
+Java 25 includes significant performance improvements that happen automatically:
+
+### Compact Object Headers (JEP 519)
+
+- *What*: Reduces Java object header size from 12-16 bytes to 8 bytes
+- *Impact*: Lower memory usage, better cache performance
+- *Benefit*: Applications use less RAM automatically
+- *Developer action*: None - automatic improvement
+
+### Generational Shenandoah (JEP 521)
+
+- *What*: Adds generational GC to Shenandoah garbage collector
+- *Impact*: Lower GC pause times, better throughput
+- *Benefit*: Applications respond faster under load
+- *Developer action*: Use `-XX:+UseShenandoahGC` if needed
+
+*Interview note:* Know these exist, but details are for performance engineers, not typical interviews.
+
+---
+
+## Other Java 25 Features (Brief)
+
+*Ahead-of-Time Features (JEP 514, JEP 515):*
+- Improved startup time and performance
+- For advanced users and specific use cases
+
+*PEM Encodings (JEP 470 - Preview):*
+- Still preview - working with PEM-encoded crypto objects
+
+*Stable Values (JEP 502 - Preview):*
+- Like `final` but lazily computed once
+
+*Structured Concurrency (JEP 505 - Fifth Preview):*
+- Still evolving - managing related concurrent tasks
+
+*Primitive Patterns (JEP 507 - Third Preview):*
+- Pattern matching with primitives - still preview
+
+---
+
+== Should You Use Java 25?
+
+### Production Use: ✅ YES - It's LTS!
+
+*Reasons to adopt:*
+
+1. **Long-Term Support** - 8 years of support from Oracle
+2. **Stable features** - 7 finalized features ready for production
+3. **Performance** - Automatic improvements (compact headers, better GC)
+4. **Virtual thread optimization** - Scoped Values designed for modern concurrency
+5. **Future-proof** - Latest LTS, supported until 2033
+
+[source,java]
+----
+// ✅ Production-ready Java 25 code
+public class OrderService {
+    private static final ScopedValue<RequestContext> REQUEST_CONTEXT =
+        ScopedValue.newInstance();
+
+    public void processOrder(Order order, User user) {
+        ScopedValue.where(REQUEST_CONTEXT, new RequestContext(user)).run(() -> {
+            // Process with automatic context propagation across virtual threads
+            validateOrder(order);
+            saveOrder(order);
+            notifyCustomer(order);
+        });
+    }
+}
+----
+
+### Migration Timeline:
+
+- **2025-2026**: Early adopters migrate from Java 21
+- **2026-2027**: Mainstream adoption begins
+- **2027-2029**: Becomes standard like Java 17 is now
+- **By 2030**: Dominant LTS version
+
+### For Interviews:
+
+⭐⭐⭐⭐⭐ **High Priority**
+
+- **2025-2026**: Start seeing questions
+- **2027+**: Commonly asked about
+- Focus on: Scoped Values, Flexible Constructors, Simplified Main
+
+---
+
+## Summary
+
+**Java 25 LTS (September 2025)**
+
+*Finalized Features:*
+1. ✅ **Scoped Values** - Modern context propagation for virtual threads
+2. ✅ **Flexible Constructor Bodies** - Validation before super()
+3. ✅ **Module Import Declarations** - Import entire modules
+4. ✅ **Simplified Main Methods** - Beginner-friendly Java
+5. ✅ **Key Derivation Function API** - Cryptographic key derivation
+6. ✅ **Compact Object Headers** - Automatic memory savings
+7. ✅ **Generational Shenandoah** - Better garbage collection
+
+*Key Takeaways:*
+
+- **LTS release** with 8 years of support (until 2033)
+- **Production-ready** for new projects
+- **Focus on modern Java** - Virtual threads, simplified syntax
+- **Performance improvements** - Happen automatically
+- **Interview relevant** - Will be asked about in 2026+
+
+*Migration Priority:*
+
+1. From Java 8/11 → **Java 17 or 21 first** (battle-tested)
+2. From Java 17/21 → **Java 25** (when ready for latest LTS)
+3. Skip Java 22-24 (non-LTS releases)
+
+*What to Learn:*
+
+✅ Master **Scoped Values** - Important for modern concurrency
+✅ Understand **Flexible Constructors** - Cleaner validation
+✅ Know **Simplified Main** - Java's future direction
+⏸️ Other features - Lower priority, specialized use cases
+
+---
+
+*Navigation:* link:README.adoc[Home] | link:java-22-to-24.adoc[← Java 22-24] | *Java 25 (LTS)*
+
+---

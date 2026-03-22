@@ -1,0 +1,614 @@
+
+curl 'http://localhost:9000/api/v1wbs/addStoryData'  \
+ -H 'accept: application/json, text/plain, */*'  \
+ -H 'accept-language: en-GB,en-US;q=0.9,en;q=0.8' \
+ -H 'authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJtYW5pc2gubmFyYW5nQG9vZGxlcy5pbyIsInJvbGVzIjpbIlJPTEVfUkVTT1VSQ0lORyIsIlJPTEVfT09ETEVTX0NVU1RPTUVSX1NVUFBPUlQiLCJST0xFX0FDQ09VTlRTIiwiUk9MRV9RVUVTVElPTlNfT1dORVIiLCJST0xFX0RFVk9QU1NVUFBPUlRfQURNSU4iLCJST0xFX0RBU0hCT0FSRCIsIlJPTEVfQ09OVEVOVF9DRU5UUkFMIiwiUk9MRV9VU0VSIiwiUk9MRV9CRCIsIlJPTEVfQkRfQ0VOVFJBTF9BRE1JTiIsIlJPTEVfUVVFU1RJT05fQkFOSyIsIlJPTEVfQURNSU4iLCJST0xFX1BNTyIsIlJPTEVfQkRfQ0VOVFJBTCIsIlJPTEVfREFTSEJPQVJEX0FETUlOIiwiUk9MRV9ERVZPUFNTVVBQT1JUIiwiUk9MRV9BVURJVE9SIl0sImlzU3RlYWx0aE1vZGUiOmZhbHNlLCJ0eXBlIjoidXNlciIsInVzZXJJZCI6NDA1LCJwcmluY2lwYWwiOiJINHNJQUFBQUFBQUFcLzQxVXpXOGJSUlFmdTNIVHhFbG9QcUNna0JJYWFHbkJHM1wvRWprTjZxTDlLbmE2OXdlc0Z5UkpZNDkyeFBjbDZkNWtaSnpZSEJCTGkwZ01WSWtoSWNFT2Nla0FjK3c5d0FRNUluTXVCQ3dkUXoxemd6Zm9yQVFteGg5XC9Pdkhudjk5NjhqM253T3dweGhxNlpia2R4WGNzbVhMSGNEcWFPd29uWlpWVDBGWDI0TURoaFh6OU01eDY5M1YwT29xVWFDcHR0TEFvT2J0akVxcUZwTWw2MU1WZEpVOVRRSE9WNjF5UHNpSEtYN2FFcGhwM0RQWFMrQzB4RlMwVWhBcDVzZ1piVUEzeUVOMjNzdERaMXdhalQybFdCcitPVmNZZThnOTVEQVJYTnd0WjIrNFFVcmFFazFHTFlHaDBIcVNYUXhWTThxdXV6bktlZGxzSHNvZFlNNVNYczRCWmhBaTJmVXM2NnJrMndBXC9vek51WkNkVnZVRWVpWmdZYWdIUUowSnJieldKQXE3RUR2Z29jNVAzYlpPQmdHREh3Y1FsZFFlMU9sWElEcUhCK25ZQkI3RU14bENwelI3WHBlSUlBQ2FQQk5EWDZCRTRFdWRiQkRlVnR4TUNTdWRXdFlIK3BDOENYXC9aUDF1dDRQWmV0a1wvRjJnbUhvMXRSMlB4UkVLZ1lDa0JkVjJRMFNqeWpvcWZrSHVcLzN2XC8rNDQxSFFSVFlRNkVqYkhkSmo2R0xFNlZ5dDlNZzdLTUhKMnZoVDMrNUYwU281dzNETWdTNm5ySjJVckV0MG94c3hjMW9aS3U1YlVYU1pyUVpJZWxFTXQxTXBoS05WRnc1OEVnTFBDOU9TSWZaXC9XR2R2ZlwvekYzXC8rQWM1ckkrZGVBRlRuZlZXWlp1ZzFkdkxXaHc5WHI5ejVkazQ2UDE0SUlUVDlXM2hsXC91cks1Y2NcLzN1OEpkQXMzR29sMHFtbGFwcG5HU2F2UlRDUmlNWXVZaVlaSjRpYXhZczFrc3JtRFV5YU9ic2R3TkdtbDQ5dGJUYks5WlVVaDdFUU1QTjV3V1V0cDA0YXNnU0NLNmRvMk1RVjFvZXM5cXV3VHhxRjB4QkZaM1Byc0p0NTRsV1UrQ2NxeW5XdmdscXhZU0VWTEhuT1BxRVdzM05oWW9LZE9WWDhpMzRVYzdcL3lueDB5REM0Wk5NZkU4c1U1ODljM2V6Y2UzNTRJb1hFT3IyTGJkWTlYRmx0WVZITnhYb2ZJYys0cEZOR3RpczAwc25iNUxJTU1XWmFKZlF3dkVKaDFnckpDT2V5VEhNMHdkS2lpMlFRdDI4NVJYWWJSMHdqbHd3QlVQU2ZcL3NSR3FOQTRnRUdqbmtIanVFeWZ0ZlVtR1dvYWpENWxcL2lBK3ZiRUlqTCtrYVhqc1ppZ1lNQUluS3d4OXV1R0dlSXVwdFFhajhJK1dqc1FwdjlCUiswUFpLVzh4TE9DeFQ1bjgrUzRrK2ZCNVZkOW50SkZrREpNSWI3Y2daN0hcL3kwOXZsMytNdHpLRkJFVXh6dTdYZjE0ckVjdFVXQlppdWFXcWhuOHFWaUdXYkkzeGg2b1NMUXRMXC9PNWdXNjRLXC8yUzVwQTh3UHRYRTR6eWxWZG9BVlwvbjhcL29kN0phcGdLNksyY0ZJK0luZkhHbG9HdEdKVmNzdnliUTNJREp5QmVyR25oN2VtQlhlRVBiMTNWamYxK3JWRWUyU1wvOCtHZ2xmTndwNnRhaVY2OWxNK2U3SVN6WmZ6eFhLMVVwR0ZlakpmMGhHbk1cLzZjazNMcXdXOW5qUDBxbFlxVk9wajlzRXRjbHE1Q21ZVHRwVXpUdlc2OW1hNVVPbHhXYVwvVlNVN2xkazNDWlFuUFNWaVg4THlFS3hJMkpMd2c0VVVKVnlWY2tcL0NTaE9zU2JraDRXY0lyRWlJOXozY1RIajVJQVVqZzhIMDhsS1wvZzM0VDFpWnZLQmdBQSIsImdyYWRlIjoiTTMiLCJyYW5rIjo0LCJpc01hbmFnZXIiOnRydWUsImlkIjo0MDUsImV4cCI6MTc2MzY4MTM5MywiaXNTdXBlcnZpc2VyIjp0cnVlLCJpYXQiOjE3NjM2NDg5OTMsImVtYWlsIjoibWFuaXNoLm5hcmFuZ0Bvb2RsZXMuaW8iLCJqdGkiOiIwNTA1YTQxNy00MDZhLTQ3NmUtOTk3ZS01MGFjMDVjMjYwYmIiLCJ1c2VybmFtZSI6Ik1hbmlzaCBLdW1hciBOYXJhbmcifQ.kKulL51LrShNAGwnG-G6TzayvJWVQa8of9IEwf7WeCs' \
+ -H 'cache-control: no-cache' \
+ -H 'content-type: application/json' \
+ -H 'origin: https://stage.oodleslab.com'  \
+ -H 'pragma: no-cache'  \
+ -H 'priority: u=1, i' \
+ -H 'referer: https://stage.oodleslab.com/'  \
+ -H 'user-agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36' \
+ --data-raw '{"week":"","description":"Description of the sprintId 78","remark":"","story":"","storyName":"","storyId":0,"ewh":0,"resource":"","sprintId":78,"weekId":[]}'
+
+
+
+
+curl 'http://localhost:9000/api/v1wbs/getallSprintData?projectId=33&wbsId=15' \
+  -H 'Accept: application/json, text/plain, */*' \
+  -H 'Accept-Language: en-GB,en-US;q=0.9,en;q=0.8' \
+  -H 'Cache-Control: no-cache' \
+  -H 'Connection: keep-alive' \
+  -H 'Origin: https://stage.oodleslab.com' \
+  -H 'Pragma: no-cache' \
+  -H 'Sec-Fetch-Dest: empty' \
+  -H 'Sec-Fetch-Mode: cors' \
+  -H 'Sec-Fetch-Site: cross-site' \
+  -H 'User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36' \
+  -H 'authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJtYW5pc2gubmFyYW5nQG9vZGxlcy5pbyIsInJvbGVzIjpbIlJPTEVfUkVTT1VSQ0lORyIsIlJPTEVfT09ETEVTX0NVU1RPTUVSX1NVUFBPUlQiLCJST0xFX0FDQ09VTlRTIiwiUk9MRV9RVUVTVElPTlNfT1dORVIiLCJST0xFX0RFVk9QU1NVUFBPUlRfQURNSU4iLCJST0xFX0RBU0hCT0FSRCIsIlJPTEVfQ09OVEVOVF9DRU5UUkFMIiwiUk9MRV9VU0VSIiwiUk9MRV9CRCIsIlJPTEVfQkRfQ0VOVFJBTF9BRE1JTiIsIlJPTEVfUVVFU1RJT05fQkFOSyIsIlJPTEVfQURNSU4iLCJST0xFX1BNTyIsIlJPTEVfQkRfQ0VOVFJBTCIsIlJPTEVfREFTSEJPQVJEX0FETUlOIiwiUk9MRV9ERVZPUFNTVVBQT1JUIiwiUk9MRV9BVURJVE9SIl0sImlzU3RlYWx0aE1vZGUiOmZhbHNlLCJ0eXBlIjoidXNlciIsInVzZXJJZCI6NDA1LCJwcmluY2lwYWwiOiJINHNJQUFBQUFBQUFcLzQxVXpXOGJSUlFmdTNIVHhFbG9QcUNna0JJYWFHbkJHM1wvRWprTjZxTDlLbmE2OXdlc0Z5UkpZNDkyeFBjbDZkNWtaSnpZSEJCTGkwZ01WSWtoSWNFT2Nla0FjK3c5d0FRNUluTXVCQ3dkUXoxemd6Zm9yQVFteGg5XC9Pdkhudjk5NjhqM253T3dweGhxNlpia2R4WGNzbVhMSGNEcWFPd29uWlpWVDBGWDI0TURoaFh6OU01eDY5M1YwT29xVWFDcHR0TEFvT2J0akVxcUZwTWw2MU1WZEpVOVRRSE9WNjF5UHNpSEtYN2FFcGhwM0RQWFMrQzB4RlMwVWhBcDVzZ1piVUEzeUVOMjNzdERaMXdhalQybFdCcitPVmNZZThnOTVEQVJYTnd0WjIrNFFVcmFFazFHTFlHaDBIcVNYUXhWTThxdXV6bktlZGxzSHNvZFlNNVNYczRCWmhBaTJmVXM2NnJrMndBXC9vek51WkNkVnZVRWVpWmdZYWdIUUowSnJieldKQXE3RUR2Z29jNVAzYlpPQmdHREh3Y1FsZFFlMU9sWElEcUhCK25ZQkI3RU14bENwelI3WHBlSUlBQ2FQQk5EWDZCRTRFdWRiQkRlVnR4TUNTdWRXdFlIK3BDOENYXC9aUDF1dDRQWmV0a1wvRjJnbUhvMXRSMlB4UkVLZ1lDa0JkVjJRMFNqeWpvcWZrSHVcLzN2XC8rNDQxSFFSVFlRNkVqYkhkSmo2R0xFNlZ5dDlNZzdLTUhKMnZoVDMrNUYwU281dzNETWdTNm5ySjJVckV0MG94c3hjMW9aS3U1YlVYU1pyUVpJZWxFTXQxTXBoS05WRnc1OEVnTFBDOU9TSWZaXC9XR2R2ZlwvekYzXC8rQWM1ckkrZGVBRlRuZlZXWlp1ZzFkdkxXaHc5WHI5ejVkazQ2UDE0SUlUVDlXM2hsXC91cks1Y2NcLzN1OEpkQXMzR29sMHFtbGFwcG5HU2F2UlRDUmlNWXVZaVlaSjRpYXhZczFrc3JtRFV5YU9ic2R3TkdtbDQ5dGJUYks5WlVVaDdFUU1QTjV3V1V0cDA0YXNnU0NLNmRvMk1RVjFvZXM5cXV3VHhxRjB4QkZaM1Byc0p0NTRsV1UrQ2NxeW5XdmdscXhZU0VWTEhuT1BxRVdzM05oWW9LZE9WWDhpMzRVYzdcL3lueDB5REM0Wk5NZkU4c1U1ODljM2V6Y2UzNTRJb1hFT3IyTGJkWTlYRmx0WVZITnhYb2ZJYys0cEZOR3RpczAwc25iNUxJTU1XWmFKZlF3dkVKaDFnckpDT2V5VEhNMHdkS2lpMlFRdDI4NVJYWWJSMHdqbHd3QlVQU2ZcL3NSR3FOQTRnRUdqbmtIanVFeWZ0ZlVtR1dvYWpENWxcL2lBK3ZiRUlqTCtrYVhqc1ppZ1lNQUluS3d4OXV1R0dlSXVwdFFhajhJK1dqc1FwdjlCUiswUFpLVzh4TE9DeFQ1bjgrUzRrK2ZCNVZkOW50SkZrREpNSWI3Y2daN0hcL3kwOXZsMytNdHpLRkJFVXh6dTdYZjE0ckVjdFVXQlppdWFXcWhuOHFWaUdXYkkzeGg2b1NMUXRMXC9PNWdXNjRLXC8yUzVwQTh3UHRYRTR6eWxWZG9BVlwvbjhcL29kN0phcGdLNksyY0ZJK0luZkhHbG9HdEdKVmNzdnliUTNJREp5QmVyR25oN2VtQlhlRVBiMTNWamYxK3JWRWUyU1wvOCtHZ2xmTndwNnRhaVY2OWxNK2U3SVN6WmZ6eFhLMVVwR0ZlakpmMGhHbk1cLzZjazNMcXdXOW5qUDBxbFlxVk9wajlzRXRjbHE1Q21ZVHRwVXpUdlc2OW1hNVVPbHhXYVwvVlNVN2xkazNDWlFuUFNWaVg4THlFS3hJMkpMd2c0VVVKVnlWY2tcL0NTaE9zU2JraDRXY0lyRWlJOXozY1RIajVJQVVqZzhIMDhsS1wvZzM0VDFpWnZLQmdBQSIsImdyYWRlIjoiTTMiLCJyYW5rIjo0LCJpc01hbmFnZXIiOnRydWUsImlkIjo0MDUsImV4cCI6MTc2MzY4MTM5MywiaXNTdXBlcnZpc2VyIjp0cnVlLCJpYXQiOjE3NjM2NDg5OTMsImVtYWlsIjoibWFuaXNoLm5hcmFuZ0Bvb2RsZXMuaW8iLCJqdGkiOiIwNTA1YTQxNy00MDZhLTQ3NmUtOTk3ZS01MGFjMDVjMjYwYmIiLCJ1c2VybmFtZSI6Ik1hbmlzaCBLdW1hciBOYXJhbmcifQ.kKulL51LrShNAGwnG-G6TzayvJWVQa8of9IEwf7WeCs' \
+  -H 'sec-ch-ua: "Chromium";v="142", "Google Chrome";v="142", "Not_A Brand";v="99"' \
+  -H 'sec-ch-ua-mobile: ?0' \
+  -H 'sec-ch-ua-platform: "Linux"'
+  
+  
+  
+  
+curl 'http://localhost:9000/api/v1wbs/updateSettingsResource?wbsId=15&projectId=33' \
+  -X 'PUT' \
+  -H 'Accept: application/json, text/plain, */*' \
+  -H 'Accept-Language: en-GB,en-US;q=0.9,en;q=0.8' \
+  -H 'Cache-Control: no-cache' \
+  -H 'Connection: keep-alive' \
+  -H 'Content-Type: application/json' \
+  -H 'Origin: https://stage.oodleslab.com' \
+  -H 'Pragma: no-cache' \
+  -H 'Sec-Fetch-Dest: empty' \
+  -H 'Sec-Fetch-Mode: cors' \
+  -H 'Sec-Fetch-Site: cross-site' \
+  -H 'User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36' \
+  -H 'authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJtYW5pc2gubmFyYW5nQG9vZGxlcy5pbyIsInJvbGVzIjpbIlJPTEVfUkVTT1VSQ0lORyIsIlJPTEVfT09ETEVTX0NVU1RPTUVSX1NVUFBPUlQiLCJST0xFX0FDQ09VTlRTIiwiUk9MRV9RVUVTVElPTlNfT1dORVIiLCJST0xFX0RFVk9QU1NVUFBPUlRfQURNSU4iLCJST0xFX0RBU0hCT0FSRCIsIlJPTEVfQ09OVEVOVF9DRU5UUkFMIiwiUk9MRV9VU0VSIiwiUk9MRV9CRCIsIlJPTEVfQkRfQ0VOVFJBTF9BRE1JTiIsIlJPTEVfUVVFU1RJT05fQkFOSyIsIlJPTEVfQURNSU4iLCJST0xFX1BNTyIsIlJPTEVfQkRfQ0VOVFJBTCIsIlJPTEVfREFTSEJPQVJEX0FETUlOIiwiUk9MRV9ERVZPUFNTVVBQT1JUIiwiUk9MRV9BVURJVE9SIl0sImlzU3RlYWx0aE1vZGUiOmZhbHNlLCJ0eXBlIjoidXNlciIsInVzZXJJZCI6NDA1LCJwcmluY2lwYWwiOiJINHNJQUFBQUFBQUFcLzQxVXpXOGJSUlFmdTNIVHhFbG9QcUNna0JJYWFHbkJHM1wvRWprTjZxTDlLbmE2OXdlc0Z5UkpZNDkyeFBjbDZkNWtaSnpZSEJCTGkwZ01WSWtoSWNFT2Nla0FjK3c5d0FRNUluTXVCQ3dkUXoxemd6Zm9yQVFteGg5XC9Pdkhudjk5NjhqM253T3dweGhxNlpia2R4WGNzbVhMSGNEcWFPd29uWlpWVDBGWDI0TURoaFh6OU01eDY5M1YwT29xVWFDcHR0TEFvT2J0akVxcUZwTWw2MU1WZEpVOVRRSE9WNjF5UHNpSEtYN2FFcGhwM0RQWFMrQzB4RlMwVWhBcDVzZ1piVUEzeUVOMjNzdERaMXdhalQybFdCcitPVmNZZThnOTVEQVJYTnd0WjIrNFFVcmFFazFHTFlHaDBIcVNYUXhWTThxdXV6bktlZGxzSHNvZFlNNVNYczRCWmhBaTJmVXM2NnJrMndBXC9vek51WkNkVnZVRWVpWmdZYWdIUUowSnJieldKQXE3RUR2Z29jNVAzYlpPQmdHREh3Y1FsZFFlMU9sWElEcUhCK25ZQkI3RU14bENwelI3WHBlSUlBQ2FQQk5EWDZCRTRFdWRiQkRlVnR4TUNTdWRXdFlIK3BDOENYXC9aUDF1dDRQWmV0a1wvRjJnbUhvMXRSMlB4UkVLZ1lDa0JkVjJRMFNqeWpvcWZrSHVcLzN2XC8rNDQxSFFSVFlRNkVqYkhkSmo2R0xFNlZ5dDlNZzdLTUhKMnZoVDMrNUYwU281dzNETWdTNm5ySjJVckV0MG94c3hjMW9aS3U1YlVYU1pyUVpJZWxFTXQxTXBoS05WRnc1OEVnTFBDOU9TSWZaXC9XR2R2ZlwvekYzXC8rQWM1ckkrZGVBRlRuZlZXWlp1ZzFkdkxXaHc5WHI5ejVkazQ2UDE0SUlUVDlXM2hsXC91cks1Y2NcLzN1OEpkQXMzR29sMHFtbGFwcG5HU2F2UlRDUmlNWXVZaVlaSjRpYXhZczFrc3JtRFV5YU9ic2R3TkdtbDQ5dGJUYks5WlVVaDdFUU1QTjV3V1V0cDA0YXNnU0NLNmRvMk1RVjFvZXM5cXV3VHhxRjB4QkZaM1Byc0p0NTRsV1UrQ2NxeW5XdmdscXhZU0VWTEhuT1BxRVdzM05oWW9LZE9WWDhpMzRVYzdcL3lueDB5REM0Wk5NZkU4c1U1ODljM2V6Y2UzNTRJb1hFT3IyTGJkWTlYRmx0WVZITnhYb2ZJYys0cEZOR3RpczAwc25iNUxJTU1XWmFKZlF3dkVKaDFnckpDT2V5VEhNMHdkS2lpMlFRdDI4NVJYWWJSMHdqbHd3QlVQU2ZcL3NSR3FOQTRnRUdqbmtIanVFeWZ0ZlVtR1dvYWpENWxcL2lBK3ZiRUlqTCtrYVhqc1ppZ1lNQUluS3d4OXV1R0dlSXVwdFFhajhJK1dqc1FwdjlCUiswUFpLVzh4TE9DeFQ1bjgrUzRrK2ZCNVZkOW50SkZrREpNSWI3Y2daN0hcL3kwOXZsMytNdHpLRkJFVXh6dTdYZjE0ckVjdFVXQlppdWFXcWhuOHFWaUdXYkkzeGg2b1NMUXRMXC9PNWdXNjRLXC8yUzVwQTh3UHRYRTR6eWxWZG9BVlwvbjhcL29kN0phcGdLNksyY0ZJK0luZkhHbG9HdEdKVmNzdnliUTNJREp5QmVyR25oN2VtQlhlRVBiMTNWamYxK3JWRWUyU1wvOCtHZ2xmTndwNnRhaVY2OWxNK2U3SVN6WmZ6eFhLMVVwR0ZlakpmMGhHbk1cLzZjazNMcXdXOW5qUDBxbFlxVk9wajlzRXRjbHE1Q21ZVHRwVXpUdlc2OW1hNVVPbHhXYVwvVlNVN2xkazNDWlFuUFNWaVg4THlFS3hJMkpMd2c0VVVKVnlWY2tcL0NTaE9zU2JraDRXY0lyRWlJOXozY1RIajVJQVVqZzhIMDhsS1wvZzM0VDFpWnZLQmdBQSIsImdyYWRlIjoiTTMiLCJyYW5rIjo0LCJpc01hbmFnZXIiOnRydWUsImlkIjo0MDUsImV4cCI6MTc2MzY4MTM5MywiaXNTdXBlcnZpc2VyIjp0cnVlLCJpYXQiOjE3NjM2NDg5OTMsImVtYWlsIjoibWFuaXNoLm5hcmFuZ0Bvb2RsZXMuaW8iLCJqdGkiOiIwNTA1YTQxNy00MDZhLTQ3NmUtOTk3ZS01MGFjMDVjMjYwYmIiLCJ1c2VybmFtZSI6Ik1hbmlzaCBLdW1hciBOYXJhbmcifQ.kKulL51LrShNAGwnG-G6TzayvJWVQa8of9IEwf7WeCs' \
+  -H 'sec-ch-ua: "Chromium";v="142", "Google Chrome";v="142", "Not_A Brand";v="99"' \
+  -H 'sec-ch-ua-mobile: ?0' \
+  -H 'sec-ch-ua-platform: "Linux"' \
+  --data-raw '[{"resourceName":"Technical Architect","costPerHours":20,"count":0},{"resourceName":"Associate Consultant L1 - QA","costPerHours":10,"count":0}]'
+  
+  
+  
+  
+  
+  
+eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJzaWRkaGFydGgua2h1cmFuYUBvb2RsZXMuaW8iLCJyb2xlcyI6WyJST0xFX1VTRVIiLCJST0xFX1RFQ0hfSU5WT0tFIiwiUk9MRV9CTE9DS0NIQUlOIl0sImlzU3RlYWx0aE1vZGUiOnRydWUsInR5cGUiOiJ1c2VyIiwidXNlcklkIjoxMjEyLCJwcmluY2lwYWwiOiJINHNJQUFBQUFBQUFcLzQxVVBXd2pSUlIrZHVKY2NrNXlkd2s2aEtKQXhCWG9rTHl4dmZiRklWZGNZbnlLa3owYnhRNUNsdUEwdXpPMkoxbnZMRFBqUHdvRUVxSzVBb1E0SkNUb0VOVVZpUEpFUVlOb29FR2lQZ29hQ2hBMURieFpcLzRVR3NjWHN6T3czNzczNXZ2ZnRvOThob1NTODRJbU9KUVQxbWJLbzZCQWVXSXA1WGNuMTBLcU5KNmVLeVM4ZkY0cFAzdWl1eDJHdEFVbXZUWFFwSUs3UGFBTXVzZW1zVFpURG1yb0J5MXpWdWlHVFBhNkVQSUo1U1lMekkxam9ZcVF5ZFNEQk1KT3ZZYzA1SXoyeTdaT2d0VjNUa2dldFBRZmpkY0lLNmJBMzRXMklPWEFabDc0WU1sYW00NTFFU3hJNitSem5WTVBWQzNFY0VVVlo0SjNXcWZUSHFDV3U3cEdBdEpqVXNINEJmQ0NFejBpQStDV2ZLTzJJRmc4MFBETkNhTjVoR000alwvc3RFc3pxdUVMY1lFcVg2UWs2TGtSaEJUVXZvYXU1dk8xeHBoQzZyS1FXajJ1TjQzRkFRVEc0M0NHTXhpTUhvV1JpOTVyXC9Sc0tFNHBXMGlkZHM2YjNlUlBISm5yQkVYeUZwdDhuVnI2M2owV2NOU05wMU5aekpwTzZjaGZpK0QwcTZhZ2l4elRTdmk1TUd2SFwvN3d3WTBuY1lnZFFhSkhcL0M0YlNMZzZBMVc2SFpmSjl4ODkzRXgrXC9NdURPTUFnSEZkVTEzRFR0bTJhejlGQ2loWGNaaXJYdE5PcDNXekdUWG5OSFViU05FMFFZSjJGcklXWnI4MkNqZ24rY1V1KzhcL05uZlwvMkJ5UnVUNUdFTW9Tc1IxRENON1NZZnZ2N2U0NDNuRDc5ZU5zbjdxd21BUzc4dGJqNlZ1WDd0dGNxM0F3MTNpT3ZhaFZ0TmozcGVnZVNwMjdUdFRJWXl6M1k5bHZVWXpUVHorZVl1dWVXUjlFNkdwUE8wa04zSk5kbE9qcWF6WHRvMnRMd29aTXRxYzlmSW9KbmxDZDlubnVZQ0d6XC9rMWl0TUtsU1BCZnFBdEQ2NVRXNjhKUGNcL2lodmw1bHpTTXFJbEhGZ0xwZWh4eW1oeGVsakQ5UXNOTU52ZlE0NTNcL3pQanZxdTBKSjZlWlo2ZHRyXC80NnVqMm4zZVg0NUJzd0FieGZkRjNCS0hWcnNZR1lYVlVYcEVJV0liTEh2SGFqTmI0V3d3WnBsenFZUU5XbWM4NkdQR0VkVVRQT0RUSkE2NDU4UkdGcXhXdTZ1aXVHbE1LWStBVno5bnczNmFzdW1kWUNmWnlRdlFESnMzOW4zYlF6aWpxdVBcL1gxT2owWFN4RXlPRnBsMCtjc2Fwd0F5c0tTS2phUWs4WjRtSWJwWTZLTVArTlBXeXp2XC9FQk5JSTV1V0tHQlEycFwvXC9sbnNpSURocWpzZXRSTFJnQnJYMG95TkRZY3ZQdlQ1cWZmazhcL25JRmFHZVlYM2pycDZyajl2UnJUTlNkVXAzVCt0bFU3UXd0RzhYaW9lM2k5WFhxMGVselJjaWJZT25Hcnh1SGk0WDY0TWxLbHVZeGJCTERmTjhLd1puaHVFRVNBNU1zN2lkNWhnYXRaXC9BQUhyXC9VcHlCUUFBIiwiZ3JhZGUiOiJNMSIsInJhbmsiOjYsImlzTWFuYWdlciI6dHJ1ZSwiaWQiOjEyMTIsImV4cCI6MTc2NDA4ODk5NSwiaXNTdXBlcnZpc2VyIjp0cnVlLCJpYXQiOjE3NjQwNTY1OTUsImVtYWlsIjoic2lkZGhhcnRoLmtodXJhbmFAb29kbGVzLmlvIiwianRpIjoiMGZlNDFjMWQtMjcyNS00ZmI5LWIzZjctMTljZjhlOTY1YzkzIiwidXNlcm5hbWUiOiJTaWRkaGFydGggIEtodXJhbmEifQ.9ZOzQadYKbx7NzAKhHFpbiPz8gRvuU5pcIAy5u-cYFc
+  
+  
+  
+  {
+    "data": {
+        "navs": [
+            {
+                "concernId": 34,
+                "node": "Overview",
+                "image": null,
+                "view": true,
+                "visible": true,
+                "edit": true,
+                "displayName": "Overview",
+                "childPermitted": false,
+                "delete": true,
+                "url": null
+            },
+            {
+                "concernId": 40,
+                "node": "Clients",
+                "image": null,
+                "view": true,
+                "visible": true,
+                "edit": true,
+                "displayName": "Clients",
+                "childPermitted": false,
+                "delete": true,
+                "childs": [
+                    {
+                        "concernId": 41,
+                        "node": "Lead",
+                        "image": null,
+                        "view": true,
+                        "visible": true,
+                        "edit": true,
+                        "displayName": "Lead Infomation",
+                        "childPermitted": false,
+                        "delete": true,
+                        "url": null
+                    },
+                    {
+                        "concernId": 42,
+                        "node": "Client Details",
+                        "image": null,
+                        "view": true,
+                        "visible": true,
+                        "edit": true,
+                        "displayName": "Client Details",
+                        "childPermitted": false,
+                        "delete": true,
+                        "url": null
+                    },
+                    {
+                        "concernId": 126,
+                        "node": "Access Management",
+                        "image": null,
+                        "view": true,
+                        "visible": true,
+                        "edit": true,
+                        "displayName": "Access Management",
+                        "childPermitted": false,
+                        "delete": true,
+                        "url": null
+                    }
+                ],
+                "url": null
+            },
+            {
+                "concernId": 52,
+                "node": "Documents",
+                "image": null,
+                "view": true,
+                "visible": true,
+                "edit": true,
+                "displayName": "Document Management",
+                "childPermitted": false,
+                "delete": true,
+                "childs": [
+                    {
+                        "concernId": 53,
+                        "node": "Project Documents",
+                        "image": null,
+                        "view": true,
+                        "visible": true,
+                        "edit": true,
+                        "displayName": "Project Documents",
+                        "childPermitted": false,
+                        "delete": true,
+                        "url": null
+                    },
+                    {
+                        "concernId": 54,
+                        "node": "Legal Documents",
+                        "image": null,
+                        "view": true,
+                        "visible": true,
+                        "edit": true,
+                        "displayName": "Legal Documents",
+                        "childPermitted": false,
+                        "delete": true,
+                        "url": null
+                    }
+                ],
+                "url": null
+            },
+            {
+                "concernId": 83,
+                "node": "Finance",
+                "image": null,
+                "view": true,
+                "visible": true,
+                "edit": true,
+                "displayName": "Financial Management",
+                "childPermitted": false,
+                "delete": true,
+                "childs": [
+                    {
+                        "concernId": 38,
+                        "node": "Invoice",
+                        "image": null,
+                        "view": true,
+                        "visible": true,
+                        "edit": true,
+                        "displayName": "Invoice History",
+                        "childPermitted": false,
+                        "delete": true,
+                        "url": null
+                    },
+                    {
+                        "concernId": 93,
+                        "node": "Billing Rate",
+                        "image": null,
+                        "view": true,
+                        "visible": true,
+                        "edit": true,
+                        "displayName": "Billing Rates",
+                        "childPermitted": false,
+                        "delete": true,
+                        "url": null
+                    }
+                ],
+                "url": null
+            },
+            {
+                "concernId": 82,
+                "node": "WorkForce Management",
+                "image": null,
+                "view": true,
+                "visible": true,
+                "edit": true,
+                "displayName": "WorkForce Management",
+                "childPermitted": false,
+                "delete": true,
+                "childs": [
+                    {
+                        "concernId": 162,
+                        "node": "Timesheet Board",
+                        "image": null,
+                        "view": true,
+                        "visible": true,
+                        "edit": true,
+                        "displayName": "Timesheet Board",
+                        "childPermitted": false,
+                        "delete": true,
+                        "url": null
+                    },
+                    {
+                        "concernId": 55,
+                        "node": "Timesheet",
+                        "image": null,
+                        "view": true,
+                        "visible": true,
+                        "edit": true,
+                        "displayName": "Timesheet",
+                        "childPermitted": false,
+                        "delete": true,
+                        "url": null
+                    },
+                    {
+                        "concernId": 63,
+                        "node": "Resourcing",
+                        "image": null,
+                        "view": true,
+                        "visible": true,
+                        "edit": true,
+                        "displayName": "Resources",
+                        "childPermitted": false,
+                        "delete": true,
+                        "url": null
+                    }
+                ],
+                "url": null
+            },
+            {
+                "concernId": 81,
+                "node": "Quality Management",
+                "image": null,
+                "view": true,
+                "visible": true,
+                "edit": true,
+                "displayName": "Quality Management",
+                "childPermitted": false,
+                "delete": true,
+                "childs": [
+                    {
+                        "concernId": 89,
+                        "node": "Test suit",
+                        "image": null,
+                        "view": true,
+                        "visible": true,
+                        "edit": true,
+                        "displayName": "Test suite",
+                        "childPermitted": false,
+                        "delete": true,
+                        "childs": [
+                            {
+                                "concernId": 50,
+                                "node": "Test Case Audit",
+                                "image": null,
+                                "view": true,
+                                "visible": true,
+                                "edit": true,
+                                "displayName": "Audits",
+                                "childPermitted": false,
+                                "delete": true,
+                                "url": null
+                            },
+                            {
+                                "concernId": 61,
+                                "node": "Test Case Module",
+                                "image": null,
+                                "view": true,
+                                "visible": true,
+                                "edit": true,
+                                "displayName": "Test Case Module",
+                                "childPermitted": false,
+                                "delete": true,
+                                "url": null
+                            }
+                        ],
+                        "url": null
+                    },
+                    {
+                        "concernId": 43,
+                        "node": "Code Review",
+                        "image": null,
+                        "view": true,
+                        "visible": true,
+                        "edit": true,
+                        "displayName": "Code Review",
+                        "childPermitted": false,
+                        "delete": true,
+                        "childs": [
+                            {
+                                "concernId": 44,
+                                "node": "History",
+                                "image": null,
+                                "view": true,
+                                "visible": true,
+                                "edit": true,
+                                "displayName": "History",
+                                "childPermitted": false,
+                                "delete": true,
+                                "url": null
+                            },
+                            {
+                                "concernId": 45,
+                                "node": "Action Items",
+                                "image": null,
+                                "view": true,
+                                "visible": true,
+                                "edit": true,
+                                "displayName": "Action Items",
+                                "childPermitted": false,
+                                "delete": true,
+                                "url": null
+                            },
+                            {
+                                "concernId": 96,
+                                "node": "Code Review Audit",
+                                "image": null,
+                                "view": true,
+                                "visible": true,
+                                "edit": true,
+                                "displayName": "Automated Code Review",
+                                "childPermitted": false,
+                                "delete": true,
+                                "url": null
+                            }
+                        ],
+                        "url": null
+                    },
+                    {
+                        "concernId": 86,
+                        "node": "Trends",
+                        "image": null,
+                        "view": true,
+                        "visible": true,
+                        "edit": true,
+                        "displayName": "Process Trends",
+                        "childPermitted": false,
+                        "delete": true,
+                        "url": null
+                    }
+                ],
+                "url": null
+            },
+            {
+                "concernId": 80,
+                "node": "Project Management",
+                "image": null,
+                "view": true,
+                "visible": true,
+                "edit": true,
+                "displayName": "Project Management",
+                "childPermitted": false,
+                "delete": true,
+                "childs": [
+                    {
+                        "concernId": 57,
+                        "node": "Build & Release",
+                        "image": null,
+                        "view": true,
+                        "visible": true,
+                        "edit": true,
+                        "displayName": "Release Management",
+                        "childPermitted": false,
+                        "delete": true,
+                        "url": null
+                    },
+                    {
+                        "concernId": 62,
+                        "node": "Task Management",
+                        "image": null,
+                        "view": true,
+                        "visible": true,
+                        "edit": true,
+                        "displayName": "Task Management",
+                        "childPermitted": false,
+                        "delete": true,
+                        "url": null
+                    },
+                    {
+                        "concernId": 47,
+                        "node": "Risk",
+                        "image": null,
+                        "view": true,
+                        "visible": true,
+                        "edit": true,
+                        "displayName": "Risk Analysis",
+                        "childPermitted": false,
+                        "delete": true,
+                        "url": null
+                    },
+                    {
+                        "concernId": 88,
+                        "node": "Project Structure",
+                        "image": null,
+                        "view": true,
+                        "visible": true,
+                        "edit": true,
+                        "displayName": "Project Structure",
+                        "childPermitted": false,
+                        "delete": true,
+                        "childs": [
+                            {
+                                "concernId": 58,
+                                "node": "Modules",
+                                "image": null,
+                                "view": true,
+                                "visible": true,
+                                "edit": true,
+                                "displayName": "Modules",
+                                "childPermitted": false,
+                                "delete": true,
+                                "url": null
+                            },
+                            {
+                                "concernId": 59,
+                                "node": "Repositories",
+                                "image": null,
+                                "view": true,
+                                "visible": true,
+                                "edit": true,
+                                "displayName": "Code Repositories",
+                                "childPermitted": false,
+                                "delete": true,
+                                "url": null
+                            }
+                        ],
+                        "url": null
+                    },
+                    {
+                        "concernId": 56,
+                        "node": "Status Timeline",
+                        "image": null,
+                        "view": true,
+                        "visible": true,
+                        "edit": true,
+                        "displayName": "Status Timeline",
+                        "childPermitted": false,
+                        "delete": true,
+                        "url": null
+                    },
+                    {
+                        "concernId": 140,
+                        "node": "Release Note",
+                        "image": null,
+                        "view": true,
+                        "visible": true,
+                        "edit": true,
+                        "displayName": "Release Schedule",
+                        "childPermitted": false,
+                        "delete": true,
+                        "url": null
+                    }
+                ],
+                "url": null
+            },
+            {
+                "concernId": 90,
+                "node": "Compliance",
+                "image": null,
+                "view": true,
+                "visible": true,
+                "edit": true,
+                "displayName": "Compliance",
+                "childPermitted": false,
+                "delete": true,
+                "childs": [
+                    {
+                        "concernId": 94,
+                        "node": "Project Compliance",
+                        "image": null,
+                        "view": true,
+                        "visible": true,
+                        "edit": true,
+                        "displayName": "Project Compliance",
+                        "childPermitted": false,
+                        "delete": true,
+                        "url": null
+                    },
+                    {
+                        "concernId": 95,
+                        "node": "Kyc Compliance",
+                        "image": null,
+                        "view": true,
+                        "visible": true,
+                        "edit": true,
+                        "displayName": "Kyc Compliance",
+                        "childPermitted": false,
+                        "delete": true,
+                        "url": null
+                    },
+                    {
+                        "concernId": 87,
+                        "node": "Marketing Compliance",
+                        "image": null,
+                        "view": true,
+                        "visible": true,
+                        "edit": true,
+                        "displayName": "Marketing Compliance",
+                        "childPermitted": false,
+                        "delete": true,
+                        "url": null
+                    }
+                ],
+                "url": null
+            },
+            {
+                "concernId": 91,
+                "node": "Communication & Collaboration",
+                "image": null,
+                "view": true,
+                "visible": true,
+                "edit": true,
+                "displayName": "Communication & Collaboration",
+                "childPermitted": false,
+                "delete": true,
+                "childs": [
+                    {
+                        "concernId": 51,
+                        "node": "Appreciation/Escalation",
+                        "image": null,
+                        "view": true,
+                        "visible": true,
+                        "edit": true,
+                        "displayName": "Appreciation/Escalation",
+                        "childPermitted": false,
+                        "delete": true,
+                        "url": null
+                    },
+                    {
+                        "concernId": 48,
+                        "node": "Feedback",
+                        "image": null,
+                        "view": true,
+                        "visible": true,
+                        "edit": true,
+                        "displayName": "Feedback",
+                        "childPermitted": false,
+                        "delete": true,
+                        "url": null
+                    },
+                    {
+                        "concernId": 92,
+                        "node": "Teams",
+                        "image": null,
+                        "view": true,
+                        "visible": true,
+                        "edit": true,
+                        "displayName": "Teams",
+                        "childPermitted": false,
+                        "delete": true,
+                        "url": null
+                    }
+                ],
+                "url": null
+            },
+            {
+                "concernId": 142,
+                "node": "Marketing",
+                "image": null,
+                "view": true,
+                "visible": true,
+                "edit": true,
+                "displayName": "Marketing",
+                "childPermitted": false,
+                "delete": true,
+                "childs": [
+                    {
+                        "concernId": 143,
+                        "node": "Link Building Management",
+                        "image": null,
+                        "view": true,
+                        "visible": true,
+                        "edit": true,
+                        "displayName": "Link Building Management",
+                        "childPermitted": false,
+                        "delete": true,
+                        "url": null
+                    }
+                ],
+                "url": null
+            }
+        ]
+    },
+    "message": "success",
+    "timestamp": "2025-11-25T07:43:50.327+00:00",
+    "status": 200,
+    "isSuccess": true
+}

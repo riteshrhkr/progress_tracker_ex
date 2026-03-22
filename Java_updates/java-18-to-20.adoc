@@ -1,0 +1,344 @@
+= Java 18-20 Features
+:toc:
+:toc-placement!:
+
+toc::[]
+
+---
+
+*Navigation:* link:README.adoc[Home] | link:java-17.adoc[← Java 17 (LTS)] | *Java 18-20* | link:java-21.adoc[Next: Java 21 (LTS) →]
+
+---
+
+== Introduction
+
+*Java 18-20* (March 2022 - September 2023) were short-term releases that primarily served as preview platforms for major features finalized in Java 21. These versions had few production-ready features but important previews.
+
+*Key Theme:* Preview features for Java 21 (Virtual Threads, Pattern Matching for Switch, Record Patterns)
+
+*Interview Importance:* ⭐⭐
+
+These versions are less important for interviews since most organizations skip to LTS releases (Java 17 → Java 21). However, understanding the preview features helps prepare for Java 21.
+
+*Version Timeline:*
+
+- *Java 18* (March 2022): UTF-8 by default, Simple Web Server, Code Snippets in Javadoc
+- *Java 19* (September 2022): Virtual Threads (preview), Pattern Matching for switch (preview), Record Patterns (preview)
+- *Java 20* (March 2023): Scoped Values (preview), continued previews from Java 19
+
+*Note:* Most important features from these versions became standard in Java 21, which is covered in the next section.
+
+---
+
+== Java 18 Features
+
+=== UTF-8 by Default (JEP 400)
+
+*What Changed:*
+
+The default charset for the JDK APIs is now UTF-8 instead of platform-dependent charsets.
+
+[source,java]
+----
+// Before Java 18 - platform dependent
+FileReader reader = new FileReader("file.txt");  // Uses platform default charset
+
+// Java 18+ - UTF-8 by default
+FileReader reader = new FileReader("file.txt");  // Uses UTF-8
+
+// Explicit charset still recommended for clarity
+FileReader reader = new FileReader("file.txt", StandardCharsets.UTF_8);
+----
+
+*Why It Matters:*
+
+- More predictable behavior across platforms (Windows, Mac, Linux)
+- Reduces charset-related bugs
+- Better internationalization support
+
+*Best Practice:* Still specify charset explicitly for important operations:
+
+[source,java]
+----
+Files.writeString(path, content, StandardCharsets.UTF_8);
+----
+
+---
+
+=== Simple Web Server (JEP 408)
+
+*What It Is:*
+
+A minimal HTTP file server via command line or programmatic API, useful for prototyping and testing.
+
+*Command Line:*
+
+[source,bash]
+----
+# Start simple file server on port 8000
+jwebserver
+
+# Custom port
+jwebserver -p 9000
+
+# Custom directory
+jwebserver -d /path/to/files
+----
+
+*Programmatic API:*
+
+[source,java]
+----
+import com.sun.net.httpserver.SimpleFileServer;
+import java.net.InetSocketAddress;
+import java.nio.file.Path;
+
+var server = SimpleFileServer.createFileServer(
+    new InetSocketAddress(8000),
+    Path.of("/path/to/files"),
+    SimpleFileServer.OutputLevel.VERBOSE
+);
+
+server.start();
+----
+
+*Use Cases:*
+
+- Quick file serving for development
+- Testing static content
+- Simple demos and prototypes
+
+*Not For:* Production use - this is a minimal server without security features
+
+---
+
+=== Code Snippets in Javadoc (JEP 413)
+
+*What It Is:*
+
+New `@snippet` tag for including code examples in Javadoc with syntax highlighting and validation.
+
+[source,java]
+----
+/**
+ * Processes user data.
+ *
+ * {@snippet :
+ * User user = new User("john@example.com");
+ * userService.process(user);
+ * }
+ *
+ * @param user the user to process
+ */
+public void processUser(User user) {
+    // ...
+}
+----
+
+*Benefits:*
+
+- Better syntax highlighting in generated docs
+- Can extract snippets from external files
+- Validates snippet code
+
+*For Most Developers:* Minor improvement - mainly benefits library authors
+
+---
+
+== Java 19 Features (Previews)
+
+Java 19 introduced several preview features that became important in Java 21:
+
+=== Virtual Threads (Preview - JEP 425)
+
+*Brief Overview:*
+
+Lightweight threads managed by the JVM, not the OS. Allows millions of concurrent threads.
+
+[source,java]
+----
+// Preview in Java 19, standard in Java 21
+Thread.startVirtualThread(() -> {
+    System.out.println("Hello from virtual thread!");
+});
+----
+
+*Why Important:*
+
+Massively simplifies concurrent programming - write synchronous-looking code that scales.
+
+*Coverage:* See Java 21 documentation for full details (this is covered in depth there).
+
+---
+
+=== Pattern Matching for switch (Preview - JEP 427)
+
+*Brief Overview:*
+
+Use patterns in switch statements, including type patterns and guards.
+
+[source,java]
+----
+// Preview in Java 19, standard in Java 21
+String formatted = switch (obj) {
+    case Integer i -> String.format("int %d", i);
+    case Long l    -> String.format("long %d", l);
+    case Double d  -> String.format("double %f", d);
+    case String s  -> String.format("String %s", s);
+    default        -> obj.toString();
+};
+----
+
+*Why Important:*
+
+More expressive and concise type testing and casting in switch.
+
+*Coverage:* See Java 21 documentation for full details.
+
+---
+
+=== Record Patterns (Preview - JEP 405)
+
+*Brief Overview:*
+
+Deconstruct record values in patterns.
+
+[source,java]
+----
+record Point(int x, int y) {}
+
+// Preview in Java 19, standard in Java 21
+if (obj instanceof Point(int x, int y)) {
+    System.out.println("x: " + x + ", y: " + y);
+}
+----
+
+*Why Important:*
+
+Elegant way to extract and use record components.
+
+*Coverage:* See Java 21 documentation for full details.
+
+---
+
+=== Structured Concurrency (Incubator - JEP 428)
+
+*Brief Overview:*
+
+API for managing concurrent tasks as a group, simplifying error handling and cancellation.
+
+[source,java]
+----
+// Incubator API
+try (var scope = new StructuredTaskScope.ShutdownOnFailure()) {
+    Future<String> user = scope.fork(() -> findUser());
+    Future<Integer> order = scope.fork(() -> findOrder());
+
+    scope.join();
+    scope.throwIfFailed();
+
+    // Both completed successfully
+    return new Response(user.resultNow(), order.resultNow());
+}
+----
+
+*Status:* Still evolving, may be included in future Java versions
+
+---
+
+== Java 20 Features (Previews Continued)
+
+Java 20 mainly refined preview features from Java 19:
+
+=== Scoped Values (Incubator - JEP 429)
+
+*Brief Overview:*
+
+Share immutable data within and across threads - safer alternative to ThreadLocal.
+
+[source,java]
+----
+// Incubator API
+private static final ScopedValue<User> CURRENT_USER = ScopedValue.newInstance();
+
+// Set value for scope
+ScopedValue.where(CURRENT_USER, user)
+    .run(() -> {
+        // CURRENT_USER.get() returns user within this scope
+        processRequest();
+    });
+----
+
+*Why It Might Matter:*
+
+Cleaner than ThreadLocal, especially with virtual threads.
+
+*Status:* Preview/incubator - may stabilize in future versions
+
+---
+
+=== Pattern Matching for switch (Second Preview - JEP 433)
+
+Refinements to Java 19 preview, preparing for Java 21 finalization.
+
+---
+
+=== Record Patterns (Second Preview - JEP 432)
+
+Refinements to Java 19 preview, preparing for Java 21 finalization.
+
+---
+
+=== Virtual Threads (Second Preview - JEP 436)
+
+Refinements to Java 19 preview, finalizing for Java 21.
+
+---
+
+== Other Minor Features
+
+*Java 18:*
+- Deprecate Finalization for Removal (JEP 421) - finalizers have been problematic for years
+- Vector API (Fourth Incubator - JEP 417) - SIMD operations for advanced performance
+
+*Java 19:*
+- Foreign Function & Memory API (Preview - JEP 424) - interact with native code safely
+- Linux/RISC-V Port (JEP 422) - platform support
+
+*Java 20:*
+- Vector API (Fifth Incubator - JEP 438) - continued evolution
+- Foreign Function & Memory API (Second Preview - JEP 434) - refinements
+
+---
+
+== Summary
+
+*Java 18-20 Main Contributions:*
+
+1. *UTF-8 by Default* (Java 18) - More predictable behavior
+2. *Simple Web Server* (Java 18) - Useful for development/testing
+3. *Preview Features* (Java 19-20) - Virtual Threads, Pattern Matching for switch, Record Patterns
+
+*Key Takeaways:*
+
+- Java 18-20 were primarily "preview" releases for Java 21
+- UTF-8 by default is the main production-ready feature from Java 18
+- Most important features (Virtual Threads, Pattern Matching for switch) became standard in Java 21
+- Organizations typically skip these versions and jump from Java 17 (LTS) to Java 21 (LTS)
+
+*Interview Focus:*
+
+- Don't worry too much about Java 18-20 specifics
+- Understand that preview features from these versions became important in Java 21
+- Know about UTF-8 by default (might come up in charset/encoding questions)
+- Focus your study time on Java 17 and Java 21 instead
+
+*Most Important:* Java 18-20 are stepping stones to Java 21. If you understand Java 17 and Java 21, you effectively understand everything important from 18-20.
+
+*What's Next:* Java 21 (LTS) - Virtual Threads, Sequenced Collections, Pattern Matching for switch (finalized), and Record Patterns - all major features for modern concurrent Java.
+
+---
+
+*Navigation:* link:README.adoc[Home] | link:java-17.adoc[← Java 17 (LTS)] | *Java 18-20* | link:java-21.adoc[Next: Java 21 (LTS) →]
+
+---

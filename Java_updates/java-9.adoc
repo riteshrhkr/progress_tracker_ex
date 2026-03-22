@@ -1,0 +1,4630 @@
+= Java 9 Features
+:toc:
+:toc-placement!:
+
+toc::[]
+
+---
+
+*Navigation:* link:README.adoc[Home] | link:java-8.adoc[← Java 8] | *Java 9* | link:java-10.adoc[Next: Java 10 →]
+
+---
+
+== Introduction
+
+*Java 9* (September 2017) introduced the *Java Platform Module System* (Project Jigsaw), one of the most significant changes to the Java platform since its inception. Beyond modules, Java 9 brought practical enhancements to existing APIs and several developer productivity improvements.
+
+*Key Themes:*
+
+- *Modularity*: Java Platform Module System (JPMS) for better encapsulation
+- *API Enhancements*: Collection factories, Stream improvements, Optional enhancements
+- *Developer Productivity*: JShell REPL, improved try-with-resources
+- *Interface Evolution*: Private methods in interfaces
+
+*Interview Importance:* ⭐⭐⭐⭐
+
+Java 9's *Collection factory methods* and *Stream/Optional improvements* are frequently used in modern codebases and appear in interviews. The Module System is important for architectural discussions, though less common in day-to-day coding interviews.
+
+*Example Files:*
+
+- link:examples/java9/Java9CollectionsDemo.java[Java9CollectionsDemo.java] - Collection factories, Stream, and Optional improvements
+- link:examples/java9/Java9InterfaceDemo.java[Java9InterfaceDemo.java] - Private interface methods with real-world scenarios
+
+---
+
+== Module System (Project Jigsaw)
+
+==== Java Platform Module System (JPMS)
+
+.Overview / What it is
+[%collapsible]
+====
+The *Module System* introduces a higher level of aggregation above packages. A *module* is a self-describing collection of code and data with explicit dependencies on other modules. Think of it as *organizing your application into large-scale components with clear boundaries*.
+
+*Core Concept:*
+
+Before Java 9, the JDK was a monolithic platform. With modules, you can create applications that only include the parts of the JDK they actually use, and you can enforce strong encapsulation at the module level.
+
+[source,java]
+----
+// module-info.java - Module descriptor
+module com.myapp.userservice {
+    // What this module depends on
+    requires java.sql;
+    requires com.myapp.common;
+
+    // What this module exposes to others
+    exports com.myapp.userservice.api;
+
+    // What stays hidden (strong encapsulation)
+    // com.myapp.userservice.internal is NOT exported
+}
+----
+
+*Key Concepts:*
+
+- *Module*: A named collection of packages and resources
+- *module-info.java*: Module descriptor (placed at root of module)
+- *requires*: Declares dependencies on other modules
+- *exports*: Makes packages available to other modules
+- *opens*: Allows reflection access to a package
+- *provides/uses*: Service provider/consumer declarations
+
+*Mental Model:*
+
+Think of modules as *contracts between large components*. Just like interfaces define contracts between classes, modules define contracts between major parts of your application. They answer: "What do I need?" (requires) and "What do I provide?" (exports).
+
+*Module Types:*
+
+1. *Named modules*: Have a module-info.java descriptor
+2. *Automatic modules*: JARs without module-info (transitional)
+3. *Unnamed module*: Classpath-based code (legacy compatibility)
+====
+
+.Why use it
+[%collapsible]
+====
+*1. Strong Encapsulation*
+
+Hide internal implementation details at the module level:
+
+[source,java]
+----
+// Without modules - all public classes are accessible
+package com.myapp.internal;
+public class InternalHelper { }  // Anyone can use this!
+
+// With modules - control what's accessible
+module com.myapp {
+    exports com.myapp.api;  // Only api package is accessible
+    // com.myapp.internal is hidden from outside
+}
+----
+
+*2. Reliable Configuration*
+
+Detect missing dependencies at startup, not at runtime:
+
+[source,java]
+----
+// Old way - fails at runtime when class is loaded
+// Exception in thread "main" java.lang.NoClassDefFoundError
+
+// With modules - fails at startup
+// Error: Module X requires Y which is missing
+----
+
+*3. Smaller Runtime Images*
+
+Include only the modules your application needs:
+
+[source,bash]
+----
+# Old way - entire JRE (~200MB)
+java -jar myapp.jar
+
+# With jlink - custom runtime image (~40MB)
+jlink --module-path $JAVA_HOME/jmods:mods \
+      --add-modules com.myapp \
+      --output myapp-runtime
+----
+
+*4. Better Security*
+
+Internal APIs (like `sun.misc.Unsafe`) are strongly encapsulated and can't be accessed accidentally.
+
+*5. Scalable Platform*
+
+Java platform itself is modularized (java.base, java.sql, java.xml, etc.), making it more maintainable.
+====
+
+.When not to use
+[%collapsible]
+====
+*❌ DON'T Use for:*
+
+*1. Simple Applications*
+
+[source,java]
+----
+// Small apps - overhead not worth it
+// Just use classpath for simple projects
+javac -cp lib/* src/*.java
+java -cp "lib/*:." Main
+----
+
+*2. Rapid Prototyping*
+
+Modules add complexity that slows down quick experimentation.
+
+*3. Applications Requiring Deep Reflection*
+
+Some frameworks (older versions of Spring, Hibernate) heavily use reflection and may conflict with module encapsulation.
+
+*4. When Dependencies Don't Support Modules*
+
+If your dependencies aren't module-aware, you'll deal with automatic modules and lose some benefits.
+
+*5. Legacy Codebases*
+
+Retrofitting modules into large legacy codebases is often not worth the effort. Classpath-based approach still works fine.
+
+*General Rule:* Use modules for *large, long-lived applications* where strong encapsulation and explicit dependencies add value. For small projects, libraries, or rapid prototyping, stick with the classpath.
+====
+
+.Best practices
+[%collapsible]
+====
+*✅ DO:*
+
+- *Start with automatic modules* before creating full module descriptors
+[source,java]
+----
+// Add Automatic-Module-Name to MANIFEST.MF first
+Automatic-Module-Name: com.myapp.userservice
+----
+
+- *One module per major component* (don't over-modularize)
+[source,java]
+----
+// Good module structure:
+// - com.myapp.core
+// - com.myapp.api
+// - com.myapp.persistence
+----
+
+- *Export only API packages*
+[source,java]
+----
+module com.myapp {
+    exports com.myapp.api;      // ✅ Public API
+    exports com.myapp.spi;      // ✅ Service Provider Interface
+    // com.myapp.internal hidden ✅
+}
+----
+
+- *Use `requires transitive` for API dependencies*
+[source,java]
+----
+module com.myapp.api {
+    // If your API returns types from another module
+    requires transitive java.sql;  // Users get java.sql automatically
+}
+----
+
+- *Use `opens` sparingly for reflection*
+[source,java]
+----
+module com.myapp {
+    opens com.myapp.model to com.fasterxml.jackson.databind;  // For JSON serialization
+}
+----
+
+*❌ DON'T:*
+
+- *Don't export everything*
+[source,java]
+----
+// BAD - defeats purpose of modules
+module com.myapp {
+    exports com.myapp.api;
+    exports com.myapp.internal;  // ❌ Don't expose internals
+    exports com.myapp.util;      // ❌ Keep utilities private
+}
+----
+
+- *Don't create circular dependencies*
+[source,java]
+----
+// BAD - modules can't have cycles
+module A { requires B; }
+module B { requires A; }  // ❌ Compilation error
+----
+
+- *Don't use split packages* (same package in multiple modules)
+[source,java]
+----
+// BAD - same package in two modules
+module A { exports com.myapp.common; }
+module B { exports com.myapp.common; }  // ❌ Not allowed
+----
+====
+
+.Example
+[%collapsible]
+====
+*Basic Module Structure:*
+
+[source,java]
+----
+// === Project Structure ===
+myapp/
+├── com.myapp.api/
+│   └── module-info.java
+│   └── com/myapp/api/
+│       └── UserService.java
+├── com.myapp.core/
+│   └── module-info.java
+│   └── com/myapp/core/
+│       ├── UserServiceImpl.java
+│       └── internal/
+│           └── UserValidator.java
+└── com.myapp.app/
+    └── module-info.java
+    └── com/myapp/app/
+        └── Main.java
+
+// === com.myapp.api/module-info.java ===
+module com.myapp.api {
+    // This is the API module - no dependencies
+    exports com.myapp.api;
+}
+
+// === com.myapp.api/com/myapp/api/UserService.java ===
+package com.myapp.api;
+
+public interface UserService {
+    User findById(long id);
+    void save(User user);
+}
+
+// === com.myapp.core/module-info.java ===
+module com.myapp.core {
+    requires com.myapp.api;        // Depends on API
+    requires java.sql;             // Uses JDBC
+
+    exports com.myapp.core;        // Export implementation package
+    // com.myapp.core.internal stays hidden
+}
+
+// === com.myapp.core/com/myapp/core/UserServiceImpl.java ===
+package com.myapp.core;
+
+import com.myapp.api.UserService;
+import com.myapp.core.internal.UserValidator;
+
+public class UserServiceImpl implements UserService {
+    private final UserValidator validator = new UserValidator();
+
+    @Override
+    public User findById(long id) {
+        validator.validateId(id);
+        // Implementation
+    }
+}
+
+// === com.myapp.core/com/myapp/core/internal/UserValidator.java ===
+package com.myapp.core.internal;
+
+// This class is NOT exported - only visible within com.myapp.core module
+public class UserValidator {
+    public void validateId(long id) {
+        if (id <= 0) throw new IllegalArgumentException("Invalid ID");
+    }
+}
+
+// === com.myapp.app/module-info.java ===
+module com.myapp.app {
+    requires com.myapp.api;
+    requires com.myapp.core;
+}
+
+// === com.myapp.app/com/myapp/app/Main.java ===
+package com.myapp.app;
+
+import com.myapp.api.UserService;
+import com.myapp.core.UserServiceImpl;
+// import com.myapp.core.internal.UserValidator;  // ❌ Compilation error - not exported!
+
+public class Main {
+    public static void main(String[] args) {
+        UserService service = new UserServiceImpl();
+        User user = service.findById(123);
+    }
+}
+----
+
+*Compiling and Running:*
+
+[source,bash]
+----
+# Compile modules
+javac -d mods --module-source-path src $(find src -name "*.java")
+
+# Run modular application
+java --module-path mods -m com.myapp.app/com.myapp.app.Main
+
+# Create custom runtime image
+jlink --module-path $JAVA_HOME/jmods:mods \
+      --add-modules com.myapp.app \
+      --output myapp-image \
+      --launcher myapp=com.myapp.app/com.myapp.app.Main
+
+# Run with custom image
+./myapp-image/bin/myapp
+----
+====
+
+.Common pitfalls
+[%collapsible]
+====
+*1. Split packages across modules*
+
+[source,java]
+----
+// PITFALL - same package in multiple modules
+
+// module A
+module com.myapp.core {
+    exports com.myapp.util;  // ❌
+}
+
+// module B
+module com.myapp.extra {
+    exports com.myapp.util;  // ❌ Same package name!
+}
+
+// FIX - use unique package names per module
+module com.myapp.core {
+    exports com.myapp.core.util;  // ✅
+}
+module com.myapp.extra {
+    exports com.myapp.extra.util;  // ✅
+}
+----
+
+*2. Circular dependencies*
+
+[source,java]
+----
+// PITFALL - circular requires
+
+module A {
+    requires B;
+}
+module B {
+    requires A;  // ❌ Circular dependency!
+}
+
+// FIX - extract common parts to a new module
+module A {
+    requires common;
+}
+module B {
+    requires common;
+}
+module common {
+    // Shared code
+}
+----
+
+*3. Forgetting `requires transitive` for API dependencies*
+
+[source,java]
+----
+// PITFALL - consumers need to repeat dependencies
+
+// com.myapp.api
+module com.myapp.api {
+    requires java.sql;  // ❌ Not transitive
+    exports com.myapp.api;
+}
+
+package com.myapp.api;
+import java.sql.Connection;
+public interface UserDao {
+    Connection getConnection();  // Returns java.sql type
+}
+
+// Consumer must also require java.sql
+module consumer {
+    requires com.myapp.api;
+    requires java.sql;  // ❌ Shouldn't need this
+}
+
+// FIX - use requires transitive
+module com.myapp.api {
+    requires transitive java.sql;  // ✅ Propagates to consumers
+    exports com.myapp.api;
+}
+
+module consumer {
+    requires com.myapp.api;  // ✅ Gets java.sql automatically
+}
+----
+
+*4. Over-using `opens` for reflection*
+
+[source,java]
+----
+// PITFALL - opening entire module
+
+module com.myapp {
+    opens com.myapp;  // ❌ Opens everything!
+}
+
+// FIX - open specific packages
+module com.myapp {
+    opens com.myapp.model to com.fasterxml.jackson.databind;  // ✅ Specific
+}
+
+// Or use --add-opens at runtime for legacy frameworks
+java --add-opens com.myapp/com.myapp.internal=ALL-UNNAMED -m com.myapp
+----
+
+*5. Not handling automatic modules properly*
+
+[source,java]
+----
+// PITFALL - depending on JAR without module-info
+
+module com.myapp {
+    requires some.legacy.jar;  // ❌ Name derived from JAR filename (unreliable)
+}
+
+// FIX - check automatic module name or add to manifest
+// In some-legacy-jar's MANIFEST.MF:
+Automatic-Module-Name: some.legacy.jar
+----
+
+*6. Mixing classpath and module path*
+
+[source,bash]
+----
+# PITFALL - confusing classpath and module path
+
+javac -cp libs/* src/*.java  # ❌ Mixing concerns
+java -cp "libs/*:." --module-path mods -m myapp  # ❌ Confusion
+
+# FIX - choose one approach
+# Module path (modular app):
+javac -p mods --module-source-path src $(find src -name "*.java")
+java -p mods -m com.myapp/com.myapp.Main
+
+# Classpath (traditional app):
+javac -cp libs/* src/**/*.java
+java -cp "libs/*:bin" com.myapp.Main
+----
+
+*7. Forgetting module-info.java in package root*
+
+[source,java]
+----
+// PITFALL - wrong location
+
+src/
+└── com/myapp/
+    └── module-info.java  // ❌ Wrong location!
+
+// FIX - module-info.java must be at module root
+src/
+├── module-info.java  // ✅ Correct
+└── com/myapp/
+    └── Main.java
+----
+
+*8. Not declaring service providers correctly*
+
+[source,java]
+----
+// PITFALL - service not found at runtime
+
+module provider {
+    exports com.myapp.spi;
+    // Missing provides clause
+}
+
+// FIX - declare service provider
+module provider {
+    exports com.myapp.spi;
+    provides com.myapp.spi.UserService
+        with com.myapp.impl.UserServiceImpl;  // ✅
+}
+
+module consumer {
+    requires com.myapp.spi;
+    uses com.myapp.spi.UserService;  // ✅
+}
+----
+
+*9. Assuming all JDK APIs are in java.base*
+
+[source,java]
+----
+// PITFALL - missing required JDK modules
+
+import java.sql.Connection;  // ❌ Compilation fails
+
+module-info.java:
+module com.myapp {
+    // Missing requires java.sql
+}
+
+// FIX - explicitly require JDK modules
+module com.myapp {
+    requires java.sql;      // ✅ For JDBC
+    requires java.xml;      // ✅ For XML APIs
+    requires java.desktop;  // ✅ For AWT/Swing
+}
+----
+
+*10. Not testing module boundaries*
+
+[source,java]
+----
+// PITFALL - assuming encapsulation works without testing
+
+// Try to access internal package from outside
+import com.myapp.internal.Helper;  // Should fail!
+
+// FIX - write tests that verify module boundaries
+@Test
+public void testModuleEncapsulation() {
+    // Attempt to access non-exported package should fail
+    assertThrows(IllegalAccessException.class, () -> {
+        Class.forName("com.myapp.internal.Helper");
+    });
+}
+----
+====
+
+[NOTE]
+====
+*Quick Review:*
+
+1. What is a module in Java 9? How is it different from a package?
+2. What goes in a `module-info.java` file? What are the main directives?
+3. What's the difference between `requires` and `requires transitive`?
+4. When would you use `exports` vs `opens`?
+5. What are the three types of modules? (Named, Automatic, Unnamed)
+6. What is a split package and why is it problematic?
+7. How do you create a custom runtime image with jlink?
+8. What's the difference between classpath and module path?
+9. When would you choose NOT to use modules in your project?
+10. How do modules improve security and reliability compared to classpath?
+
+*Interview Tip:* For architectural interviews, emphasize how modules improve *maintainability* and *security* in large enterprise applications. For coding interviews, focus on practical knowledge of collection factories and Stream improvements instead.
+====
+
+---
+
+== Collection Factory Methods
+
+==== Convenient Immutable Collections
+
+.Overview / What it is
+[%collapsible]
+====
+Java 9 introduced *factory methods* for creating immutable collections in a concise way. Think of them as *shorthand for creating read-only collections* that you can't accidentally modify.
+
+*Core Concept:*
+
+Instead of verbose builders or `Collections.unmodifiableX()` wrappers, use simple factory methods:
+
+[source,java]
+----
+// Old way - verbose and mutable by default
+List<String> list = new ArrayList<>();
+list.add("Java");
+list.add("Python");
+list.add("Kotlin");
+List<String> immutable = Collections.unmodifiableList(list);
+
+// New way - concise and immutable
+List<String> list = List.of("Java", "Python", "Kotlin");
+----
+
+*Factory Methods:*
+
+- *List.of()*: Create immutable lists
+- *Set.of()*: Create immutable sets
+- *Map.of()*: Create immutable maps (up to 10 entries)
+- *Map.ofEntries()*: Create immutable maps (any size)
+
+*Key Characteristics:*
+
+1. *Immutable*: Cannot add, remove, or replace elements
+2. *Null-hostile*: Reject null keys/values (throws NullPointerException)
+3. *Value-based*: Should not rely on identity
+4. *Iteration order*: Unspecified for Set/Map (List maintains order)
+5. *Serializable*: If all elements are serializable
+
+*Mental Model:*
+
+Think of these as *snapshots* or *constants*. Once created, they never change. Perfect for configuration, constants, or data that shouldn't be modified.
+====
+
+.Why use it
+[%collapsible]
+====
+*1. Conciseness*
+
+Dramatically reduce boilerplate:
+
+[source,java]
+----
+// Before Java 9
+Map<String, Integer> map = new HashMap<>();
+map.put("one", 1);
+map.put("two", 2);
+map.put("three", 3);
+Map<String, Integer> immutable = Collections.unmodifiableMap(map);
+
+// Java 9+
+Map<String, Integer> map = Map.of(
+    "one", 1,
+    "two", 2,
+    "three", 3
+);
+----
+
+*2. Safety*
+
+Immutability prevents bugs:
+
+[source,java]
+----
+// Old way - easy to accidentally modify
+List<String> allowed = getDefaultRoles();
+allowed.add("ADMIN");  // Oops! Modified shared list
+
+// New way - modification attempts throw exception
+List<String> allowed = List.of("USER", "GUEST");
+allowed.add("ADMIN");  // ❌ UnsupportedOperationException
+----
+
+*3. Performance*
+
+Optimized implementations:
+
+[source,java]
+----
+// List.of() uses specialized implementations
+// - List.of() → ImmutableCollections.ListN (more compact than ArrayList)
+// - Set.of() → optimized hash implementation
+// - No defensive copying needed (already immutable)
+----
+
+*4. Thread-Safety*
+
+Immutable collections are inherently thread-safe:
+
+[source,java]
+----
+// Can safely share across threads without synchronization
+public static final List<String> SUPPORTED_FORMATS =
+    List.of("JSON", "XML", "YAML");
+----
+
+*5. Better API Contracts*
+
+Clearly express intent:
+
+[source,java]
+----
+// API clearly signals: "This list won't change"
+public List<String> getSupportedLanguages() {
+    return List.of("Java", "Kotlin", "Scala");
+}
+----
+====
+
+.When not to use
+[%collapsible]
+====
+*❌ DON'T Use for:*
+
+*1. Collections That Need Modification*
+
+[source,java]
+----
+// BAD - need to modify later
+List<String> items = List.of("A", "B", "C");
+items.add("D");  // ❌ UnsupportedOperationException
+
+// GOOD - use mutable collection
+List<String> items = new ArrayList<>(List.of("A", "B", "C"));
+items.add("D");  // ✅ Works
+----
+
+*2. Large Collections Built Incrementally*
+
+[source,java]
+----
+// BAD - creating new immutable list each iteration
+List<User> users = List.of();
+for (ResultSet rs : resultSets) {
+    User user = parseUser(rs);
+    users = concat(users, user);  // ❌ Inefficient!
+}
+
+// GOOD - build then make immutable
+List<User> users = new ArrayList<>();
+for (ResultSet rs : resultSets) {
+    users.add(parseUser(rs));
+}
+List<User> immutableUsers = List.copyOf(users);  // ✅
+----
+
+*3. Collections with Null Values*
+
+[source,java]
+----
+// BAD - factory methods reject nulls
+List<String> items = List.of("A", null, "C");  // ❌ NullPointerException
+
+// GOOD - use traditional collections if nulls are needed
+List<String> items = Arrays.asList("A", null, "C");  // ✅
+----
+
+*4. Very Large Maps*
+
+[source,java]
+----
+// BAD - Map.of() limited to 10 entries
+Map<String, String> config = Map.of(
+    "k1", "v1", "k2", "v2", ..., "k10", "v10",
+    "k11", "v11"  // ❌ Too many arguments
+);
+
+// GOOD - use Map.ofEntries()
+Map<String, String> config = Map.ofEntries(
+    entry("k1", "v1"),
+    entry("k2", "v2"),
+    // ... any number of entries
+    entry("k100", "v100")
+);
+----
+
+*General Rule:* Use factory methods for *small, immutable collections* that represent constants or configuration. Use traditional collections for large, mutable, or null-containing data structures.
+====
+
+.Best practices
+[%collapsible]
+====
+*✅ DO:*
+
+- *Use for constants and configuration*
+[source,java]
+----
+public static final Set<String> VALID_STATUSES =
+    Set.of("PENDING", "APPROVED", "REJECTED");
+
+public static final Map<String, String> ERROR_MESSAGES = Map.of(
+    "404", "Not Found",
+    "500", "Internal Server Error",
+    "403", "Forbidden"
+);
+----
+
+- *Use List.copyOf() for defensive copying*
+[source,java]
+----
+private final List<String> items;
+
+public MyClass(List<String> items) {
+    this.items = List.copyOf(items);  // ✅ Immutable copy
+}
+----
+
+- *Use Map.ofEntries() for larger maps*
+[source,java]
+----
+import static java.util.Map.entry;
+
+Map<String, Integer> map = Map.ofEntries(
+    entry("one", 1),
+    entry("two", 2),
+    entry("three", 3),
+    // ... more entries
+    entry("hundred", 100)
+);
+----
+
+- *Combine with var for cleaner code* (Java 10+)
+[source,java]
+----
+var supportedFormats = List.of("JSON", "XML", "YAML");
+var httpMethods = Set.of("GET", "POST", "PUT", "DELETE");
+var statusCodes = Map.of(200, "OK", 404, "Not Found");
+----
+
+- *Return from methods to signal immutability*
+[source,java]
+----
+public List<String> getReadOnlyData() {
+    return List.of("A", "B", "C");  // ✅ Caller can't modify
+}
+----
+
+*❌ DON'T:*
+
+- *Don't use if you need null elements*
+[source,java]
+----
+// BAD
+List<String> items = List.of("A", null);  // ❌ NullPointerException
+
+// GOOD - check for nulls or use different approach
+List<String> items = Stream.of("A", null)
+    .filter(Objects::nonNull)
+    .collect(Collectors.toUnmodifiableList());
+----
+
+- *Don't use for large collections built incrementally*
+[source,java]
+----
+// BAD
+List<Integer> numbers = List.of();
+for (int i = 0; i < 1000; i++) {
+    numbers = concat(numbers, i);  // ❌ Creates 1000 objects!
+}
+
+// GOOD
+List<Integer> numbers = IntStream.range(0, 1000)
+    .boxed()
+    .collect(Collectors.toUnmodifiableList());
+----
+
+- *Don't try to modify returned collections*
+[source,java]
+----
+List<String> list = List.of("A", "B", "C");
+list.add("D");      // ❌ UnsupportedOperationException
+list.remove(0);     // ❌ UnsupportedOperationException
+list.set(0, "X");   // ❌ UnsupportedOperationException
+----
+
+- *Don't assume iteration order for Set/Map*
+[source,java]
+----
+// BAD - assuming order
+Set<String> set = Set.of("A", "B", "C");
+String first = set.iterator().next();  // ❌ Order unspecified
+
+// GOOD - use List if order matters
+List<String> list = List.of("A", "B", "C");
+String first = list.get(0);  // ✅ Guaranteed order
+----
+====
+
+.Example
+[%collapsible]
+====
+*Creating Immutable Collections:*
+
+[source,java]
+----
+// === List.of() ===
+
+// Empty list
+List<String> empty = List.of();
+
+// Single element
+List<String> one = List.of("Java");
+
+// Multiple elements
+List<String> languages = List.of("Java", "Python", "Kotlin", "Scala");
+
+// === Set.of() ===
+
+// No duplicates allowed (throws IllegalArgumentException)
+Set<String> unique = Set.of("A", "B", "C");
+// Set<String> duplicates = Set.of("A", "B", "A");  // ❌ IllegalArgumentException
+
+// === Map.of() - up to 10 key-value pairs ===
+
+// Small maps
+Map<String, Integer> ages = Map.of(
+    "Alice", 30,
+    "Bob", 25,
+    "Charlie", 35
+);
+
+Map<Integer, String> httpCodes = Map.of(
+    200, "OK",
+    201, "Created",
+    400, "Bad Request",
+    404, "Not Found",
+    500, "Internal Server Error"
+);
+
+// === Map.ofEntries() - any size ===
+
+import static java.util.Map.entry;
+
+Map<String, String> config = Map.ofEntries(
+    entry("db.host", "localhost"),
+    entry("db.port", "5432"),
+    entry("db.name", "myapp"),
+    entry("db.user", "admin"),
+    entry("app.name", "MyApplication"),
+    entry("app.version", "1.0.0"),
+    entry("feature.flag1", "enabled"),
+    entry("feature.flag2", "disabled")
+    // ... many more entries
+);
+----
+
+*Real-World Use Cases:*
+
+[source,java]
+----
+// === Constants ===
+
+public class HttpStatus {
+    public static final Map<Integer, String> MESSAGES = Map.ofEntries(
+        entry(200, "OK"),
+        entry(201, "Created"),
+        entry(204, "No Content"),
+        entry(400, "Bad Request"),
+        entry(401, "Unauthorized"),
+        entry(403, "Forbidden"),
+        entry(404, "Not Found"),
+        entry(500, "Internal Server Error"),
+        entry(503, "Service Unavailable")
+    );
+}
+
+// === Configuration ===
+
+public class AppConfig {
+    private static final List<String> SUPPORTED_FORMATS =
+        List.of("JSON", "XML", "YAML", "TOML");
+
+    private static final Set<String> ADMIN_ROLES =
+        Set.of("SUPER_ADMIN", "ADMIN", "MODERATOR");
+
+    public boolean isSupportedFormat(String format) {
+        return SUPPORTED_FORMATS.contains(format);
+    }
+
+    public boolean isAdminRole(String role) {
+        return ADMIN_ROLES.contains(role);
+    }
+}
+
+// === Defensive Copying ===
+
+public class UserPreferences {
+    private final List<String> favoriteLanguages;
+    private final Map<String, String> settings;
+
+    public UserPreferences(List<String> languages, Map<String, String> settings) {
+        // Make immutable copies
+        this.favoriteLanguages = List.copyOf(languages);
+        this.settings = Map.copyOf(settings);
+    }
+
+    public List<String> getFavoriteLanguages() {
+        return favoriteLanguages;  // Already immutable, safe to return
+    }
+
+    public Map<String, String> getSettings() {
+        return settings;  // Already immutable, safe to return
+    }
+}
+
+// === Method Returns ===
+
+public class PermissionService {
+    public Set<String> getUserPermissions(User user) {
+        if (user.isAdmin()) {
+            return Set.of("READ", "WRITE", "DELETE", "ADMIN");
+        } else if (user.isEditor()) {
+            return Set.of("READ", "WRITE");
+        } else {
+            return Set.of("READ");
+        }
+    }
+}
+
+// === Test Data ===
+
+@Test
+public void testUserValidation() {
+    List<User> testUsers = List.of(
+        new User("alice@example.com", 25),
+        new User("bob@example.com", 17),
+        new User("charlie@example.com", 30)
+    );
+
+    var adults = userService.filterAdults(testUsers);
+    assertEquals(2, adults.size());
+}
+
+// === Building Immutable Collections ===
+
+// From mutable collection
+List<String> mutable = new ArrayList<>();
+mutable.add("A");
+mutable.add("B");
+mutable.add("C");
+List<String> immutable = List.copyOf(mutable);  // ✅
+
+// From array
+String[] array = {"X", "Y", "Z"};
+List<String> list = List.of(array);  // ✅
+
+// From stream
+List<Integer> squares = IntStream.range(1, 6)
+    .map(i -> i * i)
+    .boxed()
+    .collect(Collectors.toUnmodifiableList());  // Java 10+
+----
+
+*Comparison with Previous Approaches:*
+
+[source,java]
+----
+// === Before Java 9 ===
+
+// Verbose list creation
+List<String> list = Collections.unmodifiableList(
+    Arrays.asList("A", "B", "C")
+);
+
+// Verbose map creation
+Map<String, Integer> map = new HashMap<>();
+map.put("one", 1);
+map.put("two", 2);
+map = Collections.unmodifiableMap(map);
+
+// === Java 9+ ===
+
+// Concise!
+List<String> list = List.of("A", "B", "C");
+Map<String, Integer> map = Map.of("one", 1, "two", 2);
+----
+====
+
+.Common pitfalls
+[%collapsible]
+====
+*1. Trying to modify immutable collections*
+
+[source,java]
+----
+// PITFALL - forgetting collections are immutable
+
+List<String> items = List.of("A", "B", "C");
+items.add("D");  // ❌ UnsupportedOperationException
+
+// FIX - create mutable copy if modification needed
+List<String> mutable = new ArrayList<>(List.of("A", "B", "C"));
+mutable.add("D");  // ✅
+----
+
+*2. Passing null values*
+
+[source,java]
+----
+// PITFALL - null values cause NullPointerException
+
+List<String> items = List.of("A", null, "C");  // ❌ NPE
+Map<String, String> map = Map.of("key", null);  // ❌ NPE
+Set<String> set = Set.of("A", "B", null);       // ❌ NPE
+
+// FIX - filter nulls or use traditional collections
+List<String> items = Stream.of("A", null, "C")
+    .filter(Objects::nonNull)
+    .collect(Collectors.toList());  // ✅
+
+// Or use Arrays.asList if nulls are intentional
+List<String> withNulls = Arrays.asList("A", null, "C");  // ✅
+----
+
+*3. Duplicate keys in Map.of()*
+
+[source,java]
+----
+// PITFALL - duplicate keys throw IllegalArgumentException
+
+Map<String, Integer> map = Map.of(
+    "A", 1,
+    "B", 2,
+    "A", 3  // ❌ IllegalArgumentException: duplicate key
+);
+
+// FIX - ensure unique keys
+Map<String, Integer> map = Map.of("A", 1, "B", 2, "C", 3);  // ✅
+----
+
+*4. Duplicate elements in Set.of()*
+
+[source,java]
+----
+// PITFALL - duplicate elements throw IllegalArgumentException
+
+Set<String> set = Set.of("A", "B", "A");  // ❌ IllegalArgumentException
+
+// FIX - ensure unique elements
+Set<String> set = Set.of("A", "B", "C");  // ✅
+
+// Or use List.of() if duplicates are needed
+List<String> list = List.of("A", "B", "A");  // ✅
+----
+
+*5. Exceeding Map.of() parameter limit*
+
+[source,java]
+----
+// PITFALL - Map.of() supports max 10 key-value pairs
+
+Map<String, Integer> map = Map.of(
+    "k1", 1, "k2", 2, "k3", 3, "k4", 4, "k5", 5,
+    "k6", 6, "k7", 7, "k8", 8, "k9", 9, "k10", 10,
+    "k11", 11  // ❌ Too many arguments
+);
+
+// FIX - use Map.ofEntries()
+import static java.util.Map.entry;
+
+Map<String, Integer> map = Map.ofEntries(
+    entry("k1", 1),
+    entry("k2", 2),
+    // ... any number of entries
+    entry("k100", 100)
+);  // ✅
+----
+
+*6. Assuming iteration order for Set/Map*
+
+[source,java]
+----
+// PITFALL - relying on iteration order
+
+Set<String> set = Set.of("C", "A", "B");
+assertEquals("C", set.iterator().next());  // ❌ May fail - order unspecified
+
+Map<String, Integer> map = Map.of("z", 1, "a", 2);
+// Iteration order is unspecified
+
+// FIX - use List if order matters
+List<String> list = List.of("C", "A", "B");
+assertEquals("C", list.get(0));  // ✅ Order guaranteed
+----
+
+*7. Confusing List.of() with Arrays.asList()*
+
+[source,java]
+----
+// PITFALL - they behave differently
+
+// Arrays.asList() - allows set() but not add/remove
+List<String> list1 = Arrays.asList("A", "B", "C");
+list1.set(0, "X");  // ✅ Works
+list1.add("D");     // ❌ UnsupportedOperationException
+
+// List.of() - completely immutable
+List<String> list2 = List.of("A", "B", "C");
+list2.set(0, "X");  // ❌ UnsupportedOperationException
+list2.add("D");     // ❌ UnsupportedOperationException
+
+// Arrays.asList() - allows nulls
+List<String> list3 = Arrays.asList("A", null, "C");  // ✅ Works
+List<String> list4 = List.of("A", null, "C");        // ❌ NPE
+----
+
+*8. Creating mutable collections incorrectly*
+
+[source,java]
+----
+// PITFALL - this doesn't make it mutable
+
+List<String> list = new ArrayList<>(List.of("A", "B", "C"));
+var reference = list;
+List<String> immutable = List.of("X", "Y", "Z");
+reference = immutable;  // Now reference points to immutable collection!
+reference.add("W");  // ❌ UnsupportedOperationException
+
+// FIX - be mindful of references
+List<String> mutable = new ArrayList<>(List.of("A", "B", "C"));
+mutable.add("D");  // ✅ Works because mutable is an ArrayList
+----
+
+*9. Not using copyOf() for defensive copying*
+
+[source,java]
+----
+// PITFALL - storing mutable reference
+
+public class Config {
+    private final List<String> settings;
+
+    public Config(List<String> settings) {
+        this.settings = settings;  // ❌ Stores mutable reference!
+    }
+}
+
+List<String> settings = new ArrayList<>(List.of("A", "B"));
+Config config = new Config(settings);
+settings.add("C");  // ❌ Modifies config's internal state!
+
+// FIX - use copyOf()
+public class Config {
+    private final List<String> settings;
+
+    public Config(List<String> settings) {
+        this.settings = List.copyOf(settings);  // ✅ Immutable copy
+    }
+}
+----
+
+*10. Performance issues with large collections*
+
+[source,java]
+----
+// PITFALL - inefficient repeated creation
+
+List<String> result = List.of();
+for (int i = 0; i < 10000; i++) {
+    result = concat(result, "item" + i);  // ❌ Creates 10000 List objects!
+}
+
+// FIX - build with mutable collection first
+List<String> builder = new ArrayList<>();
+for (int i = 0; i < 10000; i++) {
+    builder.add("item" + i);
+}
+List<String> result = List.copyOf(builder);  // ✅ Or Collections.unmodifiableList()
+----
+====
+
+[NOTE]
+====
+*Quick Review:*
+
+1. What are the three main collection factory methods introduced in Java 9?
+2. Are collections created by `List.of()` mutable or immutable?
+3. What happens if you try to add null to a collection created with `Set.of()`?
+4. What's the maximum number of entries for `Map.of()`? How do you create larger maps?
+5. What's the difference between `List.of()` and `Arrays.asList()`?
+6. When would you use `List.copyOf()` instead of `List.of()`?
+7. What exception is thrown if you try to modify an immutable collection?
+8. Are iteration orders guaranteed for collections created with `Set.of()` and `Map.of()`?
+9. What happens if you pass duplicate elements to `Set.of()`?
+10. How do you create a mutable copy of an immutable collection?
+
+*Interview Tip:* Emphasize *immutability benefits* (thread-safety, predictability) and *conciseness* compared to pre-Java 9 approaches. Be ready to explain when NOT to use these methods (nulls, large dynamic collections, need for modification).
+====
+
+---
+
+== Stream API Improvements
+
+==== New Stream Operations
+
+.Overview / What it is
+[%collapsible]
+====
+Java 9 added four new methods to the Stream API that solve common problems more elegantly. Think of them as *power tools* that handle specific patterns you'd otherwise implement manually.
+
+*New Methods:*
+
+1. *takeWhile()*: Take elements while condition is true (then stop)
+2. *dropWhile()*: Skip elements while condition is true (then take rest)
+3. *ofNullable()*: Create stream from potentially null value
+4. *iterate()* (overload): Iterate with termination condition
+
+*Core Concept:*
+
+These methods bridge gaps in the original Stream API, particularly for working with ordered streams and handling edge cases like nulls.
+
+[source,java]
+----
+// takeWhile() - take until condition fails
+Stream.of(2, 4, 6, 7, 8, 10)
+    .takeWhile(n -> n % 2 == 0)  // Takes: 2, 4, 6 (stops at 7)
+    .forEach(System.out::println);
+
+// dropWhile() - skip until condition fails
+Stream.of(2, 4, 6, 7, 8, 10)
+    .dropWhile(n -> n % 2 == 0)  // Skips: 2, 4, 6 (keeps: 7, 8, 10)
+    .forEach(System.out::println);
+
+// ofNullable() - handle potential null
+Stream.ofNullable(getValue())  // Empty stream if null
+    .forEach(System.out::println);
+
+// iterate() with condition - like for loop
+Stream.iterate(0, n -> n < 10, n -> n + 1)  // 0, 1, 2, ..., 9
+    .forEach(System.out::println);
+----
+
+*Mental Model:*
+
+- *takeWhile()*: "Give me elements FROM START until predicate fails"
+- *dropWhile()*: "Skip elements FROM START until predicate fails, then give me rest"
+- *ofNullable()*: "Stream of 0 or 1 element, safely handling null"
+- *iterate(condition)*: "for loop as a stream"
+====
+
+.Why use it
+[%collapsible]
+====
+*1. takeWhile() - Process Ordered Data Until Condition*
+
+Perfect for sorted streams or reading until delimiter:
+
+[source,java]
+----
+// Read lines from file until empty line
+Files.lines(path)
+    .takeWhile(line -> !line.isEmpty())
+    .forEach(System.out::println);
+
+// Process sorted list until threshold
+List<Integer> sortedScores = List.of(95, 90, 85, 78, 65, 50);
+List<Integer> passing = sortedScores.stream()
+    .takeWhile(score -> score >= 70)  // Takes: 95, 90, 85, 78
+    .collect(Collectors.toList());
+----
+
+*2. dropWhile() - Skip Header/Prefix*
+
+Skip unwanted prefix elements:
+
+[source,java]
+----
+// Skip comment lines at start of file
+Files.lines(path)
+    .dropWhile(line -> line.startsWith("#"))
+    .forEach(System.out::println);
+
+// Skip low values in sorted data
+List<Integer> sorted = List.of(1, 2, 5, 10, 20, 50);
+List<Integer> significant = sorted.stream()
+    .dropWhile(n -> n < 10)  // Skips: 1, 2, 5 (keeps: 10, 20, 50)
+    .collect(Collectors.toList());
+----
+
+*3. ofNullable() - Null-Safe Stream Operations*
+
+Avoid NullPointerException in stream pipelines:
+
+[source,java]
+----
+// Before Java 9 - verbose null checking
+Optional.ofNullable(user)
+    .map(User::getEmail)
+    .ifPresent(email -> sendEmail(email));
+
+// Java 9+ - cleaner with Stream.ofNullable()
+Stream.ofNullable(user)
+    .map(User::getEmail)
+    .forEach(this::sendEmail);
+
+// Flatmap with potential nulls
+users.stream()
+    .flatMap(user -> Stream.ofNullable(user.getAddress()))
+    .forEach(System.out::println);
+----
+
+*4. iterate(condition) - Bounded Iteration*
+
+Create finite streams without explicit limit():
+
+[source,java]
+----
+// Before Java 9 - need limit()
+Stream.iterate(1, n -> n * 2)
+    .limit(10)  // Must remember to limit!
+    .forEach(System.out::println);
+
+// Java 9+ - condition built-in
+Stream.iterate(1, n -> n <= 1024, n -> n * 2)  // 1, 2, 4, 8, ..., 1024
+    .forEach(System.out::println);
+
+// Like a for loop: for(int i=0; i<10; i++)
+Stream.iterate(0, i -> i < 10, i -> i + 1)
+    .forEach(System.out::println);
+----
+====
+
+.When not to use
+[%collapsible]
+====
+*❌ DON'T Use for:*
+
+*1. takeWhile()/dropWhile() on Unordered Streams*
+
+[source,java]
+----
+// BAD - behavior undefined for unordered streams
+Set<Integer> set = Set.of(1, 2, 3, 4, 5);
+set.stream()
+    .takeWhile(n -> n < 3)  // ❌ Set is unordered - unpredictable!
+    .forEach(System.out::println);
+
+// GOOD - use filter() instead
+set.stream()
+    .filter(n -> n < 3)  // ✅ Works on unordered streams
+    .forEach(System.out::println);
+----
+
+*2. takeWhile() When You Need All Matching Elements*
+
+[source,java]
+----
+// BAD - takeWhile() stops at first non-match
+List<Integer> numbers = List.of(2, 4, 5, 6, 8);
+numbers.stream()
+    .takeWhile(n -> n % 2 == 0)  // Only gets: 2, 4 (stops at 5)
+    .forEach(System.out::println);
+
+// GOOD - use filter() to get all matches
+numbers.stream()
+    .filter(n -> n % 2 == 0)  // Gets: 2, 4, 6, 8
+    .forEach(System.out::println);
+----
+
+*3. ofNullable() for Collections*
+
+[source,java]
+----
+// BAD - ofNullable() for collection
+List<String> maybeNull = getList();  // Might return null
+Stream.ofNullable(maybeNull)  // ❌ Stream of one List or empty
+    .forEach(System.out::println);
+
+// GOOD - use orElse with stream()
+Optional.ofNullable(maybeNull)
+    .orElse(Collections.emptyList())
+    .stream()  // ✅ Stream of elements
+    .forEach(System.out::println);
+----
+
+*General Rule:* Use these methods for their *specific use cases*. Don't force them where traditional Stream operations (`filter()`, `limit()`, etc.) are more appropriate.
+====
+
+.Best practices
+[%collapsible]
+====
+*✅ DO:*
+
+- *Use takeWhile()/dropWhile() only on ordered streams*
+[source,java]
+----
+// Good - List is ordered
+List.of(1, 2, 3, 4, 5).stream()
+    .takeWhile(n -> n < 4)  // ✅ Predictable: 1, 2, 3
+    .collect(Collectors.toList());
+
+// Good - sorted stream is ordered
+Stream.of(5, 1, 3, 2, 4)
+    .sorted()
+    .takeWhile(n -> n < 4)  // ✅ Predictable: 1, 2, 3
+    .collect(Collectors.toList());
+----
+
+- *Use ofNullable() in flatMap operations*
+[source,java]
+----
+// Elegant handling of potential nulls
+users.stream()
+    .flatMap(user -> Stream.ofNullable(user.getMiddleName()))
+    .collect(Collectors.toList());
+----
+
+- *Use iterate() with condition for bounded sequences*
+[source,java]
+----
+// Fibonacci sequence until value exceeds 1000
+Stream.iterate(new int[]{0, 1}, f -> f[0] + f[1] <= 1000,
+               f -> new int[]{f[1], f[0] + f[1]})
+    .map(f -> f[0])
+    .forEach(System.out::println);
+----
+
+- *Combine takeWhile() with sorted data*
+[source,java]
+----
+// Efficiently process top results
+sortedResults.stream()
+    .takeWhile(result -> result.getScore() > threshold)
+    .limit(10)  // Top 10 above threshold
+    .collect(Collectors.toList());
+----
+
+*❌ DON'T:*
+
+- *Don't use takeWhile() when you mean filter()*
+[source,java]
+----
+// BAD - looking for ALL even numbers
+List.of(2, 4, 5, 6, 8).stream()
+    .takeWhile(n -> n % 2 == 0)  // ❌ Stops at 5: gets only 2, 4
+
+// GOOD
+List.of(2, 4, 5, 6, 8).stream()
+    .filter(n -> n % 2 == 0)  // ✅ Gets: 2, 4, 6, 8
+----
+
+- *Don't use ofNullable() when Optional is clearer*
+[source,java]
+----
+// Less clear
+Stream.ofNullable(getValue())
+    .findFirst()
+    .orElse(defaultValue);
+
+// Clearer
+Optional.ofNullable(getValue())
+    .orElse(defaultValue);
+----
+
+- *Don't forget condition in new iterate() overload*
+[source,java]
+----
+// BAD - infinite stream without limit
+Stream.iterate(1, n -> n * 2)
+    .forEach(System.out::println);  // ❌ Never stops!
+
+// GOOD - with condition
+Stream.iterate(1, n -> n <= 1024, n -> n * 2)
+    .forEach(System.out::println);  // ✅ Stops at 1024
+----
+====
+
+.Example
+[%collapsible]
+====
+*takeWhile() Examples:*
+
+[source,java]
+----
+// === Example 1: Process sorted data until threshold ===
+
+List<Integer> scores = List.of(98, 95, 92, 87, 65, 58, 45);
+
+List<Integer> excellentScores = scores.stream()
+    .takeWhile(score -> score >= 90)  // Takes: 98, 95, 92
+    .collect(Collectors.toList());
+
+System.out.println("Excellent scores: " + excellentScores);
+
+// === Example 2: Read file until delimiter ===
+
+List<String> lines = Files.lines(Paths.get("config.txt"))
+    .takeWhile(line -> !line.equals("---"))  // Read until separator
+    .collect(Collectors.toList());
+
+// === Example 3: Process increasing sequence ===
+
+List<Integer> increasing = List.of(1, 2, 3, 5, 4, 6, 7);
+
+List<Integer> strictlyIncreasing = new ArrayList<>();
+strictlyIncreasing.add(increasing.get(0));
+
+increasing.stream()
+    .skip(1)
+    .takeWhile(n -> n > strictlyIncreasing.get(strictlyIncreasing.size() - 1))
+    .forEach(strictlyIncreasing::add);
+// Result: [1, 2, 3, 5] (stops at 4)
+
+// === Example 4: Paginated results ===
+
+Stream.iterate(1, n -> n + 1)
+    .takeWhile(page -> hasMorePages(page))
+    .flatMap(page -> fetchPage(page).stream())
+    .forEach(this::process);
+----
+
+*dropWhile() Examples:*
+
+[source,java]
+----
+// === Example 1: Skip header lines ===
+
+List<String> csvLines = List.of(
+    "# CSV File",
+    "# Generated: 2024-10-24",
+    "Name,Age,City",
+    "Alice,30,NYC",
+    "Bob,25,LA"
+);
+
+List<String> dataLines = csvLines.stream()
+    .dropWhile(line -> line.startsWith("#"))  // Skip comments
+    .skip(1)  // Skip header row
+    .collect(Collectors.toList());
+// Result: ["Alice,30,NYC", "Bob,25,LA"]
+
+// === Example 2: Skip low priority items ===
+
+List<Task> tasks = getTasks();  // Sorted by priority
+
+List<Task> importantTasks = tasks.stream()
+    .dropWhile(task -> task.getPriority() < 5)
+    .collect(Collectors.toList());
+
+// === Example 3: Skip warming up period ===
+
+List<Double> measurements = List.of(
+    15.0, 20.0, 25.0,  // Warming up
+    45.0, 47.0, 46.0, 48.0  // Stable
+);
+
+List<Double> stableMeasurements = measurements.stream()
+    .dropWhile(temp -> temp < 40.0)  // Skip warm-up
+    .collect(Collectors.toList());
+----
+
+*ofNullable() Examples:*
+
+[source,java]
+----
+// === Example 1: Flatten optional values ===
+
+class User {
+    private String name;
+    private String middleName;  // Might be null
+
+    public String getMiddleName() { return middleName; }
+}
+
+List<User> users = getUsers();
+
+List<String> middleNames = users.stream()
+    .flatMap(user -> Stream.ofNullable(user.getMiddleName()))
+    .collect(Collectors.toList());
+
+// === Example 2: Conditional stream operation ===
+
+String searchTerm = getSearchTerm();  // Might be null
+
+Stream.ofNullable(searchTerm)
+    .filter(term -> term.length() > 2)
+    .flatMap(term -> searchDatabase(term).stream())
+    .forEach(System.out::println);
+
+// === Example 3: Combining multiple potential nulls ===
+
+Stream.of(
+    Stream.ofNullable(getPrimaryContact()),
+    Stream.ofNullable(getSecondaryContact()),
+    Stream.ofNullable(getEmergencyContact())
+)
+.flatMap(s -> s)  // Flatten
+.findFirst()
+.ifPresent(this::sendNotification);
+----
+
+*iterate() with Condition Examples:*
+
+[source,java]
+----
+// === Example 1: Generate sequence with limit ===
+
+// Powers of 2 up to 1000
+Stream.iterate(1, n -> n <= 1000, n -> n * 2)
+    .forEach(System.out::println);
+// Output: 1, 2, 4, 8, 16, 32, 64, 128, 256, 512
+
+// === Example 2: Countdown ===
+
+Stream.iterate(10, n -> n >= 0, n -> n - 1)
+    .forEach(System.out::println);
+// Output: 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0
+
+// === Example 3: Date sequence ===
+
+LocalDate start = LocalDate.of(2024, 10, 1);
+LocalDate end = LocalDate.of(2024, 10, 31);
+
+Stream.iterate(start, date -> !date.isAfter(end), date -> date.plusDays(1))
+    .forEach(System.out::println);
+// All dates in October 2024
+
+// === Example 4: Fibonacci sequence ===
+
+Stream.iterate(new int[]{0, 1},
+               fib -> fib[0] + fib[1] < 100,
+               fib -> new int[]{fib[1], fib[0] + fib[1]})
+    .map(fib -> fib[0])
+    .forEach(System.out::println);
+// Output: 0, 1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89
+
+// === Example 5: Custom iterator pattern ===
+
+class Counter {
+    int value;
+    Counter(int value) { this.value = value; }
+    Counter next() { return new Counter(value + 2); }
+}
+
+Stream.iterate(new Counter(0), c -> c.value < 20, Counter::next)
+    .map(c -> c.value)
+    .forEach(System.out::println);
+// Output: 0, 2, 4, 6, 8, 10, 12, 14, 16, 18
+----
+
+*Comparison with Old Approaches:*
+
+[source,java]
+----
+// === takeWhile() vs manual loop ===
+
+// Before Java 9
+List<Integer> result = new ArrayList<>();
+for (Integer n : numbers) {
+    if (n % 2 == 0) {
+        result.add(n);
+    } else {
+        break;  // Stop at first odd number
+    }
+}
+
+// Java 9+
+List<Integer> result = numbers.stream()
+    .takeWhile(n -> n % 2 == 0)
+    .collect(Collectors.toList());
+
+// === ofNullable() vs Optional handling ===
+
+// Before Java 9
+Optional.ofNullable(value)
+    .map(Stream::of)
+    .orElseGet(Stream::empty)
+    .forEach(System.out::println);
+
+// Java 9+
+Stream.ofNullable(value)
+    .forEach(System.out::println);
+
+// === iterate() with condition vs limit() ===
+
+// Before Java 9
+Stream.iterate(1, n -> n * 2)
+    .limit(10)  // Must count iterations
+    .forEach(System.out::println);
+
+// Java 9+
+Stream.iterate(1, n -> n <= 1024, n -> n * 2)  // Condition-based
+    .forEach(System.out::println);
+----
+====
+
+.Common pitfalls
+[%collapsible]
+====
+*1. Using takeWhile() on unordered streams*
+
+[source,java]
+----
+// PITFALL - unpredictable behavior on unordered data
+
+Set<Integer> set = new HashSet<>(List.of(1, 2, 3, 4, 5));
+List<Integer> result = set.stream()
+    .takeWhile(n -> n < 3)  // ❌ Set iteration order is undefined!
+    .collect(Collectors.toList());
+
+// FIX - use filter() for unordered streams
+List<Integer> result = set.stream()
+    .filter(n -> n < 3)  // ✅ Gets all matching elements
+    .collect(Collectors.toList());
+
+// Or sort first if you need takeWhile()
+List<Integer> result = set.stream()
+    .sorted()
+    .takeWhile(n -> n < 3)  // ✅ Now ordered
+    .collect(Collectors.toList());
+----
+
+*2. Confusing takeWhile() with filter()*
+
+[source,java]
+----
+// PITFALL - takeWhile() stops at first non-match
+
+List<Integer> numbers = List.of(2, 4, 6, 5, 8, 10);
+
+List<Integer> result = numbers.stream()
+    .takeWhile(n -> n % 2 == 0)  // ❌ Gets only: 2, 4, 6 (stops at 5!)
+    .collect(Collectors.toList());
+
+// Expected behavior
+List<Integer> result = numbers.stream()
+    .filter(n -> n % 2 == 0)  // ✅ Gets: 2, 4, 6, 8, 10
+    .collect(Collectors.toList());
+
+// When to use takeWhile(): Sorted data with threshold
+List<Integer> sorted = List.of(10, 8, 6, 5, 4, 2);
+List<Integer> aboveThreshold = sorted.stream()
+    .takeWhile(n -> n > 5)  // ✅ Correct: 10, 8, 6
+    .collect(Collectors.toList());
+----
+
+*3. Forgetting iterate() condition leads to infinite stream*
+
+[source,java]
+----
+// PITFALL - infinite stream without termination
+
+// Old iterate() - infinite by default
+Stream.iterate(1, n -> n + 1)
+    .forEach(System.out::println);  // ❌ Never stops!
+
+// FIX - use new overload with condition
+Stream.iterate(1, n -> n <= 100, n -> n + 1)
+    .forEach(System.out::println);  // ✅ Stops at 100
+
+// Or use limit()
+Stream.iterate(1, n -> n + 1)
+    .limit(100)
+    .forEach(System.out::println);  // ✅ Also works
+----
+
+*4. Using ofNullable() incorrectly for collections*
+
+[source,java]
+----
+// PITFALL - ofNullable() creates stream of the collection, not elements
+
+List<String> maybeNull = getList();  // Might be null
+
+Stream.ofNullable(maybeNull)
+    .forEach(System.out::println);  // ❌ Prints the List object!
+
+// FIX - handle null and stream elements
+Optional.ofNullable(maybeNull)
+    .orElse(Collections.emptyList())
+    .stream()
+    .forEach(System.out::println);  // ✅ Prints elements
+
+// Or use orElseGet
+Stream.ofNullable(maybeNull)
+    .flatMap(Collection::stream)
+    .forEach(System.out::println);  // ✅ Also works
+----
+
+*5. dropWhile() doesn't evaluate all elements*
+
+[source,java]
+----
+// PITFALL - dropWhile() only checks until condition fails
+
+List<String> items = List.of("# comment", "# note", "data", "# another");
+
+List<String> result = items.stream()
+    .dropWhile(s -> s.startsWith("#"))
+    .collect(Collectors.toList());
+// Result: ["data", "# another"]  - "# another" is included!
+
+// FIX - use filter() to remove ALL comments
+List<String> result = items.stream()
+    .filter(s -> !s.startsWith("#"))
+    .collect(Collectors.toList());
+// Result: ["data"]  ✅
+----
+
+*6. Parallel streams with takeWhile()/dropWhile()*
+
+[source,java]
+----
+// PITFALL - unpredictable with parallel streams
+
+List<Integer> numbers = IntStream.range(1, 100).boxed().collect(Collectors.toList());
+
+List<Integer> result = numbers.parallelStream()  // ❌ Parallel!
+    .takeWhile(n -> n < 50)
+    .collect(Collectors.toList());
+// Behavior is non-deterministic with parallel streams
+
+// FIX - use sequential stream
+List<Integer> result = numbers.stream()  // ✅ Sequential
+    .takeWhile(n -> n < 50)
+    .collect(Collectors.toList());
+----
+
+*7. Not realizing takeWhile() is short-circuiting*
+
+[source,java]
+----
+// PITFALL - expensive operation after takeWhile() still executes
+
+numbers.stream()
+    .peek(n -> System.out.println("Processing: " + n))
+    .takeWhile(n -> n < 5)  // Stops at 5
+    .map(this::expensiveOperation)  // ❌ Still calls for all before takeWhile()!
+    .forEach(System.out::println);
+
+// FIX - put expensive operations after takeWhile()
+numbers.stream()
+    .takeWhile(n -> n < 5)  // Filter first
+    .peek(n -> System.out.println("Processing: " + n))
+    .map(this::expensiveOperation)  // ✅ Only processes filtered elements
+    .forEach(System.out::println);
+----
+
+*8. Misunderstanding iterate() parameter order*
+
+[source,java]
+----
+// PITFALL - wrong parameter order
+
+// Correct order: seed, hasNext, next
+Stream.iterate(0, n -> n < 10, n -> n + 1)  // ✅
+
+// Common mistake: seed, next, hasNext
+// Stream.iterate(0, n -> n + 1, n -> n < 10)  // ❌ Won't compile (wrong types)
+----
+
+*9. Using ofNullable() in wrong context*
+
+[source,java]
+----
+// PITFALL - ofNullable() when you need empty stream
+
+// Creating stream that might be null
+Stream<String> stream = condition ? Stream.of("A", "B") : null;
+
+Stream.ofNullable(stream)  // ❌ Stream of one Stream or empty
+    .forEach(System.out::println);
+
+// FIX - use Optional or conditional
+Stream<String> stream = condition ? Stream.of("A", "B") : Stream.empty();
+stream.forEach(System.out::println);  // ✅
+----
+
+*10. Not considering performance of takeWhile()/dropWhile()*
+
+[source,java]
+----
+// PITFALL - using takeWhile() on unsorted data
+
+// Unsorted list - takeWhile() doesn't give you all matches
+List<Integer> unsorted = List.of(5, 2, 8, 1, 9, 3);
+
+// Inefficient - sorts entire list
+List<Integer> result = unsorted.stream()
+    .sorted()  // O(n log n)
+    .takeWhile(n -> n < 5)
+    .collect(Collectors.toList());
+
+// More efficient - just filter
+List<Integer> result = unsorted.stream()
+    .filter(n -> n < 5)  // O(n)
+    .collect(Collectors.toList());
+----
+====
+
+[NOTE]
+====
+*Quick Review:*
+
+1. What's the difference between `takeWhile()` and `filter()`?
+2. When should you use `dropWhile()` instead of `filter()`?
+3. What does `Stream.ofNullable(null)` return?
+4. What are the three parameters of the new `iterate()` overload?
+5. Do `takeWhile()` and `dropWhile()` work correctly on unordered streams?
+6. What happens if you use `takeWhile()` on `List.of(2, 4, 5, 6, 8)` with predicate `n % 2 == 0`?
+7. How is `Stream.ofNullable(value)` different from `Stream.of(value)`?
+8. Why would you prefer the new `iterate()` overload over using `limit()`?
+9. What's a good use case for `dropWhile()`?
+10. Can `takeWhile()` and `dropWhile()` be used effectively with parallel streams?
+
+*Interview Tip:* Emphasize that `takeWhile()` and `dropWhile()` are *order-dependent* and work best with sorted/ordered streams. Contrast with `filter()` which examines all elements regardless of order.
+====
+
+== Optional Improvements
+
+==== New Optional Methods
+
+.Overview / What it is
+[%collapsible]
+====
+Java 9 enhanced the `Optional` class with three powerful new methods that make working with optional values even more elegant. Think of these as *missing puzzle pieces* that complete common Optional usage patterns.
+
+*New Methods:*
+
+1. *ifPresentOrElse()*: Execute one action if present, another if empty
+2. *or()*: Provide alternative Optional if empty
+3. *stream()*: Convert Optional to Stream (0 or 1 element)
+
+*Core Concept:*
+
+These methods fill gaps in the original Optional API, particularly for handling the "else" case and chaining Optional operations more fluently.
+
+[source,java]
+----
+// ifPresentOrElse() - handle both cases
+optional.ifPresentOrElse(
+    value -> System.out.println("Found: " + value),
+    () -> System.out.println("Not found")
+);
+
+// or() - fallback to another Optional
+Optional<String> result = primaryOptional
+    .or(() -> secondaryOptional)
+    .or(() -> tertiaryOptional);
+
+// stream() - use Optional in Stream pipelines
+users.stream()
+    .map(User::getEmail)  // Returns Optional<String>
+    .flatMap(Optional::stream)  // Flatten to stream of values
+    .forEach(System.out::println);
+----
+
+*Mental Model:*
+
+- *ifPresentOrElse()*: "Do this if present, otherwise do that"
+- *or()*: "Try this Optional, if empty try the next one" (lazy Optional chaining)
+- *stream()*: "Treat Optional as a 0-or-1 element stream"
+====
+
+.Why use it
+[%collapsible]
+====
+*1. ifPresentOrElse() - Handle Both Branches Elegantly*
+
+Before Java 9, handling both present and absent cases was awkward:
+
+[source,java]
+----
+// Before Java 9 - awkward
+if (optional.isPresent()) {
+    System.out.println("Value: " + optional.get());
+} else {
+    System.out.println("No value");
+}
+
+// Java 9+ - fluent
+optional.ifPresentOrElse(
+    value -> System.out.println("Value: " + value),
+    () -> System.out.println("No value")
+);
+----
+
+Perfect for side effects with both cases:
+
+[source,java]
+----
+userOptional.ifPresentOrElse(
+    user -> sendWelcomeEmail(user),
+    () -> logMissingUser()
+);
+----
+
+*2. or() - Lazy Optional Fallback Chain*
+
+Chain multiple Optional sources without eager evaluation:
+
+[source,java]
+----
+// Before Java 9 - eager evaluation or verbose
+Optional<User> user = findInCache(id);
+if (user.isEmpty()) {
+    user = findInDatabase(id);  // Always executes!
+}
+if (user.isEmpty()) {
+    user = findInBackupDatabase(id);
+}
+
+// Java 9+ - lazy evaluation
+Optional<User> user = findInCache(id)
+    .or(() -> findInDatabase(id))  // Only if cache is empty
+    .or(() -> findInBackupDatabase(id));  // Only if both above are empty
+----
+
+*3. stream() - Integrate Optional with Stream API*
+
+Flatten streams of Optional values elegantly:
+
+[source,java]
+----
+// Before Java 9 - verbose filtering
+List<String> emails = users.stream()
+    .map(User::getEmail)  // Stream<Optional<String>>
+    .filter(Optional::isPresent)
+    .map(Optional::get)
+    .collect(Collectors.toList());
+
+// Java 9+ - elegant flatMap
+List<String> emails = users.stream()
+    .map(User::getEmail)
+    .flatMap(Optional::stream)  // Flattens Optional to Stream
+    .collect(Collectors.toList());
+----
+
+*4. Combine All Three for Powerful Patterns*
+
+[source,java]
+----
+findUser(id)
+    .or(() -> findInBackup(id))  // Try backup
+    .stream()  // Convert to stream
+    .peek(user -> System.out.println("Found: " + user))
+    .findFirst()
+    .ifPresentOrElse(
+        user -> processUser(user),
+        () -> createDefaultUser()
+    );
+----
+====
+
+.When not to use
+[%collapsible]
+====
+*❌ DON'T Use for:*
+
+*1. ifPresentOrElse() When You Don't Need Both Actions*
+
+[source,java]
+----
+// BAD - using ifPresentOrElse() with empty action
+optional.ifPresentOrElse(
+    value -> process(value),
+    () -> { /* do nothing */ }  // ❌ Unnecessary
+);
+
+// GOOD - use ifPresent()
+optional.ifPresent(value -> process(value));  // ✅
+----
+
+*2. or() When You Have a Value (Not Optional)*
+
+[source,java]
+----
+// BAD - wrapping value in Optional just for or()
+optional.or(() -> Optional.of(defaultValue))  // ❌ Verbose
+    .get();
+
+// GOOD - use orElse()
+optional.orElse(defaultValue);  // ✅
+----
+
+*3. stream() for Simple Present Check*
+
+[source,java]
+----
+// BAD - overcomplicated
+boolean hasValue = optional.stream()
+    .findAny()
+    .isPresent();  // ❌ Too complex
+
+// GOOD - use isPresent()
+boolean hasValue = optional.isPresent();  // ✅
+----
+
+*4. Chaining or() When orElse() Suffices*
+
+[source,java]
+----
+// BAD - or() for static default
+optional.or(() -> Optional.of("default"));  // ❌ Unnecessary Optional
+
+// GOOD - use orElse()
+optional.orElse("default");  // ✅
+----
+
+*General Rule:* Use these new methods when they make the code *more readable* and *more functional*. Don't force them where simpler Optional methods work better.
+====
+
+.Best practices
+[%collapsible]
+====
+*✅ DO:*
+
+- *Use ifPresentOrElse() for side effects with both branches*
+[source,java]
+----
+userRepository.findById(id)
+    .ifPresentOrElse(
+        user -> auditLog.log("User found: " + user.getId()),
+        () -> auditLog.log("User not found: " + id)
+    );
+----
+
+- *Use or() for lazy Optional chaining*
+[source,java]
+----
+// Multiple data sources with lazy evaluation
+Optional<Config> config = loadFromFile()
+    .or(() -> loadFromEnvironment())
+    .or(() -> loadFromDefaults());
+----
+
+- *Use stream() to flatten Optional in Stream pipelines*
+[source,java]
+----
+List<Address> addresses = users.stream()
+    .map(User::getAddress)  // Stream<Optional<Address>>
+    .flatMap(Optional::stream)  // Stream<Address>
+    .collect(Collectors.toList());
+----
+
+- *Combine or() with map() for transformation chains*
+[source,java]
+----
+String result = getPrimaryValue()
+    .map(String::toUpperCase)
+    .or(() -> getSecondaryValue().map(String::toLowerCase))
+    .orElse("DEFAULT");
+----
+
+- *Use stream() with filter and findFirst*
+[source,java]
+----
+Optional<User> admin = users.stream()
+    .map(this::validateUser)  // Stream<Optional<User>>
+    .flatMap(Optional::stream)
+    .filter(User::isAdmin)
+    .findFirst();
+----
+
+*❌ DON'T:*
+
+- *Don't use ifPresentOrElse() for value transformation*
+[source,java]
+----
+// BAD - side effects for transformation
+String result;
+optional.ifPresentOrElse(
+    value -> result = value.toUpperCase(),  // ❌ Mutating external variable
+    () -> result = "DEFAULT"
+);
+
+// GOOD - use map/orElse for transformation
+String result = optional
+    .map(String::toUpperCase)
+    .orElse("DEFAULT");  // ✅
+----
+
+- *Don't use or() when orElseGet() is clearer*
+[source,java]
+----
+// BAD - wrapping in Optional
+String value = optional
+    .or(() -> Optional.of(computeDefault()))
+    .get();  // ❌
+
+// GOOD - use orElseGet()
+String value = optional
+    .orElseGet(() -> computeDefault());  // ✅
+----
+
+- *Don't chain or() excessively*
+[source,java]
+----
+// BAD - too many fallbacks
+optional
+    .or(() -> opt1)
+    .or(() -> opt2)
+    .or(() -> opt3)
+    .or(() -> opt4)
+    .or(() -> opt5);  // ❌ Hard to read
+
+// GOOD - consider a different approach
+Stream.of(optional, opt1, opt2, opt3, opt4, opt5)
+    .flatMap(Optional::stream)
+    .findFirst();  // ✅
+----
+
+- *Don't use stream() when you don't need Stream operations*
+[source,java]
+----
+// BAD - unnecessary stream
+optional.stream()
+    .forEach(System.out::println);  // ❌
+
+// GOOD - use ifPresent()
+optional.ifPresent(System.out::println);  // ✅
+----
+====
+
+.Example
+[%collapsible]
+====
+*ifPresentOrElse() Examples:*
+
+[source,java]
+----
+// === Example 1: Audit logging ===
+
+Optional<User> userOpt = userService.findById(userId);
+
+userOpt.ifPresentOrElse(
+    user -> {
+        auditLog.info("User login: " + user.getEmail());
+        updateLastLogin(user);
+    },
+    () -> {
+        auditLog.warn("Login attempt with invalid user ID: " + userId);
+        incrementFailedAttempts(userId);
+    }
+);
+
+// === Example 2: UI update ===
+
+searchResult.ifPresentOrElse(
+    result -> {
+        ui.displayResult(result);
+        ui.hideNoResultsMessage();
+    },
+    () -> {
+        ui.showNoResultsMessage();
+        ui.displaySuggestions();
+    }
+);
+
+// === Example 3: Caching with metrics ===
+
+cache.get(key).ifPresentOrElse(
+    value -> {
+        metrics.incrementCacheHit();
+        return value;
+    },
+    () -> {
+        metrics.incrementCacheMiss();
+        fetchFromDatabase(key);
+    }
+);
+
+// === Example 4: Configuration validation ===
+
+configOptional.ifPresentOrElse(
+    config -> {
+        validator.validate(config);
+        System.out.println("Configuration loaded successfully");
+    },
+    () -> {
+        System.err.println("Using default configuration");
+        loadDefaults();
+    }
+);
+----
+
+*or() Examples:*
+
+[source,java]
+----
+// === Example 1: Multi-tier data source ===
+
+Optional<User> user = userCache.get(userId)
+    .or(() -> userDatabase.find(userId))
+    .or(() -> userBackupDatabase.find(userId))
+    .or(() -> userArchive.find(userId));
+
+user.ifPresent(u -> System.out.println("Found user: " + u));
+
+// === Example 2: Configuration hierarchy ===
+
+Optional<String> apiUrl = getFromSystemProperty("api.url")
+    .or(() -> getFromEnvironmentVariable("API_URL"))
+    .or(() -> getFromConfigFile("api.url"))
+    .or(() -> Optional.of("http://localhost:8080"));  // Default
+
+// === Example 3: Service discovery ===
+
+Optional<Service> service = findPrimaryService()
+    .filter(Service::isHealthy)
+    .or(() -> findSecondaryService())
+    .or(() -> findTertiaryService());
+
+// === Example 4: User preferences fallback ===
+
+String theme = userPreferences.getTheme()
+    .or(() -> accountPreferences.getTheme())
+    .or(() -> systemDefaults.getTheme())
+    .orElse("default-theme");
+
+// === Example 5: Authentication source chain ===
+
+Optional<User> authenticatedUser = authenticateWithSSO(credentials)
+    .or(() -> authenticateWithLDAP(credentials))
+    .or(() -> authenticateWithDatabase(credentials));
+
+authenticatedUser.ifPresentOrElse(
+    user -> createSession(user),
+    () -> denyAccess()
+);
+----
+
+*stream() Examples:*
+
+[source,java]
+----
+// === Example 1: Flatten stream of Optional ===
+
+List<User> users = List.of(
+    new User("alice", "alice@example.com"),
+    new User("bob", null),  // No email
+    new User("charlie", "charlie@example.com")
+);
+
+List<String> emails = users.stream()
+    .map(User::getEmail)  // Stream<Optional<String>>
+    .flatMap(Optional::stream)  // Stream<String>
+    .collect(Collectors.toList());
+// Result: ["alice@example.com", "charlie@example.com"]
+
+// === Example 2: Filter and map with Optional ===
+
+List<Address> addresses = users.stream()
+    .map(User::getAddress)  // Stream<Optional<Address>>
+    .flatMap(Optional::stream)
+    .filter(Address::isValid)
+    .collect(Collectors.toList());
+
+// === Example 3: Combining multiple Optional sources ===
+
+Stream.of(
+    findInCache(id),
+    findInDatabase(id),
+    findInBackup(id)
+)
+.flatMap(Optional::stream)  // Flatten all Optional results
+.findFirst()  // Get first present value
+.ifPresent(System.out::println);
+
+// === Example 4: Optional transformation in pipeline ===
+
+List<Integer> validAges = users.stream()
+    .map(user -> parseAge(user.getAgeString()))  // Stream<Optional<Integer>>
+    .flatMap(Optional::stream)
+    .filter(age -> age >= 18)
+    .collect(Collectors.toList());
+
+// === Example 5: Grouping with Optional values ===
+
+Map<String, List<String>> phonesByDepartment = employees.stream()
+    .collect(Collectors.groupingBy(
+        Employee::getDepartment,
+        Collectors.flatMapping(
+            emp -> emp.getPhoneNumber().stream(),  // Optional.stream()
+            Collectors.toList()
+        )
+    ));
+----
+
+*Combined Examples:*
+
+[source,java]
+----
+// === Example 1: Full pipeline with all three methods ===
+
+public void processUserRequest(Long userId) {
+    findInCache(userId)
+        .or(() -> findInDatabase(userId))  // Fallback to DB
+        .stream()  // Convert to stream
+        .peek(user -> cache.put(userId, user))  // Cache if found
+        .findFirst()
+        .ifPresentOrElse(
+            user -> sendResponse(user),
+            () -> sendNotFoundError(userId)
+        );
+}
+
+// === Example 2: Configuration with validation ===
+
+loadConfigFromFile()
+    .filter(Config::isValid)
+    .or(() -> loadConfigFromDefaults())
+    .stream()
+    .peek(config -> System.out.println("Using config: " + config.getSource()))
+    .findFirst()
+    .ifPresentOrElse(
+        config -> application.initialize(config),
+        () -> {
+            System.err.println("No valid configuration found");
+            System.exit(1);
+        }
+    );
+
+// === Example 3: Data enrichment pipeline ===
+
+public List<EnrichedUser> enrichUsers(List<User> users) {
+    return users.stream()
+        .map(user -> enrichUser(user)  // Returns Optional<EnrichedUser>
+            .or(() -> createPartialEnrichment(user))
+        )
+        .flatMap(Optional::stream)
+        .collect(Collectors.toList());
+}
+----
+
+*Comparison with Before Java 9:*
+
+[source,java]
+----
+// === Before Java 9 - ifPresentOrElse() ===
+
+// Awkward if-else
+if (optional.isPresent()) {
+    process(optional.get());
+} else {
+    handleMissing();
+}
+
+// Java 9+
+optional.ifPresentOrElse(
+    value -> process(value),
+    () -> handleMissing()
+);
+
+// === Before Java 9 - or() ===
+
+// Eager evaluation
+Optional<User> user = primary;
+if (user.isEmpty()) {
+    user = secondary;  // Evaluated even if primary present
+}
+
+// Java 9+ - lazy
+Optional<User> user = primary.or(() -> secondary);
+
+// === Before Java 9 - stream() ===
+
+// Manual filtering
+List<String> values = optionals.stream()
+    .filter(Optional::isPresent)
+    .map(Optional::get)
+    .collect(Collectors.toList());
+
+// Java 9+
+List<String> values = optionals.stream()
+    .flatMap(Optional::stream)
+    .collect(Collectors.toList());
+----
+====
+
+.Common pitfalls
+[%collapsible]
+====
+*1. Using ifPresentOrElse() for value transformation*
+
+[source,java]
+----
+// PITFALL - mutating external variable
+
+String result;
+optional.ifPresentOrElse(
+    value -> result = value.toUpperCase(),  // ❌ Side effect
+    () -> result = "DEFAULT"
+);
+
+// FIX - use map/orElse
+String result = optional
+    .map(String::toUpperCase)
+    .orElse("DEFAULT");  // ✅
+----
+
+*2. Confusing or() with orElse()*
+
+[source,java]
+----
+// PITFALL - wrong method for simple default
+
+// Using or() when you have a value (not Optional)
+String value = optional
+    .or(() -> Optional.of("default"))  // ❌ Unnecessary Optional wrapper
+    .get();
+
+// FIX - use orElse()
+String value = optional.orElse("default");  // ✅
+
+// or() is for when the fallback is also an Optional
+Optional<String> result = optional
+    .or(() -> getFromBackup());  // ✅ Returns Optional
+----
+
+*3. Not understanding or() is lazy*
+
+[source,java]
+----
+// PITFALL - assuming eager evaluation
+
+Optional<User> primary = Optional.of(user);
+Optional<User> result = primary.or(() -> {
+    System.out.println("Fetching from backup");  // ❌ Never prints!
+    return fetchFromBackup();
+});
+
+// or() only evaluates if primary is empty
+// Use orElseGet() if you want the supplier called for side effects
+----
+
+*4. Using stream() when simpler methods exist*
+
+[source,java]
+----
+// PITFALL - overcomplicated
+
+// Checking if present
+boolean hasValue = optional.stream()
+    .findAny()
+    .isPresent();  // ❌ Too complex
+
+// FIX
+boolean hasValue = optional.isPresent();  // ✅
+
+// Getting value
+String value = optional.stream()
+    .findFirst()
+    .orElse("default");  // ❌ Unnecessary
+
+// FIX
+String value = optional.orElse("default");  // ✅
+----
+
+*5. Forgetting ifPresentOrElse() needs both actions*
+
+[source,java]
+----
+// PITFALL - empty else action
+
+optional.ifPresentOrElse(
+    value -> process(value),
+    () -> { }  // ❌ Unnecessary
+);
+
+// FIX - use ifPresent()
+optional.ifPresent(value -> process(value));  // ✅
+----
+
+*6. Chaining too many or() calls*
+
+[source,java]
+----
+// PITFALL - hard to read chain
+
+Optional<User> user = source1()
+    .or(() -> source2())
+    .or(() -> source3())
+    .or(() -> source4())
+    .or(() -> source5())
+    .or(() -> source6());  // ❌ Too many fallbacks
+
+// FIX - consider Stream approach
+Optional<User> user = Stream.of(
+    source1(), source2(), source3(),
+    source4(), source5(), source6()
+)
+.flatMap(Optional::stream)
+.findFirst();  // ✅
+----
+
+*7. Not realizing stream() returns Stream, not Optional*
+
+[source,java]
+----
+// PITFALL - expecting Optional
+
+Optional<String> result = optional.stream();  // ❌ Compilation error!
+// stream() returns Stream<T>, not Optional<T>
+
+// FIX - understand the type
+Stream<String> stream = optional.stream();  // ✅
+Optional<String> result = stream.findFirst();  // If you need Optional back
+----
+
+*8. Using get() after or()*
+
+[source,java]
+----
+// PITFALL - get() can still throw
+
+Optional<String> result = optional.or(() -> getBackup());
+String value = result.get();  // ❌ Can throw if both are empty!
+
+// FIX - use orElse/orElseGet
+String value = optional
+    .or(() -> getBackup())
+    .orElse("default");  // ✅
+----
+
+*9. Inefficient stream() usage*
+
+[source,java]
+----
+// PITFALL - converting Optional to Stream and back
+
+Optional<String> result = optional
+    .stream()
+    .map(String::toUpperCase)
+    .findFirst();  // ❌ Unnecessary stream conversion
+
+// FIX - use map() directly
+Optional<String> result = optional
+    .map(String::toUpperCase);  // ✅
+----
+
+*10. Using ifPresentOrElse() when you need a return value*
+
+[source,java]
+----
+// PITFALL - ifPresentOrElse() is void
+
+String result;
+optional.ifPresentOrElse(
+    value -> result = process(value),  // ❌ Can't return from lambda
+    () -> result = getDefault()
+);
+
+// FIX - use map/orElseGet
+String result = optional
+    .map(this::process)
+    .orElseGet(this::getDefault);  // ✅
+----
+====
+
+[NOTE]
+====
+*Quick Review:*
+
+1. What's the difference between `ifPresent()` and `ifPresentOrElse()`?
+2. When would you use `or()` instead of `orElse()`?
+3. What does `Optional.empty().stream()` return?
+4. Is `or()` eagerly or lazily evaluated?
+5. What type does `optional.stream()` return - Optional or Stream?
+6. How is `or()` different from `orElseGet()`?
+7. What's a good use case for `stream()` on Optional?
+8. Can you chain multiple `or()` calls? Is it recommended?
+9. Does `ifPresentOrElse()` return a value?
+10. How do you flatten `Stream<Optional<T>>` to `Stream<T>` in Java 9+?
+
+*Interview Tip:* Emphasize that these methods make Optional *more composable* with Stream API and handle the "else" case more elegantly. Show how `or()` provides lazy Optional chaining (unlike `orElse()` which evaluates eagerly).
+====
+
+== Private Interface Methods
+
+==== Code Reuse in Interfaces
+
+.Overview / What it is
+[%collapsible]
+====
+Java 9 allows interfaces to have *private methods* (both instance and static). Think of them as *helper methods that reduce duplication* in default and static interface methods without exposing implementation details.
+
+*Core Concept:*
+
+Before Java 9, you couldn't extract common code from default/static methods in interfaces. Now you can create private helper methods for code reuse.
+
+[source,java]
+----
+public interface Calculator {
+
+    // Public default methods
+    default int addPositive(int a, int b) {
+        validate(a);
+        validate(b);
+        return a + b;
+    }
+
+    default int multiplyPositive(int a, int b) {
+        validate(a);
+        validate(b);
+        return a * b;
+    }
+
+    // Private helper method - reduces duplication
+    private void validate(int number) {
+        if (number < 0) {
+            throw new IllegalArgumentException("Only positive numbers allowed");
+        }
+    }
+}
+----
+
+*What You Can Do:*
+
+1. *Private instance methods*: Used by default methods
+2. *Private static methods*: Used by static and default methods
+
+*What You CANNOT Do:*
+
+- Private methods cannot be abstract (they must have a body)
+- Private methods are not inherited or visible to implementing classes
+- Private methods cannot be called from outside the interface
+
+*Mental Model:*
+
+Think of private interface methods as *internal implementation details* that help keep default/static methods DRY (Don't Repeat Yourself), just like private methods in classes.
+====
+
+.Why use it
+[%collapsible]
+====
+*1. Eliminate Code Duplication*
+
+Extract common logic from default methods:
+
+[source,java]
+----
+// Before Java 9 - duplicated validation logic
+public interface UserService {
+    default void createUser(User user) {
+        if (user == null) throw new IllegalArgumentException("User cannot be null");
+        if (user.getEmail() == null) throw new IllegalArgumentException("Email required");
+        // ... create user
+    }
+
+    default void updateUser(User user) {
+        if (user == null) throw new IllegalArgumentException("User cannot be null");
+        if (user.getEmail() == null) throw new IllegalArgumentException("Email required");
+        // ... update user
+    }
+}
+
+// Java 9+ - extracted to private method
+public interface UserService {
+    default void createUser(User user) {
+        validateUser(user);
+        // ... create user
+    }
+
+    default void updateUser(User user) {
+        validateUser(user);
+        // ... update user
+    }
+
+    private void validateUser(User user) {
+        if (user == null) throw new IllegalArgumentException("User cannot be null");
+        if (user.getEmail() == null) throw new IllegalArgumentException("Email required");
+    }
+}
+----
+
+*2. Keep Implementation Details Hidden*
+
+Private methods don't leak to implementing classes:
+
+[source,java]
+----
+public interface Logger {
+    default void logInfo(String message) {
+        log("INFO", message);
+    }
+
+    default void logError(String message) {
+        log("ERROR", message);
+    }
+
+    // Hidden from implementing classes
+    private void log(String level, String message) {
+        System.out.println("[" + level + "] " + message);
+    }
+}
+
+class MyLogger implements Logger {
+    // Cannot access log() method - it's private to the interface
+}
+----
+
+*3. Support Complex Default Method Logic*
+
+Break down complex default methods into smaller, testable pieces:
+
+[source,java]
+----
+public interface DataProcessor {
+    default List<String> processData(List<String> data) {
+        List<String> cleaned = cleanData(data);
+        List<String> validated = validateData(cleaned);
+        return transformData(validated);
+    }
+
+    private List<String> cleanData(List<String> data) {
+        return data.stream()
+            .map(String::trim)
+            .filter(s -> !s.isEmpty())
+            .collect(Collectors.toList());
+    }
+
+    private List<String> validateData(List<String> data) {
+        // Validation logic
+        return data;
+    }
+
+    private List<String> transformData(List<String> data) {
+        // Transformation logic
+        return data;
+    }
+}
+----
+
+*4. Organize Static Helper Methods*
+
+Keep utility logic internal to the interface:
+
+[source,java]
+----
+public interface TimeUtils {
+    static LocalDateTime now() {
+        return LocalDateTime.now(getClock());
+    }
+
+    static LocalDateTime parse(String dateTime) {
+        return LocalDateTime.parse(dateTime, getFormatter());
+    }
+
+    private static Clock getClock() {
+        return Clock.systemDefaultZone();
+    }
+
+    private static DateTimeFormatter getFormatter() {
+        return DateTimeFormatter.ISO_LOCAL_DATE_TIME;
+    }
+}
+----
+====
+
+.When not to use
+[%collapsible]
+====
+*❌ DON'T Use for:*
+
+*1. Overridable Behavior*
+
+[source,java]
+----
+// BAD - behavior that should be customizable
+public interface Renderer {
+    default void render(String content) {
+        String formatted = format(content);  // ❌ Can't override format()
+        display(formatted);
+    }
+
+    private String format(String content) {
+        return content.toUpperCase();
+    }
+
+    void display(String content);
+}
+
+// GOOD - allow implementations to customize
+public interface Renderer {
+    default void render(String content) {
+        String formatted = format(content);  // ✅ Can override
+        display(formatted);
+    }
+
+    default String format(String content) {  // ✅ Default, not private
+        return content.toUpperCase();
+    }
+
+    void display(String content);
+}
+----
+
+*2. API That Implementations Should Access*
+
+[source,java]
+----
+// BAD - utility method that implementations might need
+public interface StringProcessor {
+    String process(String input);
+
+    private boolean isValid(String s) {  // ❌ Implementations can't use this
+        return s != null && !s.isEmpty();
+    }
+}
+
+// GOOD - make it default or static public
+public interface StringProcessor {
+    String process(String input);
+
+    default boolean isValid(String s) {  // ✅ Implementations can use
+        return s != null && !s.isEmpty();
+    }
+}
+----
+
+*3. When Interface is Simple*
+
+[source,java]
+----
+// BAD - over-engineering simple interface
+public interface Greeter {
+    default void greet(String name) {
+        String message = buildMessage(name);  // ❌ Unnecessary extraction
+        System.out.println(message);
+    }
+
+    private String buildMessage(String name) {
+        return "Hello, " + name;
+    }
+}
+
+// GOOD - keep it simple
+public interface Greeter {
+    default void greet(String name) {
+        System.out.println("Hello, " + name);  // ✅ Simple, no extraction needed
+    }
+}
+----
+
+*General Rule:* Use private methods when you have *actual code duplication* or *complex default methods* that benefit from extraction. Don't use them just because you can.
+====
+
+.Best practices
+[%collapsible]
+====
+*✅ DO:*
+
+- *Extract common validation logic*
+[source,java]
+----
+public interface Repository<T> {
+    default void save(T entity) {
+        validateNotNull(entity);
+        // save logic
+    }
+
+    default void update(T entity) {
+        validateNotNull(entity);
+        // update logic
+    }
+
+    private void validateNotNull(T entity) {
+        if (entity == null) {
+            throw new IllegalArgumentException("Entity cannot be null");
+        }
+    }
+}
+----
+
+- *Break down complex default methods*
+[source,java]
+----
+public interface ReportGenerator {
+    default Report generateReport(Data data) {
+        validate(data);
+        List<String> processed = process(data);
+        return format(processed);
+    }
+
+    private void validate(Data data) { /* ... */ }
+    private List<String> process(Data data) { /* ... */ }
+    private Report format(List<String> data) { /* ... */ }
+}
+----
+
+- *Keep private methods focused and small*
+[source,java]
+----
+public interface Formatter {
+    default String format(Object obj) {
+        if (shouldFormat(obj)) {
+            return applyFormatting(obj);
+        }
+        return obj.toString();
+    }
+
+    private boolean shouldFormat(Object obj) {
+        return obj != null && !(obj instanceof String);
+    }
+
+    private String applyFormatting(Object obj) {
+        // Formatting logic
+        return obj.toString();
+    }
+}
+----
+
+- *Use private static methods for stateless helpers*
+[source,java]
+----
+public interface MathUtils {
+    static int factorial(int n) {
+        validatePositive(n);
+        return calculateFactorial(n);
+    }
+
+    private static void validatePositive(int n) {
+        if (n < 0) throw new IllegalArgumentException("Negative numbers not allowed");
+    }
+
+    private static int calculateFactorial(int n) {
+        return n <= 1 ? 1 : n * calculateFactorial(n - 1);
+    }
+}
+----
+
+*❌ DON'T:*
+
+- *Don't make methods private when implementations need them*
+[source,java]
+----
+// BAD
+public interface Validator {
+    boolean validate(String input);
+
+    private boolean isEmpty(String s) {  // ❌ Implementations might need this
+        return s == null || s.isEmpty();
+    }
+}
+
+// GOOD
+public interface Validator {
+    boolean validate(String input);
+
+    default boolean isEmpty(String s) {  // ✅ Accessible to implementations
+        return s == null || s.isEmpty();
+    }
+}
+----
+
+- *Don't overuse for trivial extractions*
+[source,java]
+----
+// BAD - over-extraction
+default void log(String msg) {
+    String formatted = addBrackets(msg);  // ❌ Trivial
+    System.out.println(formatted);
+}
+
+private String addBrackets(String msg) {
+    return "[" + msg + "]";
+}
+
+// GOOD - inline trivial operations
+default void log(String msg) {
+    System.out.println("[" + msg + "]");  // ✅
+}
+----
+
+- *Don't create deep call hierarchies*
+[source,java]
+----
+// BAD - too many layers
+default void process() {
+    step1();
+}
+
+private void step1() { step2(); }
+private void step2() { step3(); }
+private void step3() { /* actual work */ }  // ❌ Hard to follow
+
+// GOOD - flatten when reasonable
+default void process() {
+    initialize();
+    execute();
+    cleanup();
+}
+
+private void initialize() { /* ... */ }
+private void execute() { /* ... */ }
+private void cleanup() { /* ... */ }
+----
+====
+
+.Example
+[%collapsible]
+====
+*Example 1: Validation Extraction*
+
+[source,java]
+----
+public interface UserManagement {
+
+    default void createUser(String username, String email) {
+        validateUsername(username);
+        validateEmail(email);
+        System.out.println("Creating user: " + username);
+    }
+
+    default void updateUser(String username, String email) {
+        validateUsername(username);
+        validateEmail(email);
+        System.out.println("Updating user: " + username);
+    }
+
+    private void validateUsername(String username) {
+        if (username == null || username.length() < 3) {
+            throw new IllegalArgumentException("Username must be at least 3 characters");
+        }
+    }
+
+    private void validateEmail(String email) {
+        if (email == null || !email.contains("@")) {
+            throw new IllegalArgumentException("Invalid email format");
+        }
+    }
+}
+
+class UserService implements UserManagement {
+    // Automatically has createUser and updateUser with built-in validation
+}
+----
+
+*Example 2: Complex Calculation Breakdown*
+
+[source,java]
+----
+public interface PriceCalculator {
+
+    default double calculateFinalPrice(double basePrice, String customerType, int quantity) {
+        double discounted = applyDiscount(basePrice, customerType);
+        double withQuantity = applyQuantityDiscount(discounted, quantity);
+        double withTax = applyTax(withQuantity);
+        return roundToTwoDecimals(withTax);
+    }
+
+    private double applyDiscount(double price, String customerType) {
+        return switch (customerType) {
+            case "VIP" -> price * 0.8;   // 20% off
+            case "MEMBER" -> price * 0.9; // 10% off
+            default -> price;
+        };
+    }
+
+    private double applyQuantityDiscount(double price, int quantity) {
+        if (quantity >= 10) return price * 0.95;  // 5% bulk discount
+        return price;
+    }
+
+    private double applyTax(double price) {
+        return price * 1.1;  // 10% tax
+    }
+
+    private double roundToTwoDecimals(double value) {
+        return Math.round(value * 100.0) / 100.0;
+    }
+}
+----
+
+*Example 3: Logging with Private Static Methods*
+
+[source,java]
+----
+public interface Loggable {
+
+    default void logInfo(String message) {
+        log("INFO", message);
+    }
+
+    default void logWarning(String message) {
+        log("WARNING", message);
+    }
+
+    default void logError(String message) {
+        log("ERROR", message);
+    }
+
+    private void log(String level, String message) {
+        String formatted = formatMessage(level, message);
+        System.out.println(formatted);
+    }
+
+    private static String formatMessage(String level, String message) {
+        return String.format("[%s] %s - %s",
+            level,
+            getCurrentTimestamp(),
+            message
+        );
+    }
+
+    private static String getCurrentTimestamp() {
+        return LocalDateTime.now()
+            .format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+    }
+}
+----
+
+*Example 4: Data Processing Pipeline*
+
+[source,java]
+----
+public interface DataTransformer {
+
+    default List<String> transform(List<String> rawData) {
+        List<String> cleaned = cleanData(rawData);
+        List<String> validated = validateData(cleaned);
+        List<String> normalized = normalizeData(validated);
+        return normalized;
+    }
+
+    private List<String> cleanData(List<String> data) {
+        return data.stream()
+            .map(String::trim)
+            .filter(s -> !s.isEmpty())
+            .collect(Collectors.toList());
+    }
+
+    private List<String> validateData(List<String> data) {
+        return data.stream()
+            .filter(this::isValid)
+            .collect(Collectors.toList());
+    }
+
+    private List<String> normalizeData(List<String> data) {
+        return data.stream()
+            .map(String::toUpperCase)
+            .collect(Collectors.toList());
+    }
+
+    private boolean isValid(String s) {
+        return s.length() >= 3 && s.matches("[a-zA-Z0-9]+");
+    }
+}
+----
+
+*Example 5: Configuration Builder*
+
+[source,java]
+----
+public interface ConfigBuilder {
+
+    default Config buildConfig(Map<String, String> properties) {
+        validateProperties(properties);
+        Map<String, String> normalized = normalizeKeys(properties);
+        Map<String, String> withDefaults = applyDefaults(normalized);
+        return new Config(withDefaults);
+    }
+
+    private void validateProperties(Map<String, String> properties) {
+        if (properties == null || properties.isEmpty()) {
+            throw new IllegalArgumentException("Properties cannot be null or empty");
+        }
+
+        validateRequiredKeys(properties);
+    }
+
+    private void validateRequiredKeys(Map<String, String> properties) {
+        List<String> required = List.of("app.name", "app.version");
+        for (String key : required) {
+            if (!properties.containsKey(key)) {
+                throw new IllegalArgumentException("Missing required property: " + key);
+            }
+        }
+    }
+
+    private Map<String, String> normalizeKeys(Map<String, String> properties) {
+        return properties.entrySet().stream()
+            .collect(Collectors.toMap(
+                e -> e.getKey().toLowerCase(),
+                Map.Entry::getValue
+            ));
+    }
+
+    private Map<String, String> applyDefaults(Map<String, String> properties) {
+        Map<String, String> result = new HashMap<>(properties);
+        result.putIfAbsent("app.env", "development");
+        result.putIfAbsent("app.port", "8080");
+        return result;
+    }
+}
+
+class Config {
+    private final Map<String, String> properties;
+    Config(Map<String, String> properties) {
+        this.properties = properties;
+    }
+    public String get(String key) { return properties.get(key); }
+}
+----
+
+*Example 6: Comparison - Before and After Java 9*
+
+[source,java]
+----
+// === Before Java 9 - Code Duplication ===
+
+public interface Calculator {
+    default int addPositive(int a, int b) {
+        if (a < 0 || b < 0) {
+            throw new IllegalArgumentException("Only positive numbers");
+        }
+        return a + b;
+    }
+
+    default int multiplyPositive(int a, int b) {
+        if (a < 0 || b < 0) {  // ❌ Duplicated validation
+            throw new IllegalArgumentException("Only positive numbers");
+        }
+        return a * b;
+    }
+}
+
+// === Java 9+ - Private Method Extraction ===
+
+public interface Calculator {
+    default int addPositive(int a, int b) {
+        validatePositive(a, b);  // ✅ No duplication
+        return a + b;
+    }
+
+    default int multiplyPositive(int a, int b) {
+        validatePositive(a, b);  // ✅ Reused
+        return a * b;
+    }
+
+    private void validatePositive(int... numbers) {
+        for (int n : numbers) {
+            if (n < 0) {
+                throw new IllegalArgumentException("Only positive numbers");
+            }
+        }
+    }
+}
+----
+====
+
+.Common pitfalls
+[%collapsible]
+====
+*1. Making methods private when implementations need them*
+
+[source,java]
+----
+// PITFALL - useful method hidden from implementations
+
+public interface StringUtils {
+    String process(String input);
+
+    private boolean isNullOrEmpty(String s) {  // ❌ Implementations can't use
+        return s == null || s.isEmpty();
+    }
+}
+
+class MyStringProcessor implements StringUtils {
+    @Override
+    public String process(String input) {
+        // Can't call isNullOrEmpty()!  ❌
+        if (input == null || input.isEmpty()) {  // Have to duplicate
+            return "";
+        }
+        return input.toUpperCase();
+    }
+}
+
+// FIX - make it default
+public interface StringUtils {
+    String process(String input);
+
+    default boolean isNullOrEmpty(String s) {  // ✅ Accessible
+        return s == null || s.isEmpty();
+    }
+}
+
+class MyStringProcessor implements StringUtils {
+    @Override
+    public String process(String input) {
+        if (isNullOrEmpty(input)) {  // ✅ Can use it
+            return "";
+        }
+        return input.toUpperCase();
+    }
+}
+----
+
+*2. Trying to make private methods abstract*
+
+[source,java]
+----
+// PITFALL - private methods must have body
+
+public interface Service {
+    private void init();  // ❌ Compilation error: private methods cannot be abstract
+}
+
+// FIX - private methods must have implementation
+public interface Service {
+    private void init() {  // ✅
+        System.out.println("Initializing...");
+    }
+}
+----
+
+*3. Calling private interface method from implementing class*
+
+[source,java]
+----
+public interface Logger {
+    default void log(String msg) {
+        formatAndPrint(msg);
+    }
+
+    private void formatAndPrint(String msg) {
+        System.out.println("[LOG] " + msg);
+    }
+}
+
+class MyLogger implements Logger {
+    public void logSpecial(String msg) {
+        formatAndPrint(msg);  // ❌ Compilation error: cannot access private method
+    }
+}
+
+// FIX - use public default method or duplicate logic
+class MyLogger implements Logger {
+    public void logSpecial(String msg) {
+        log(msg);  // ✅ Use public default method
+    }
+}
+----
+
+*4. Over-extracting trivial code*
+
+[source,java]
+----
+// PITFALL - unnecessary extraction
+
+public interface Formatter {
+    default String format(String input) {
+        return addPrefix(input);  // ❌ Trivial operation
+    }
+
+    private String addPrefix(String input) {
+        return "PREFIX_" + input;
+    }
+}
+
+// FIX - inline trivial operations
+public interface Formatter {
+    default String format(String input) {
+        return "PREFIX_" + input;  // ✅ Simple enough to inline
+    }
+}
+----
+
+*5. Not using static for stateless helpers*
+
+[source,java]
+----
+// PITFALL - instance method for stateless operation
+
+public interface Utils {
+    default String process(String input) {
+        return transform(input);
+    }
+
+    private String transform(String input) {  // ❌ Should be static
+        return input.toUpperCase();
+    }
+}
+
+// FIX - use private static
+public interface Utils {
+    default String process(String input) {
+        return transform(input);
+    }
+
+    private static String transform(String input) {  // ✅ Static
+        return input.toUpperCase();
+    }
+}
+----
+
+*6. Creating deep call chains*
+
+[source,java]
+----
+// PITFALL - too many layers
+
+public interface Processor {
+    default void process() {
+        step1();
+    }
+
+    private void step1() { step2(); }
+    private void step2() { step3(); }
+    private void step3() { step4(); }
+    private void step4() { /* actual work */ }  // ❌ Hard to follow
+}
+
+// FIX - flatten or reduce layers
+public interface Processor {
+    default void process() {
+        initialize();
+        execute();
+        finalize();
+    }
+
+    private void initialize() { /* ... */ }
+    private void execute() { /* ... */ }
+    private void finalize() { /* ... */ }
+}
+----
+
+*7. Forgetting private methods aren't inherited*
+
+[source,java]
+----
+// PITFALL - expecting inheritance
+
+public interface Base {
+    default void process() {
+        helper();
+    }
+
+    private void helper() {
+        System.out.println("Base helper");
+    }
+}
+
+public interface Extended extends Base {
+    default void processExtended() {
+        helper();  // ❌ Compilation error: helper() not accessible
+    }
+}
+
+// FIX - make it default if subinterfaces need it
+public interface Base {
+    default void helper() {  // ✅ Protected via default
+        System.out.println("Base helper");
+    }
+}
+----
+
+*8. Using private methods before they're defined*
+
+[source,java]
+----
+// PITFALL - forward reference issues (though Java allows it)
+
+public interface Service {
+    default void operation() {
+        helper();  // ✅ Actually works in Java, but can be confusing
+    }
+
+    // Private method defined after use
+    private void helper() {
+        System.out.println("Helper");
+    }
+}
+
+// BETTER - define private methods before use for readability
+public interface Service {
+    private void helper() {
+        System.out.println("Helper");
+    }
+
+    default void operation() {
+        helper();  // ✅ Clearer
+    }
+}
+----
+
+*9. Duplicating private methods across interfaces*
+
+[source,java]
+----
+// PITFALL - same validation in multiple interfaces
+
+public interface UserService {
+    private void validateEmail(String email) {  // ❌ Duplicated
+        if (!email.contains("@")) throw new IllegalArgumentException();
+    }
+}
+
+public interface AccountService {
+    private void validateEmail(String email) {  // ❌ Same code
+        if (!email.contains("@")) throw new IllegalArgumentException();
+    }
+}
+
+// FIX - extract to common utility interface
+public interface EmailValidator {
+    default boolean isValidEmail(String email) {
+        return email != null && email.contains("@");
+    }
+}
+
+public interface UserService extends EmailValidator {
+    default void createUser(String email) {
+        if (!isValidEmail(email)) {  // ✅ Reused
+            throw new IllegalArgumentException();
+        }
+    }
+}
+----
+
+*10. Mixing concerns in private methods*
+
+[source,java]
+----
+// PITFALL - private method doing too much
+
+public interface DataService {
+    default void saveData(Data data) {
+        processAndValidateAndLog(data);  // ❌ Method does 3 things
+    }
+
+    private void processAndValidateAndLog(Data data) {
+        // Process
+        data.transform();
+        // Validate
+        if (!data.isValid()) throw new IllegalStateException();
+        // Log
+        System.out.println("Saved: " + data);
+    }
+}
+
+// FIX - separate concerns
+public interface DataService {
+    default void saveData(Data data) {
+        process(data);
+        validate(data);
+        log(data);
+    }
+
+    private void process(Data data) {
+        data.transform();
+    }
+
+    private void validate(Data data) {
+        if (!data.isValid()) throw new IllegalStateException();
+    }
+
+    private void log(Data data) {
+        System.out.println("Saved: " + data);
+    }
+}
+----
+====
+
+[NOTE]
+====
+*Quick Review:*
+
+1. What are the two types of private methods allowed in interfaces (Java 9+)?
+2. Can a private interface method be abstract?
+3. Can implementing classes access private interface methods?
+4. What's the main purpose of private interface methods?
+5. Can a private instance method call a private static method in the same interface?
+6. Are private interface methods inherited by sub-interfaces?
+7. When would you use a private static method vs a private instance method in an interface?
+8. Can default methods call private methods in the same interface?
+9. What's the difference between making a method private vs making it a default method?
+10. Can you have a private method in an interface without any default or static methods?
+
+*Interview Tip:* Emphasize that private interface methods are about *code reuse and encapsulation* within interfaces, introduced to support the evolution of default methods without exposing implementation details. Compare to how default methods (Java 8) enabled interface evolution without breaking existing implementations.
+====
+
+== Try-with-resources Improvements
+
+==== Effectively Final Resources
+
+.Overview / What it is
+[%collapsible]
+====
+Java 9 allows you to use *effectively final* variables in try-with-resources statements without re-declaring them. Think of it as *removing unnecessary boilerplate* when you already have a resource variable.
+
+*Core Concept:*
+
+Before Java 9, you had to declare resources inside the try-with-resources parentheses. Now, if you have a final or effectively final variable, you can reference it directly.
+
+[source,java]
+----
+// Before Java 9 - must declare inside try()
+BufferedReader reader1 = new BufferedReader(new FileReader("file.txt"));
+try (BufferedReader reader2 = reader1) {  // ❌ Redundant variable
+    return reader2.readLine();
+}
+
+// Java 9+ - use existing effectively final variable
+BufferedReader reader = new BufferedReader(new FileReader("file.txt"));
+try (reader) {  // ✅ Direct reference
+    return reader.readLine();
+}
+----
+
+*Requirements:*
+
+- Variable must be *final* or *effectively final* (not reassigned after initialization)
+- Variable must be initialized before the try-with-resources statement
+- Variable's type must implement `AutoCloseable` or `Closeable`
+
+*Mental Model:*
+
+Think of this as "use what you already have" - if you have a resource variable that won't change, just use it directly in try-with-resources without creating a redundant copy.
+====
+
+.Why use it
+[%collapsible]
+====
+*1. Reduced Boilerplate*
+
+Eliminates redundant variable declarations:
+
+[source,java]
+----
+// Before Java 9
+Scanner scanner = new Scanner(new File("data.txt"));
+try (Scanner s = scanner) {  // ❌ Extra variable
+    while (s.hasNextLine()) {
+        System.out.println(s.nextLine());
+    }
+}
+
+// Java 9+
+Scanner scanner = new Scanner(new File("data.txt"));
+try (scanner) {  // ✅ Cleaner
+    while (scanner.hasNextLine()) {
+        System.out.println(scanner.nextLine());
+    }
+}
+----
+
+*2. Better Code Readability*
+
+Use the same variable name throughout:
+
+[source,java]
+----
+// Before Java 9 - confusing naming
+Connection connection = getConnection();
+try (Connection conn = connection) {  // ❌ Two names for same thing
+    // Which one to use? conn or connection?
+}
+
+// Java 9+ - consistent naming
+Connection connection = getConnection();
+try (connection) {  // ✅ Same name throughout
+    // Clear: use 'connection'
+}
+----
+
+*3. Easier Resource Sharing*
+
+When resources are passed as parameters or returned from methods:
+
+[source,java]
+----
+public void processFile(BufferedReader reader) {
+    // Before Java 9
+    try (BufferedReader r = reader) {  // ❌ Unnecessary copy
+        String line = r.readLine();
+    }
+
+    // Java 9+
+    try (reader) {  // ✅ Use parameter directly
+        String line = reader.readLine();
+    }
+}
+----
+
+*4. Multiple Resources Cleanup*
+
+Combine pre-existing resources easily:
+
+[source,java]
+----
+InputStream input = new FileInputStream("in.txt");
+OutputStream output = new FileOutputStream("out.txt");
+
+// Java 9+ - both managed
+try (input; output) {  // ✅ Both closed automatically
+    byte[] buffer = new byte[1024];
+    int length;
+    while ((length = input.read(buffer)) > 0) {
+        output.write(buffer, 0, length);
+    }
+}
+----
+====
+
+.When not to use
+[%collapsible]
+====
+*❌ DON'T Use for:*
+
+*1. Variables That Are Not Effectively Final*
+
+[source,java]
+----
+// BAD - variable is reassigned
+BufferedReader reader = new BufferedReader(new FileReader("file1.txt"));
+reader = new BufferedReader(new FileReader("file2.txt"));  // Reassigned!
+try (reader) {  // ❌ Compilation error: not effectively final
+    return reader.readLine();
+}
+
+// GOOD - declare in try() if you need to reassign
+try (BufferedReader reader = new BufferedReader(new FileReader("file.txt"))) {
+    return reader.readLine();
+}
+----
+
+*2. When Resource Creation Can Fail*
+
+[source,java]
+----
+// BAD - if creation fails, nothing to close
+FileInputStream input = new FileInputStream("file.txt");  // Can throw!
+FileOutputStream output = new FileOutputStream("out.txt");  // If this throws, input not closed!
+try (input; output) {
+    // ...
+}
+
+// GOOD - declare inside try() for exception safety
+try (FileInputStream input = new FileInputStream("file.txt");
+     FileOutputStream output = new FileOutputStream("out.txt")) {
+    // If second fails, first is still closed ✅
+}
+----
+
+*3. When Variable Might Be Null*
+
+[source,java]
+----
+// BAD - potential NullPointerException
+BufferedReader reader = condition ? new BufferedReader(...) : null;
+try (reader) {  // ❌ NPE if reader is null
+    // ...
+}
+
+// GOOD - check for null first
+BufferedReader reader = condition ? new BufferedReader(...) : null;
+if (reader != null) {
+    try (reader) {
+        // ...
+    }
+}
+----
+
+*4. When You Need Different Scope*
+
+[source,java]
+----
+// BAD - resource needed after try block
+BufferedReader reader = new BufferedReader(new FileReader("file.txt"));
+try (reader) {
+    // Process
+}
+// Can't use reader here - it's closed! ❌
+
+// GOOD - don't use try-with-resources if you need it open
+BufferedReader reader = new BufferedReader(new FileReader("file.txt"));
+try {
+    // Process
+} finally {
+    if (reader != null) reader.close();
+}
+// Can still use reader if you need to
+----
+
+*General Rule:* Use this feature when you have a *truly effectively final* resource variable that you want to auto-close. For complex scenarios with multiple failure points or conditional resources, stick with traditional try-with-resources declarations.
+====
+
+.Best practices
+[%collapsible]
+====
+*✅ DO:*
+
+- *Use for method parameters*
+[source,java]
+----
+public String readFirstLine(BufferedReader reader) throws IOException {
+    try (reader) {  // ✅ Parameter is effectively final
+        return reader.readLine();
+    }
+}
+----
+
+- *Use for final variables*
+[source,java]
+----
+final Connection connection = dataSource.getConnection();
+try (connection) {  // ✅ Explicit final
+    // Use connection
+}
+----
+
+- *Combine multiple existing resources*
+[source,java]
+----
+Scanner scanner = new Scanner(System.in);
+Formatter formatter = new Formatter();
+
+try (scanner; formatter) {  // ✅ Both closed
+    String input = scanner.nextLine();
+    formatter.format("Input: %s%n", input);
+}
+----
+
+- *Use with returned resources*
+[source,java]
+----
+Connection conn = connectionPool.getConnection();
+try (conn) {  // ✅ Pool connection auto-returned
+    // Use connection
+}
+----
+
+*❌ DON'T:*
+
+- *Don't use if variable might be reassigned*
+[source,java]
+----
+// BAD
+Connection conn = getConnection();
+if (needsSpecialConnection()) {
+    conn = getSpecialConnection();  // ❌ Reassigned!
+}
+try (conn) {  // Compilation error
+    // ...
+}
+
+// GOOD - declare inside try
+Connection conn;
+if (needsSpecialConnection()) {
+    conn = getSpecialConnection();
+} else {
+    conn = getConnection();
+}
+try (conn) {  // ✅ Works if no reassignment after this
+    // ...
+}
+----
+
+- *Don't use if resource creation might fail in sequence*
+[source,java]
+----
+// BAD - exception safety issue
+InputStream in = new FileInputStream("in.txt");   // If next line fails...
+OutputStream out = new FileOutputStream("out.txt"); // ...in not closed!
+try (in; out) {
+    // ...
+}
+
+// GOOD - all-or-nothing creation
+try (InputStream in = new FileInputStream("in.txt");
+     OutputStream out = new FileOutputStream("out.txt")) {
+    // ✅ If second fails, first still closed
+}
+----
+
+- *Don't mix declaration styles unnecessarily*
+[source,java]
+----
+// CONFUSING - inconsistent style
+Connection conn = getConnection();
+try (conn; PreparedStatement stmt = conn.prepareStatement("...")) {
+    // ❌ Mixing styles is confusing
+}
+
+// BETTER - consistent style
+try (Connection conn = getConnection();
+     PreparedStatement stmt = conn.prepareStatement("...")) {
+    // ✅ All declared in try()
+}
+
+// ALSO GOOD - all effectively final
+Connection conn = getConnection();
+PreparedStatement stmt = conn.prepareStatement("...");
+try (conn; stmt) {
+    // ✅ Consistent: both pre-existing
+}
+----
+
+- *Don't forget the resource must be AutoCloseable*
+[source,java]
+----
+String notCloseable = "text";
+try (notCloseable) {  // ❌ Compilation error: String not AutoCloseable
+    // ...
+}
+----
+====
+
+.Example
+[%collapsible]
+====
+*Example 1: Basic Usage*
+
+[source,java]
+----
+// Before Java 9
+public void readFile(String path) throws IOException {
+    BufferedReader reader = new BufferedReader(new FileReader(path));
+    try (BufferedReader br = reader) {
+        String line = br.readLine();
+        System.out.println(line);
+    }
+}
+
+// Java 9+
+public void readFile(String path) throws IOException {
+    BufferedReader reader = new BufferedReader(new FileReader(path));
+    try (reader) {
+        String line = reader.readLine();
+        System.out.println(line);
+    }
+}
+----
+
+*Example 2: Method Parameters*
+
+[source,java]
+----
+public void processStream(InputStream input, OutputStream output) throws IOException {
+    // Before Java 9
+    try (InputStream in = input; OutputStream out = output) {
+        byte[] buffer = new byte[1024];
+        int length;
+        while ((length = in.read(buffer)) > 0) {
+            out.write(buffer, 0, length);
+        }
+    }
+
+    // Java 9+
+    try (input; output) {
+        byte[] buffer = new byte[1024];
+        int length;
+        while ((length = input.read(buffer)) > 0) {
+            output.write(buffer, 0, length);
+        }
+    }
+}
+----
+
+*Example 3: Database Operations*
+
+[source,java]
+----
+public List<User> queryUsers(Connection connection) throws SQLException {
+    String query = "SELECT * FROM users";
+
+    // Java 9+ - connection parameter used directly
+    try (connection;
+         PreparedStatement stmt = connection.prepareStatement(query);
+         ResultSet rs = stmt.executeQuery()) {
+
+        List<User> users = new ArrayList<>();
+        while (rs.next()) {
+            users.add(new User(
+                rs.getLong("id"),
+                rs.getString("name"),
+                rs.getString("email")
+            ));
+        }
+        return users;
+    }
+}
+----
+
+*Example 4: Multiple Pre-existing Resources*
+
+[source,java]
+----
+public void copyData() throws IOException {
+    FileInputStream input = new FileInputStream("source.txt");
+    FileOutputStream output = new FileOutputStream("dest.txt");
+    BufferedInputStream bufferedInput = new BufferedInputStream(input);
+    BufferedOutputStream bufferedOutput = new BufferedOutputStream(output);
+
+    // All effectively final - use them directly
+    try (input; output; bufferedInput; bufferedOutput) {
+        byte[] buffer = new byte[8192];
+        int length;
+        while ((length = bufferedInput.read(buffer)) > 0) {
+            bufferedOutput.write(buffer, 0, length);
+        }
+    }
+}
+----
+
+*Example 5: Conditional Resource*
+
+[source,java]
+----
+public void processFile(boolean useCompression) throws IOException {
+    InputStream baseStream = new FileInputStream("data.bin");
+
+    // Wrap in compression if needed
+    InputStream stream = useCompression
+        ? new GZIPInputStream(baseStream)
+        : baseStream;
+
+    // stream is effectively final after this point
+    try (stream) {
+        byte[] data = stream.readAllBytes();
+        process(data);
+    }
+}
+----
+
+*Example 6: Resource from Factory Method*
+
+[source,java]
+----
+public class ResourceFactory {
+    public static Scanner createScanner(String source) throws FileNotFoundException {
+        return new Scanner(new File(source));
+    }
+}
+
+public class DataProcessor {
+    public void process() throws FileNotFoundException {
+        Scanner scanner = ResourceFactory.createScanner("data.txt");
+
+        try (scanner) {  // ✅ Effectively final
+            while (scanner.hasNextLine()) {
+                String line = scanner.nextLine();
+                System.out.println(line);
+            }
+        }
+    }
+}
+----
+
+*Example 7: Comparison - Java 7 vs Java 9*
+
+[source,java]
+----
+// === Java 7 - Original try-with-resources ===
+
+try (BufferedReader reader = new BufferedReader(new FileReader("file.txt"))) {
+    return reader.readLine();
+}
+
+// === Java 9 - Effectively final variable ===
+
+BufferedReader reader = new BufferedReader(new FileReader("file.txt"));
+try (reader) {
+    return reader.readLine();
+}
+
+// === Why Java 9 improvement matters ===
+
+// Scenario: Resource passed as parameter
+public String readFirstLine_Java7(BufferedReader reader) throws IOException {
+    try (BufferedReader r = reader) {  // ❌ Redundant copy
+        return r.readLine();
+    }
+}
+
+public String readFirstLine_Java9(BufferedReader reader) throws IOException {
+    try (reader) {  // ✅ Direct use
+        return reader.readLine();
+    }
+}
+----
+
+*Example 8: Complex Real-World Scenario*
+
+[source,java]
+----
+public class DatabaseBackup {
+
+    public void backup(Connection sourceConn, Connection backupConn) throws SQLException {
+        String selectQuery = "SELECT * FROM important_data";
+        String insertQuery = "INSERT INTO important_data VALUES (?, ?, ?)";
+
+        // Both connections are parameters (effectively final)
+        try (sourceConn; backupConn;
+             PreparedStatement selectStmt = sourceConn.prepareStatement(selectQuery);
+             PreparedStatement insertStmt = backupConn.prepareStatement(insertQuery);
+             ResultSet rs = selectStmt.executeQuery()) {
+
+            while (rs.next()) {
+                insertStmt.setLong(1, rs.getLong("id"));
+                insertStmt.setString(2, rs.getString("name"));
+                insertStmt.setString(3, rs.getString("data"));
+                insertStmt.executeUpdate();
+            }
+
+            backupConn.commit();
+            System.out.println("Backup completed successfully");
+        }
+        // All resources automatically closed in reverse order
+    }
+}
+----
+====
+
+.Common pitfalls
+[%collapsible]
+====
+*1. Using non-effectively-final variables*
+
+[source,java]
+----
+// PITFALL - variable reassigned
+
+BufferedReader reader = new BufferedReader(new FileReader("file1.txt"));
+reader = new BufferedReader(new FileReader("file2.txt"));  // Reassigned!
+
+try (reader) {  // ❌ Compilation error: variable is not effectively final
+    return reader.readLine();
+}
+
+// FIX - make it final or don't reassign
+final BufferedReader reader = new BufferedReader(new FileReader("file.txt"));
+try (reader) {  // ✅ Works
+    return reader.readLine();
+}
+----
+
+*2. Resource creation exception leaves previous resource open*
+
+[source,java]
+----
+// PITFALL - if second resource fails, first leaks
+
+InputStream input = new FileInputStream("in.txt");    // Opens successfully
+OutputStream output = new FileOutputStream("out.txt"); // Throws IOException!
+// input is never closed! ❌
+
+try (input; output) {
+    // Never reached
+}
+
+// FIX - create all resources inside try()
+try (InputStream input = new FileInputStream("in.txt");
+     OutputStream output = new FileOutputStream("out.txt")) {
+    // ✅ If output fails, input still gets closed
+}
+----
+
+*3. Using null resources*
+
+[source,java]
+----
+// PITFALL - null resource
+
+BufferedReader reader = condition ? new BufferedReader(...) : null;
+
+try (reader) {  // ❌ NullPointerException if reader is null
+    return reader.readLine();
+}
+
+// FIX - check for null
+BufferedReader reader = condition ? new BufferedReader(...) : null;
+if (reader != null) {
+    try (reader) {
+        return reader.readLine();
+    }
+}
+----
+
+*4. Forgetting variable must be AutoCloseable*
+
+[source,java]
+----
+// PITFALL - not AutoCloseable
+
+class MyResource {  // Doesn't implement AutoCloseable
+    public void doSomething() { }
+}
+
+MyResource resource = new MyResource();
+try (resource) {  // ❌ Compilation error
+    resource.doSomething();
+}
+
+// FIX - implement AutoCloseable
+class MyResource implements AutoCloseable {
+    public void doSomething() { }
+
+    @Override
+    public void close() {
+        // Cleanup logic
+    }
+}
+----
+
+*5. Closing resources in wrong order*
+
+[source,java]
+----
+// PITFALL - order matters for dependent resources
+
+InputStream input = new FileInputStream("file.txt");
+BufferedInputStream buffered = new BufferedInputStream(input);
+
+try (buffered; input) {  // ❌ Wrong order!
+    // When exiting: input closes first, then buffered tries to use closed input
+}
+
+// FIX - close in reverse dependency order (or let try-with-resources handle it)
+try (input; buffered) {  // ✅ buffered closes first, then input
+    // Proper order
+}
+
+// BEST - declare inside try(), order handled automatically
+try (InputStream input = new FileInputStream("file.txt");
+     BufferedInputStream buffered = new BufferedInputStream(input)) {
+    // ✅ Closes in correct reverse order automatically
+}
+----
+
+*6. Modifying variable after try-with-resources*
+
+[source,java]
+----
+// PITFALL - treating closed resource as still open
+
+BufferedReader reader = new BufferedReader(new FileReader("file.txt"));
+
+try (reader) {
+    String firstLine = reader.readLine();
+    System.out.println(firstLine);
+}
+// reader is now closed!
+
+String secondLine = reader.readLine();  // ❌ IOException: Stream closed
+
+// FIX - don't use resource after try block
+BufferedReader reader = new BufferedReader(new FileReader("file.txt"));
+String firstLine, secondLine;
+
+try (reader) {
+    firstLine = reader.readLine();
+    secondLine = reader.readLine();  // ✅ Read while still open
+    System.out.println(firstLine);
+    System.out.println(secondLine);
+}
+----
+
+*7. Mixing old and new syntax inconsistently*
+
+[source,java]
+----
+// PITFALL - confusing mix
+
+Connection conn = getConnection();
+try (conn; PreparedStatement stmt = conn.prepareStatement("...")) {
+    // ❌ Why is conn outside but stmt inside?
+}
+
+// BETTER - be consistent
+// Option 1: All inside
+try (Connection conn = getConnection();
+     PreparedStatement stmt = conn.prepareStatement("...")) {
+    // ✅ Consistent
+}
+
+// Option 2: All outside (if both are effectively final)
+Connection conn = getConnection();
+PreparedStatement stmt = conn.prepareStatement("...");
+try (conn; stmt) {
+    // ✅ Also consistent
+}
+----
+
+*8. Not understanding effectively final*
+
+[source,java]
+----
+// PITFALL - thinking final keyword is required
+
+// This works! (effectively final)
+BufferedReader reader = new BufferedReader(new FileReader("file.txt"));
+// Not reassigned anywhere
+try (reader) {  // ✅ Works without 'final' keyword
+    return reader.readLine();
+}
+
+// This doesn't work (not effectively final)
+BufferedReader reader2 = new BufferedReader(new FileReader("file1.txt"));
+if (condition) {
+    reader2 = new BufferedReader(new FileReader("file2.txt"));  // Reassignment!
+}
+try (reader2) {  // ❌ Not effectively final
+    return reader2.readLine();
+}
+----
+
+*9. Trying to close resources manually*
+
+[source,java]
+----
+// PITFALL - manual close in try-with-resources
+
+BufferedReader reader = new BufferedReader(new FileReader("file.txt"));
+
+try (reader) {
+    String line = reader.readLine();
+    reader.close();  // ❌ Don't do this! Will be closed again automatically
+    return line;
+}
+// Double close might cause issues
+
+// FIX - let try-with-resources handle it
+try (reader) {
+    String line = reader.readLine();
+    return line;  // ✅ Auto-closed
+}
+----
+
+*10. Suppressed exceptions confusion*
+
+[source,java]
+----
+// PITFALL - not understanding suppressed exceptions
+
+BufferedReader reader = new BufferedReader(new FileReader("file.txt"));
+
+try (reader) {
+    processLine(reader.readLine());  // Throws ProcessException
+}
+// If reader.close() also throws, ProcessException is main, close() exception is suppressed
+
+// Access suppressed exceptions
+catch (ProcessException e) {
+    Throwable[] suppressed = e.getSuppressed();
+    for (Throwable t : suppressed) {
+        System.err.println("Suppressed: " + t);
+    }
+}
+----
+====
+
+[NOTE]
+====
+*Quick Review:*
+
+1. What does "effectively final" mean in the context of try-with-resources?
+2. Can you use a variable that was reassigned in a try-with-resources statement (Java 9+)?
+3. What interface must a resource implement to be used in try-with-resources?
+4. What happens if resource creation throws an exception when using pre-declared variables?
+5. Can you mix traditional try-with-resources declarations with effectively final variables?
+6. In what order are resources closed in try-with-resources?
+7. Can you use a null variable in try-with-resources (Java 9+)?
+8. Do you need the `final` keyword for a variable to be used in try-with-resources (Java 9+)?
+9. What's the main advantage of Java 9's try-with-resources improvement?
+10. What happens if you try to use a resource after the try-with-resources block?
+
+*Interview Tip:* Emphasize that Java 9's improvement *reduces boilerplate* for effectively final resources, making code cleaner especially when resources are method parameters or come from factory methods. Contrast with Java 7's try-with-resources which required all resources to be declared in the try statement itself.
+====
+
+---
+
+== Other Notable Features
+
+While we've covered the major language and API features, Java 9 introduced many other improvements:
+
+*JShell (REPL)*: Interactive Java shell for experimenting with code snippets
+
+*Process API Improvements*: Better control and information about OS processes
+
+*Reactive Streams*: `java.util.concurrent.Flow` API for reactive programming
+
+*HTTP/2 Client*: Incubating HTTP client with HTTP/2 support (standardized in Java 11)
+
+*Compact Strings*: Internal optimization using byte arrays for Latin-1 strings
+
+*Multi-Release JARs*: Support different class versions for different Java versions
+
+*Improved Javadoc*: HTML5 support and search functionality
+
+These features are important but less commonly encountered in day-to-day coding interviews compared to the six major features we covered in detail.
+
+---
+
+*Java 9 Complete!* 🎉
+
+You now have comprehensive coverage of Java 9's most important features:
+1. ✅ Module System (Project Jigsaw)
+2. ✅ Collection Factory Methods
+3. ✅ Stream API Improvements
+4. ✅ Optional Improvements
+5. ✅ Private Interface Methods
+6. ✅ Try-with-resources Improvements
+
+All sections include detailed examples, best practices, common pitfalls, and interview-focused quick review questions!
+
+== Other Notable Features
+
+_JShell, Process API improvements, and other features will be covered in the next continuation..._
+
+---
+
+*Navigation:* link:README.adoc[Home] | link:java-8.adoc[← Java 8] | *Java 9* | link:java-10.adoc[Next: Java 10 →]
+
+---
