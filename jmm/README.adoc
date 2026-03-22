@@ -15,7 +15,7 @@ toc::[]
 
 ---
 
-== 1. Introduction to Java Memory Model (JMM)
+== Introduction to Java Memory Model (JMM)
 
 === Definition and Purpose
 The Java Memory Model (JMM) is a specification that guarantees how and when changes made by one thread to shared data become visible to other threads. Because Java is designed to be platform-independent, the JMM abstracts away the underlying hardware memory architectures (which vary significantly across different CPUs and OS platforms) and provides a unified model for multithreaded programming.
@@ -29,7 +29,7 @@ In a multi-core environment, threads can execute concurrently and variables migh
 
 ---
 
-== 2. Happens-Before Relationship
+== Happens-Before Relationship
 
 The central concept in the JMM is the *happens-before* relationship. If an action `A` happens-before action `B` (`A -> B`), the JMM guarantees that the results of `A` are visible to `B`, and `A` occurs before `B` in terms of execution order.
 
@@ -70,7 +70,7 @@ if (v == true) { // (3)
 
 Because `v` is `volatile`, the write to `v` at (2) happens-before the read at (3). Due to the Program Order Rule, (1) happens-before (2), and (3) happens-before (4). By transitivity, if Thread B sees `v == true`, then (1) happens-before (4). Therefore, Thread B is guaranteed to print `42`.
 
-== 3. Java Memory Structure 
+== Java Memory Structure 
 
 The JVM divides memory into several run-time data areas.
 
@@ -92,7 +92,7 @@ The JVM divides memory into several run-time data areas.
 
 ---
 
-== 4. Variables and References
+== Variables and References
 
 === Primitive vs. Reference Types
 * **Primitives** (`int`, `double`, `boolean`, etc.) declared as local variables are stored entirely on the JVM Stack (within the thread's frame). Primitive instance variables (class members) are stored on the Heap alongside their object.
@@ -122,7 +122,7 @@ Java is strictly **pass-by-value**. When an object is passed to a method, the *v
 
 ---
 
-== 5. Garbage Collection and Memory Management
+== Garbage Collection and Memory Management
 
 Garbage Collection (GC) automatically removes objects that are no longer reachable, freeing memory and preventing leaks.
 
@@ -225,7 +225,7 @@ NOTE:  From **JDK 17 onwards**, **G1 GC** is the default garbage collector.
     It is chosen because it **balances throughput and pause times** for most applications.
     Unlike older collectors (Serial, Parallel, CMS), G1 **divides the heap into regions**, allowing **predictable, shorter GC pauses** even with large heaps.
 
-== 6. Types of References
+== Types of References
 
 The `java.lang.ref` package defines different reference types to allow interaction with the GC.
 
@@ -236,7 +236,7 @@ The `java.lang.ref` package defines different reference types to allow interacti
 
 ---
 
-== 7. Concurrency Fundamentals
+== Concurrency Fundamentals
 
 === Thread Lifecycle
 A Java thread has various states:
@@ -253,7 +253,7 @@ A Java thread has various states:
 
 ---
 
-== 8. Volatile Keyword
+== Volatile Keyword
 
 The `volatile` keyword acts as a modifier for fields.
 
@@ -266,7 +266,7 @@ The `volatile` keyword acts as a modifier for fields.
 
 ---
 
-== 9. Atomic Classes
+== Atomic Classes
 
 For lock-free thread-safe mathematical operations, use the `java.util.concurrent.atomic` package.
 
@@ -289,7 +289,7 @@ public class AtomicCounter {
 
 ---
 
-== 10. Synchronization and Locks
+== Synchronization and Locks
 
 === `synchronized` Keyword
 Using `synchronized` ensures that only one thread can execute a block of code at a time using an **intrinsic monitor lock**.
@@ -303,7 +303,7 @@ Located in `java.util.concurrent.locks`, these provide advanced lock management.
 
 ---
 
-== 11. Advanced Topics
+== Advanced Topics
 
 * **Instruction Reordering:** Compilers/CPUs reorder instructions strictly within single-thread semantic rules. They cannot anticipate thread interactions, causing bugs unless synchronized.
 * **Memory Barriers (Fences):** CPU instructions (StoreStore, StoreLoad, LoadLoad, LoadStore) inserted by the JVM compiler to enforce ordering and prevent CPU caching discrepancies. `volatile` utilizes these heavily.
@@ -317,7 +317,7 @@ Located in `java.util.concurrent.locks`, these provide advanced lock management.
 
 ---
 
-== 12. Hardware-Level Concepts
+== Hardware-Level Concepts
 
 === CPU Cache Hierarchy
 Accessing main memory (RAM) is extremely slow compared to CPU speed. Therefore, CPUs use caching:
@@ -333,7 +333,7 @@ The JMM shields the developer from dealing with MESI and manual memory barriers.
 
 ---
 
-== 13. Common Concurrency Problems
+== Common Concurrency Problems
 
 1. **Race Conditions:** "Check-then-act" scenarios. E.g., `if(map.containsKey(str)) map.remove(str);` is fundamentally unsafe across threads.
 2. **Deadlocks:** Thread A holds Lock 1 waiting for Lock 2. Thread B holds Lock 2 waiting for Lock 1. Both wait forever.
@@ -342,7 +342,7 @@ The JMM shields the developer from dealing with MESI and manual memory barriers.
 
 ---
 
-== 14. Best Practices
+== Best Practices
 
 1. **Favor Immutability:** Declare fields as `final`. Immutable objects require absolutely ZERO synchronization and are inherently thread-safe.
 2. **Use Higher-Level Utilities:** Prefer `java.util.concurrent` (e.g., `ConcurrentHashMap`, `CountDownLatch`, `ExecutorService`) over manual `wait()`/`notify()` and thread management.
@@ -354,7 +354,7 @@ The JMM shields the developer from dealing with MESI and manual memory barriers.
 
 ---
 
-== 15. Interview Questions Section
+== Interview Questions Section
 
 1. **What is the difference between `volatile` and `AtomicInteger`?**
 _Answer:_ `volatile` only guarantees visibility and prevents instruction reordering. It doesn't make composite operations like `++` atomic. `AtomicInteger` uses CAS to guarantee both visibility and atomicity for mathematical transformations.
