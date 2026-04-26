@@ -1,0 +1,360 @@
+= English Tenses — Complete Guide 🇮🇳
+:toc: left
+:toc-title: इस Guide में क्या है
+:toclevels: 3
+:icons: font
+:source-highlighter: highlight.js
+
+== Tense क्या है? 🤔
+
+भाई, सबसे पहले ये समझ लो — **Tense basically बताता है कि कोई काम कब हो रहा है।**
+
+Hindi में जब तुम बोलते हो:
+
+* "मैं खाना *खाता हूँ*" → अभी / regularly (Present)
+* "मैं खाना *खा रहा था*" → पहले हो रहा था (Past)
+* "मैं खाना *खाऊँगा*" → आगे करूँगा (Future)
+
+बस यही tense है! **Time बताने का तरीका।**
+
+English में तीन main tenses हैं, और हर एक के 4 sub-types — total **12 tenses**।
+
+[cols="1,4"]
+|===
+| Main Tense | Sub-Types
+
+| **Present** (वर्तमान)
+| Simple, Continuous, Perfect, Perfect Continuous
+
+| **Past** (भूतकाल)
+| Simple, Continuous, Perfect, Perfect Continuous
+
+| **Future** (भविष्य)
+| Simple, Continuous, Perfect, Perfect Continuous
+|===
+
+---
+
+== Hindi से English Tense पहचानने का Shortcut 🔑
+
+ये सबसे important section है। Hindi sentence का ending देखो, और tense पता चल जाएगा!
+
+[cols="2,2,2"]
+|===
+| Hindi Ending | Tense | Example
+
+| ता है / ती है / ते हैं
+| Simple Present
+| मैं रोज़ office *जाता हूँ*
+
+| रहा है / रही है / रहे हैं
+| Present Continuous
+| वो अभी खाना *खा रहा है*
+
+| चुका है / चुकी है / लिया है / दिया है
+| Present Perfect
+| मैंने काम *कर लिया है*
+
+| रहा है + (कब से / से)
+| Present Perfect Continuous
+| वो सुबह से *पढ़ रहा है*
+
+| ता था / ती थी / ते थे
+| Simple Past
+| मैं रोज़ school *जाता था*
+
+| रहा था / रही थी / रहे थे
+| Past Continuous
+| वो खाना *बना रही थी*
+
+| चुका था / चुकी थी / लिया था
+| Past Perfect
+| Train आने से पहले वो *जा चुका था*
+
+| रहा था + (कब से / से)
+| Past Perfect Continuous
+| वो 2 घंटे से *पढ़ रहा था*
+
+| गा / गी / गे
+| Simple Future
+| मैं कल *जाऊँगा*
+
+| रहा होगा / रही होगी
+| Future Continuous
+| वो अभी सो *रहा होगा*
+
+| चुका होगा / चुकी होगी / लिया होगा
+| Future Perfect
+| वो तब तक खाना *खा चुका होगा*
+
+| रहा होगा + (कब से / से)
+| Future Perfect Continuous
+| वो 3 घंटे से *काम कर रहा होगा*
+|===
+
+TIP: ये table याद कर लो — बस Hindi sentence देखो, ending match करो, और English tense पता!
+
+---
+
+== सभी 12 Tenses — एक नज़र में 📋
+
+[cols="2,3,3,3"]
+|===
+| Tense | Formula (Affirmative ✅) | Example (English) | Hindi Meaning
+
+| Simple Present
+| Subject + V1/V1+s + Object
+| I go to office daily.
+| मैं रोज़ office जाता हूँ।
+
+| Present Continuous
+| Subject + is/am/are + V1+ing + Object
+| She is cooking food.
+| वो खाना बना रही है।
+
+| Present Perfect
+| Subject + has/have + V3 + Object
+| I have finished my work.
+| मैंने अपना काम खत्म कर लिया है।
+
+| Present Perfect Continuous
+| Subject + has/have + been + V1+ing + since/for
+| He has been studying since morning.
+| वो सुबह से पढ़ रहा है।
+
+| Simple Past
+| Subject + V2 + Object
+| I went to school.
+| मैं school गया।
+
+| Past Continuous
+| Subject + was/were + V1+ing + Object
+| They were playing cricket.
+| वो cricket खेल रहे थे।
+
+| Past Perfect
+| Subject + had + V3 + Object
+| She had already left.
+| वो पहले ही जा चुकी थी।
+
+| Past Perfect Continuous
+| Subject + had + been + V1+ing + since/for
+| I had been waiting for 2 hours.
+| मैं 2 घंटे से wait कर रहा था।
+
+| Simple Future
+| Subject + will + V1 + Object
+| I will call you tomorrow.
+| मैं कल तुम्हें call करूँगा।
+
+| Future Continuous
+| Subject + will + be + V1+ing + Object
+| She will be sleeping at 10 PM.
+| वो रात 10 बजे सो रही होगी।
+
+| Future Perfect
+| Subject + will + have + V3 + Object
+| He will have completed the project.
+| वो project complete कर चुका होगा।
+
+| Future Perfect Continuous
+| Subject + will + have + been + V1+ing + since/for
+| I will have been working here for 5 years.
+| मैं यहाँ 5 साल से काम कर रहा होऊँगा।
+|===
+
+---
+
+== Common Verbs — V1, V2, V3 Table 📖
+
+ये verbs बहुत ज़रूरी हैं। इनकी 3 forms याद रखो — tenses में काम आएँगी।
+
+=== Regular Verbs (Pattern वाले — V2/V3 में -ed लगता है)
+
+[cols="1,1,1,2"]
+|===
+| V1 (Base) | V2 (Past) | V3 (Past Participle) | Hindi Meaning
+
+| play | played | played | खेलना
+| work | worked | worked | काम करना
+| cook | cooked | cooked | खाना बनाना
+| watch | watched | watched | देखना
+| call | called | called | बुलाना / call करना
+| clean | cleaned | cleaned | साफ करना
+| help | helped | helped | मदद करना
+| laugh | laughed | laughed | हँसना
+| listen | listened | listened | सुनना
+| open | opened | opened | खोलना
+| close | closed | closed | बंद करना
+| start | started | started | शुरू करना
+| finish | finished | finished | खत्म करना
+| ask | asked | asked | पूछना
+| talk | talked | talked | बात करना
+|===
+
+=== Irregular Verbs (इनका कोई fix pattern नहीं — याद करने पड़ेंगे 😅)
+
+[cols="1,1,1,2"]
+|===
+| V1 (Base) | V2 (Past) | V3 (Past Participle) | Hindi Meaning
+
+| go | went | gone | जाना
+| come | came | come | आना
+| eat | ate | eaten | खाना
+| drink | drank | drunk | पीना
+| give | gave | given | देना
+| take | took | taken | लेना
+| write | wrote | written | लिखना
+| read | read | read | पढ़ना
+| speak | spoke | spoken | बोलना
+| see | saw | seen | देखना
+| buy | bought | bought | खरीदना
+| sell | sold | sold | बेचना
+| know | knew | known | जानना
+| think | thought | thought | सोचना
+| make | made | made | बनाना
+| do | did | done | करना
+| have | had | had | रखना / पास होना
+| get | got | got/gotten | पाना / मिलना
+| run | ran | run | दौड़ना
+| sit | sat | sat | बैठना
+| stand | stood | stood | खड़ा होना
+| sleep | slept | slept | सोना
+| wake | woke | woken | जागना
+| break | broke | broken | तोड़ना
+| drive | drove | driven | चलाना (गाड़ी)
+| fly | flew | flown | उड़ना
+| sing | sang | sung | गाना
+| swim | swam | swum | तैरना
+| teach | taught | taught | पढ़ाना
+| learn | learnt/learned | learnt/learned | सीखना
+| forget | forgot | forgotten | भूलना
+| begin | began | begun | शुरू करना
+| send | sent | sent | भेजना
+| bring | brought | brought | लाना
+| catch | caught | caught | पकड़ना
+| feel | felt | felt | महसूस करना
+| find | found | found | ढूंढना / पाना
+| keep | kept | kept | रखना
+| leave | left | left | छोड़ना / जाना
+| lose | lost | lost | खोना / हारना
+| meet | met | met | मिलना
+| pay | paid | paid | भुगतान करना
+| put | put | put | रखना
+| say | said | said | कहना
+| tell | told | told | बताना
+| win | won | won | जीतना
+|===
+
+TIP: Regular verbs आसान हैं — बस -ed लगाओ। Irregular verbs को रोज़ 5-10 बार पढ़ो, कुछ दिनों में याद हो जाएँगे!
+
+---
+
+== Confusing Tense Pairs — ये अक्सर गड़बड़ करते हैं 🔀
+
+=== 1. Simple Present vs Present Continuous
+
+[cols="1,1"]
+|===
+| Simple Present | Present Continuous
+
+| Routine / habit / fact
+| अभी इस moment हो रहा है
+
+| _I **drink** tea every morning._
+| _I **am drinking** tea right now._
+
+| रोज़ होता है
+| अभी हो रहा है
+
+| Signal: always, usually, every day
+| Signal: now, right now, at the moment
+|===
+
+IMPORTANT: "I am living in Delhi" (temporary) vs "I live in Delhi" (permanent) — दोनों सही हैं, context अलग है!
+
+=== 2. Simple Past vs Present Perfect
+
+ये सबसे confusing pair है! 🤯
+
+[cols="1,1"]
+|===
+| Simple Past | Present Perfect
+
+| काम हो गया, time भी पता है
+| काम हो गया, लेकिन time important नहीं
+
+| _I **ate** lunch at 2 PM._
+| _I **have eaten** lunch._
+
+| **कब** किया — ये matter करता है
+| **कर लिया** — बस इतना बताना है
+
+| Signal: yesterday, last week, in 2020, ago
+| Signal: already, just, yet, ever, never
+|===
+
+WARNING: "I have gone to Goa yesterday" ❌ — ये WRONG है! Yesterday = past time → Simple Past use करो: "I **went** to Goa yesterday." ✅
+
+=== 3. Past Continuous vs Past Perfect
+
+[cols="1,1"]
+|===
+| Past Continuous | Past Perfect
+
+| Past में कोई काम चल रहा था
+| Past में एक काम दूसरे से **पहले** हो चुका था
+
+| _I **was watching** TV when he called._
+| _I **had finished** dinner before he called._
+
+| एक काम चल रहा था, तभी दूसरा हुआ
+| पहले एक हुआ, फिर दूसरा
+
+| Signal: when, while
+| Signal: before, after, already, by the time
+|===
+
+=== 4. Will vs Going to (Future)
+
+[cols="1,1"]
+|===
+| Will | Going to
+
+| अभी decide किया (instant decision)
+| पहले से plan है
+
+| _Someone is at the door. I **will** open it._
+| _I **am going to** visit my parents this weekend._
+
+| Promise / offer / sudden decision
+| Plan / intention / evidence-based prediction
+
+| Signal: I think, probably, promise
+| Signal: plan, decide, intend, look (evidence)
+|===
+
+---
+
+== Detailed Tense Files 📚
+
+हर tense की पूरी detail — formulas, examples, mistakes, tips — इन files में मिलेगी:
+
+. link:PresentTense.adoc[Present Tense — पूरी Detail]
+. link:PastTense.adoc[Past Tense — पूरी Detail]
+. link:FutureTense.adoc[FutureTense Tense — पूरी Detail]
+. link:AuxiliaryVerbs.adoc[ Auxiliary Verbs — पूरी Detail]
+
+
+---
+
+== Quick Tips — Tense Master बनने के लिए 💡
+
+[NOTE]
+====
+1. **Hindi sentence बोलो → ending देखो → tense पहचानो → English में translate करो।** यही process है।
+2. **Daily 5 sentences** बनाने की practice करो — अपनी daily life से।
+3. **V1, V2, V3** irregular verbs रोज़ पढ़ो — ये foundation है।
+4. **Signal words** याद रखो — ये tense identify करने में shortcut हैं।
+5. **Mistakes से मत डरो** — गलतियाँ करोगे तभी सीखोगे! 😄
+====

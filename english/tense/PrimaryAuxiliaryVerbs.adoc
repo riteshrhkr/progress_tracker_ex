@@ -1,0 +1,968 @@
+= Primary Auxiliary Verbs — Be, Have, Do 🏗️
+:toc: left
+:toc-title: Primary Auxiliaries
+:toclevels: 3
+:icons: font
+
+== Overview
+
+Primary Auxiliary Verbs तीन हैं — **Be**, **Have**, और **Do**। ये तीनों English grammar की **foundation** हैं। इनके बिना तुम tenses, negative sentences, questions — कुछ भी properly नहीं बना सकते।
+
+इनकी **दो roles** हैं:
+1. **Main Verb** (अकेले) — _I **am** happy. I **have** a car. I **do** yoga._
+2. **Auxiliary / Helping Verb** — _I **am** going. I **have** eaten. **Do** you know?_
+
+IMPORTANT: ये तीनों verbs — be, have, do — English की सबसे ज़्यादा use होने वाली verbs हैं। इन्हें अच्छे से समझ लो तो half grammar clear!
+
+---
+
+== 1. BE — am / is / are / was / were / been / being 🟢
+
+"Be" English का सबसे complex verb है — इसकी **7 forms** हैं! लेकिन tension मत लो, सब systematically समझेंगे।
+
+=== सभी Forms एक नज़र में
+
+[cols="2,2,2"]
+|===
+| Form | Tense | Example
+
+| **am**
+| Present (I)
+| I *am* a student.
+
+| **is**
+| Present (He/She/It/Singular)
+| She *is* happy.
+
+| **are**
+| Present (You/We/They/Plural)
+| They *are* friends.
+
+| **was**
+| Past (I/He/She/It/Singular)
+| He *was* tired.
+
+| **were**
+| Past (You/We/They/Plural)
+| We *were* late.
+
+| **been**
+| Perfect forms (has/have/had + been)
+| I have *been* waiting.
+
+| **being**
+| Continuous Passive (is/was + being + V3)
+| The food is *being* cooked.
+
+| **be**
+| Base form (after modals, to be)
+| You should *be* careful.
+|===
+
+---
+
+=== Subject-wise कौन सी Form — Master Table 📋
+
+[cols="2,2,2,2"]
+|===
+| Subject | Present | Past | Perfect (has/have/had +)
+
+| I
+| **am**
+| **was**
+| been
+
+| He / She / It / Singular
+| **is**
+| **was**
+| been
+
+| You
+| **are**
+| **were**
+| been
+
+| We / They / Plural
+| **are**
+| **were**
+| been
+|===
+
+WARNING: **You** के साथ हमेशा **are / were** — चाहे एक person हो या बहुत! +
+❌ You was late. → ✅ You **were** late.
+
+---
+
+=== Role 1: "Be" as Main Verb (मतलब = होना) ⭐
+
+जब "be" अकेला main verb है — तब ये **"होना"**, **"रहना"**, या state/condition बताता है।
+
+==== कब Use करें?
+
+===== Situation 1: Identity / Profession बताना
+* मैं एक student हूँ। → _I **am** a student._
+* वो एक doctor है। → _She **is** a doctor._
+* हम Indians हैं। → _We **are** Indians._
+
+===== Situation 2: Quality / State / Feeling बताना
+* मैं खुश हूँ। → _I **am** happy._
+* वो थका हुआ था। → _He **was** tired._
+* बच्चे excited हैं। → _The children **are** excited._
+
+===== Situation 3: Location बताना
+* मैं office में हूँ। → _I **am** at the office._
+* किताब table पर है। → _The book **is** on the table._
+* वो लोग park में थे। → _They **were** in the park._
+
+===== Situation 4: Age / Size / Color बताना
+* मैं 25 साल का हूँ। → _I **am** 25 years old._
+* ये room बहुत बड़ा है। → _This room **is** very big._
+* आसमान नीला था। → _The sky **was** blue._
+
+==== Pattern — Main Verb के रूप में
+
+===== Affirmative ✅
+----
+Subject + am/is/are/was/were + Complement (adjective/noun/place)
+----
+
+[cols="2,3"]
+|===
+| Hindi | English
+
+| मैं ठीक हूँ।
+| I am fine.
+
+| वो मेरा दोस्त है।
+| He is my friend.
+
+| हम तैयार हैं।
+| We are ready.
+
+| कल मौसम अच्छा था।
+| The weather was nice yesterday.
+
+| वो लोग बहुत helpful थे।
+| They were very helpful.
+|===
+
+===== Negative ❌
+----
+Subject + am/is/are/was/were + not + Complement
+----
+
+[cols="2,3"]
+|===
+| Hindi | English
+
+| मैं बीमार नहीं हूँ।
+| I am not sick.
+
+| वो यहाँ नहीं है।
+| He is not (isn't) here.
+
+| हम late नहीं हैं।
+| We are not (aren't) late.
+
+| वो खुश नहीं था।
+| He was not (wasn't) happy.
+
+| बच्चे घर पर नहीं थे।
+| The children were not (weren't) at home.
+|===
+
+IMPORTANT: **"Be" main verb होने पर** negative बनाने के लिए **do/does/did की ज़रूरत नहीं** — सीधे not लगाओ! +
+❌ I do not am happy. → ✅ I **am not** happy.
+
+===== Interrogative ❓
+----
+Am/Is/Are/Was/Were + Subject + Complement + ?
+----
+
+[cols="2,3"]
+|===
+| Hindi | English
+
+| क्या तुम ठीक हो?
+| Are you okay?
+
+| क्या वो teacher है?
+| Is she a teacher?
+
+| क्या वो लोग यहाँ थे?
+| Were they here?
+
+| तुम कहाँ हो?
+| Where are you?
+
+| वो कैसा था?
+| How was it?
+|===
+
+---
+
+=== Role 2: "Be" as Auxiliary — Continuous Tenses 🔄
+
+"Be" (am/is/are/was/were) + **V1-ing** → Continuous Tenses बनाते हैं।
+
+[cols="2,3,3"]
+|===
+| Tense | Formula | Example
+
+| Present Continuous
+| am/is/are + V1-ing
+| I *am studying*. She *is cooking*.
+
+| Past Continuous
+| was/were + V1-ing
+| He *was sleeping*. They *were playing*.
+
+| Present Perfect Continuous
+| have/has + **been** + V1-ing
+| I *have been waiting* since 2 PM.
+
+| Past Perfect Continuous
+| had + **been** + V1-ing
+| She *had been working* for 5 hours.
+
+| Future Continuous
+| will + **be** + V1-ing
+| I *will be traveling* tomorrow.
+
+| Future Perfect Continuous
+| will + have + **been** + V1-ing
+| He *will have been studying* for 3 hours.
+|===
+
+TIP: देखो — **हर continuous tense** में "be" की कोई न कोई form ज़रूर है! am/is/are → was/were → been → be
+
+---
+
+=== Role 3: "Be" in Passive Voice 🔄
+
+Passive Voice = जब subject काम करने वाला नहीं, बल्कि **काम उस पर हो रहा है।**
+
+----
+Subject + be (form) + V3 (Past Participle)
+----
+
+[cols="2,3,3"]
+|===
+| Active (Normal) | Passive | Tense
+
+| She writes a letter.
+| A letter *is written* by her.
+| Simple Present
+
+| He broke the glass.
+| The glass *was broken* by him.
+| Simple Past
+
+| They are building a house.
+| A house *is being built* by them.
+| Present Continuous
+
+| She has cleaned the room.
+| The room *has been cleaned* by her.
+| Present Perfect
+
+| They will invite us.
+| We *will be invited* by them.
+| Simple Future
+|===
+
+NOTE: Passive voice में **"being"** present/past continuous passive में आता है: _The road **is being** repaired._ +
+और **"been"** perfect passive में: _The work **has been** done._
+
+---
+
+=== Common Mistakes with "Be" ⚠️
+
+[cols="1,1,2"]
+|===
+| ❌ Wrong | ✅ Right | Problem क्या है
+
+| I is happy.
+| I *am* happy.
+| I के साथ am!
+
+| He are a student.
+| He *is* a student.
+| He/She/It → is
+
+| You was late.
+| You *were* late.
+| You → always were (past)
+
+| They was playing.
+| They *were* playing.
+| They → were
+
+| She am cooking.
+| She *is* cooking.
+| She → is
+
+| I don't am happy.
+| I *am not* happy.
+| Be main verb → do नहीं लगता!
+
+| He is go to school.
+| He *is going* to school.
+| Continuous → -ing भूल गए
+
+| The food is cook.
+| The food is *being cooked* / *cooked*.
+| Passive में V3 + being (continuous)
+|===
+
+---
+
+=== Tips & Tricks for "Be" 💡
+
+* 🎯 **"I AM, You ARE, He IS"** — ये mantra याद कर लो, बस!
+* 🎯 **Past में: I WAS, You WERE, He WAS, They WERE** — Was (singular), Were (plural + you)
+* 🎯 **Contractions** (spoken English में):
+** I'm = I am, He's = He is, We're = We are
+** Wasn't = Was not, Weren't = Were not, Isn't = Is not, Aren't = Are not
+* 🎯 **"Be" + adjective = feeling/state:** _I am tired. She is angry. They were happy._
+* 🎯 **"Be" + V-ing = continuous tense:** _I am going. She was cooking._
+* 🎯 **"Be" + V3 = passive voice:** _The door is locked. The food was eaten._
+
+---
+
+== 2. HAVE — have / has / had 🟡
+
+=== सभी Forms एक नज़र में
+
+[cols="2,2,2"]
+|===
+| Form | Tense/Usage | Example
+
+| **have**
+| Present (I/You/We/They)
+| I *have* a car. / I *have* eaten.
+
+| **has**
+| Present (He/She/It/Singular)
+| She *has* a dog. / She *has* finished.
+
+| **had**
+| Past (All subjects)
+| He *had* a bike. / I *had* eaten.
+
+| **having**
+| Continuous (only action meaning)
+| I am *having* lunch. (action ✅)
+
+| **have**
+| Base form (after modals)
+| I will *have* tea. / You should *have* asked.
+|===
+
+---
+
+=== Subject-wise कौन सी Form
+
+[cols="2,2,2"]
+|===
+| Subject | Present | Past
+
+| I / You / We / They / Plural
+| **have**
+| **had**
+
+| He / She / It / Singular
+| **has**
+| **had**
+|===
+
+WARNING: Past में सबके लिए **had** — कोई confusion नहीं!
+
+---
+
+=== Role 1: "Have" as Main Verb ⭐
+
+जब "have" अकेला main verb है — तब ये possession, relations, experiences, actions बताता है।
+
+==== कब Use करें?
+
+===== Situation 1: Possession (पास होना)
+* मेरे पास एक car है। → _I **have** a car._
+* उसके पास दो phones हैं। → _He **has** two phones._
+* उनके पास बड़ा घर था। → _They **had** a big house._
+
+===== Situation 2: Relations / Body Parts
+* मेरे तीन भाई हैं। → _I **have** three brothers._
+* उसकी blue eyes हैं। → _She **has** blue eyes._
+
+===== Situation 3: Illness / Problem
+* मुझे सिरदर्द है। → _I **have** a headache._
+* उसे बुखार था। → _He **had** a fever._
+
+===== Situation 4: Meals / Experiences (Action meaning)
+* चलो चाय पीते हैं। → _Let's **have** tea._
+* मैं lunch कर रहा हूँ। → _I am **having** lunch._
+* हमने बहुत मज़ा किया। → _We **had** a great time._
+
+===== Situation 5: "Have to" — Obligation (करना पड़ता है)
+* मुझे office जाना पड़ता है। → _I **have to** go to the office._
+* उसे रोज़ पढ़ना पड़ता है। → _She **has to** study every day._
+* मुझे 2 घंटे wait करना पड़ा। → _I **had to** wait for 2 hours._
+
+==== Pattern — Main Verb के रूप में
+
+===== Affirmative ✅
+----
+Subject + have/has/had + Object
+----
+
+===== Negative ❌
+
+NOTE: **"Have" main verb** होने पर negative दो तरीकों से बनता है:
+
+**Method 1 — do/does/did + not + have (ज़्यादा common):**
+[cols="2,3"]
+|===
+| Hindi | English
+
+| मेरे पास car नहीं है।
+| I *do not (don't) have* a car.
+
+| उसके पास time नहीं है।
+| She *does not (doesn't) have* time.
+
+| उनके पास ticket नहीं था।
+| They *did not (didn't) have* a ticket.
+|===
+
+**Method 2 — haven't got (British English):**
+[cols="2,3"]
+|===
+| Hindi | English
+
+| मेरे पास car नहीं है।
+| I *haven't got* a car.
+
+| उसके पास time नहीं है।
+| She *hasn't got* time.
+|===
+
+===== Interrogative ❓
+----
+Do/Does/Did + Subject + have + Object + ?
+OR
+Have/Has + Subject + got + Object + ?
+----
+
+[cols="2,3"]
+|===
+| Hindi | English
+
+| क्या तुम्हारे पास pen है?
+| Do you have a pen? / Have you got a pen?
+
+| क्या उसके पास laptop है?
+| Does he have a laptop? / Has he got a laptop?
+
+| क्या तुम्हें कोई idea था?
+| Did you have any idea?
+|===
+
+---
+
+=== Role 2: "Have" as Auxiliary — Perfect Tenses ✨
+
+"Have" (have/has/had) + **V3** → Perfect Tenses बनाते हैं।
+
+[cols="2,3,3"]
+|===
+| Tense | Formula | Example
+
+| Present Perfect
+| have/has + V3
+| I *have eaten*. She *has gone*.
+
+| Past Perfect
+| had + V3
+| I *had finished* before he came.
+
+| Future Perfect
+| will + have + V3
+| I *will have completed* by then.
+
+| Present Perfect Continuous
+| have/has + been + V-ing
+| I *have been waiting* for 2 hours.
+
+| Past Perfect Continuous
+| had + been + V-ing
+| She *had been working* since morning.
+
+| Future Perfect Continuous
+| will + have + been + V-ing
+| He *will have been studying* for 5 hours.
+|===
+
+TIP: **Perfect = have/has/had + V3** — ये formula golden है! हर perfect tense में "have" की कोई form ज़रूर है।
+
+---
+
+=== "Have to" vs "Must" vs "Have got to" 🤔
+
+[cols="1,1,1"]
+|===
+| Have to | Must | Have got to
+
+| External obligation
+| Internal / Strong obligation
+| Informal = have to
+
+| _I **have to** wear uniform._ (rule)
+| _I **must** study hard._ (self-motivated)
+| _I'**ve got to** go now!_ (casual spoken)
+
+| Past: **had to**
+| No past form → use had to
+| No past form → use had to
+
+| Negative: don't have to (ज़रूरी नहीं)
+| Negative: must not (मना है!)
+| Negative: haven't got to
+
+| _You **don't have to** come._ ✅
+| _You **must not** come._ ❌ (opposite!)
+| _You **haven't got to** worry._
+|===
+
+WARNING: **Don't have to** (ज़रूरत नहीं) ≠ **Must not** (मना है) — ये सबसे common mistake है! +
+_You don't have to wear a tie._ = Tie optional है। +
+_You must not wear shorts._ = Shorts मना हैं!
+
+---
+
+=== "Have something done" — Causative (करवाना) 🔧
+
+जब तुम खुद काम नहीं करते, **किसी से करवाते हो** — तब Causative use होता है।
+
+----
+Subject + have/has/had + Object + V3 (Past Participle)
+----
+
+[cols="2,3"]
+|===
+| Hindi | English
+
+| मैंने अपनी car wash करवाई।
+| I *had* my car *washed*.
+
+| उसने अपने बाल कटवाए।
+| She *had* her hair *cut*.
+
+| मुझे अपना phone repair करवाना है।
+| I need to *have* my phone *repaired*.
+
+| हमने घर paint करवाया।
+| We *had* the house *painted*.
+
+| वो अपने कपड़े iron करवाता है।
+| He *has* his clothes *ironed*.
+|===
+
+TIP: "करवाना" = **have + object + V3** — ये pattern daily life में बहुत use होता है!
+
+---
+
+=== Common Mistakes with "Have" ⚠️
+
+[cols="1,1,2"]
+|===
+| ❌ Wrong | ✅ Right | Problem क्या है
+
+| He have a car.
+| He *has* a car.
+| He/She/It → has!
+
+| She has went home.
+| She has *gone* home.
+| Perfect tense → V3 (gone), not V2 (went)
+
+| I haven't a pen.
+| I *don't have* a pen. / I *haven't got* a pen.
+| "Haven't + noun" alone is old-fashioned — use "don't have" or "haven't got"
+
+| Does he has a bike?
+| Does he *have* a bike?
+| Does के बाद base form (have), not has!
+
+| I am having a car.
+| I *have* a car.
+| Possession → no continuous! Having = action (lunch, party, bath) only
+
+| He must has studied.
+| He must *have* studied.
+| Modal + have (base form), not has!
+|===
+
+---
+
+=== Tips & Tricks for "Have" 💡
+
+* 🎯 **Have = 4 roles:**
+** 1) Possession: I **have** a pen.
+** 2) Perfect tenses: I **have** eaten.
+** 3) Obligation: I **have to** go.
+** 4) Causative: I **had** my car washed.
+* 🎯 **Has = सिर्फ Present + He/She/It** — बाकी सब जगह have या had!
+* 🎯 **"Having" continuous** सिर्फ action meaning में — lunch, bath, party, fun — possession में **never**!
+* 🎯 **Contractions:** I've = I have, He's = He has, She'd = She had, Haven't = Have not
+
+---
+
+== 3. DO — do / does / did 🔵
+
+"Do" सबसे simple primary auxiliary है — लेकिन सबसे ज़्यादा use होता है negative और questions बनाने में!
+
+=== सभी Forms एक नज़र में
+
+[cols="2,2,2"]
+|===
+| Form | Tense | Example
+
+| **do**
+| Present (I/You/We/They)
+| *Do* you know? I *do* yoga.
+
+| **does**
+| Present (He/She/It/Singular)
+| *Does* he work? She *does* dance.
+
+| **did**
+| Past (All subjects)
+| *Did* they come? I *did* try.
+
+| **doing**
+| Continuous (-ing form)
+| What are you *doing*?
+
+| **done**
+| Past Participle (V3)
+| The work is *done*. I have *done* it.
+|===
+
+---
+
+=== Subject-wise कौन सी Form
+
+[cols="2,2,2"]
+|===
+| Subject | Present | Past
+
+| I / You / We / They / Plural
+| **do**
+| **did**
+
+| He / She / It / Singular
+| **does**
+| **did**
+|===
+
+NOTE: Past में सबके लिए **did** — has/does जैसा कोई confusion नहीं!
+
+---
+
+=== Role 1: "Do" as Main Verb (मतलब = करना) ⭐
+
+"Do" जब main verb है तो इसका मतलब है **"करना"**।
+
+[cols="2,3"]
+|===
+| Hindi | English
+
+| मैं रोज़ yoga करता हूँ।
+| I *do* yoga every day.
+
+| उसने बहुत अच्छा काम किया।
+| She *did* a great job.
+
+| तुम क्या कर रहे हो?
+| What are you *doing*?
+
+| मैंने अपना homework कर लिया।
+| I have *done* my homework.
+
+| housework करो।
+| *Do* the housework.
+|===
+
+---
+
+=== Role 2: "Do" as Auxiliary — 3 Super Powers! 🦸
+
+"Do" का auxiliary role तीन चीज़ों के लिए है:
+
+==== Super Power 1: Negative बनाना ❌
+
+**Simple Present और Simple Past** में negative बनाने के लिए do/does/did + not use करते हैं।
+
+----
+Subject + do/does/did + not + V1 (base form) + Object
+----
+
+[cols="2,3,2"]
+|===
+| Hindi | English | Tense
+
+| मैं coffee नहीं पीता।
+| I *do not (don't)* drink coffee.
+| Simple Present
+
+| वो meat नहीं खाती।
+| She *does not (doesn't)* eat meat.
+| Simple Present
+
+| मैं कल office नहीं गया।
+| I *did not (didn't)* go to office yesterday.
+| Simple Past
+
+| उन्होंने call नहीं किया।
+| They *did not (didn't)* call.
+| Simple Past
+
+| बारिश नहीं हुई।
+| It *did not (didn't)* rain.
+| Simple Past
+|===
+
+WARNING: **does/did** लगाने के बाद main verb **V1 (base form)** में रहती है! +
+❌ She doesn't go**es**. → ✅ She doesn't **go**. +
+❌ I didn't went. → ✅ I didn't **go**.
+
+==== Super Power 2: Question बनाना ❓
+
+**Simple Present और Simple Past** में question बनाने के लिए।
+
+----
+Do/Does/Did + Subject + V1 + Object + ?
+----
+
+[cols="2,3,2"]
+|===
+| Hindi | English | Tense
+
+| क्या तुम चाय पीते हो?
+| *Do* you drink tea?
+| Simple Present
+
+| क्या वो यहाँ काम करता है?
+| *Does* he work here?
+| Simple Present
+
+| क्या तुम कल आए थे?
+| *Did* you come yesterday?
+| Simple Past
+
+| उसने क्या कहा?
+| What *did* she say?
+| Simple Past
+
+| तुम कहाँ रहते हो?
+| Where *do* you live?
+| Simple Present
+|===
+
+TIP: WH-questions pattern: **WH word + do/does/did + Subject + V1?** +
+_What **do** you do? Where **does** she live? Why **did** they leave?_
+
+==== Super Power 3: Emphasis देना 💪 (Emphatic Do)
+
+जब ज़ोर देकर बोलना हो — "मैं **सच में** जानता हूँ!", "उसे **वाकई** पसंद है!"
+
+----
+Subject + do/does/did + V1 (emphasized)
+----
+
+[cols="2,3"]
+|===
+| Hindi | English
+
+| मैं सच में जानता हूँ!
+| I *do* know!
+
+| उसे वाकई तुमसे प्यार है!
+| She *does* love you!
+
+| मैंने try तो किया था!
+| I *did* try!
+
+| Please आ जाओ!
+| *Do* come! (earnest request)
+
+| बैठो बैठो!
+| *Do* sit down! (polite insistence)
+|===
+
+NOTE: Emphatic "do" normally spoken English में use होता है confirmation, insistence, या surprise express करने के लिए।
+
+---
+
+=== कहाँ "Do" Auxiliary Use नहीं होता ⛔
+
+**Important Rule:** जब sentence में पहले से कोई **auxiliary verb** (is, am, are, was, were, has, have, had, will, can, should, etc.) हो, तो **do/does/did use मत करो!**
+
+[cols="1,1,2"]
+|===
+| ❌ Wrong | ✅ Right | Why
+
+| I don't am happy.
+| I *am not* happy.
+| "am" already auxiliary है
+
+| Does he can swim?
+| *Can* he swim?
+| "can" already modal है
+
+| She didn't has eaten.
+| She *hasn't* eaten.
+| "has" already auxiliary है
+
+| Do you are coming?
+| *Are* you coming?
+| "are" already auxiliary है
+
+| He didn't was there.
+| He *wasn't* there.
+| "was" already auxiliary है
+|===
+
+WARNING: **Golden Rule:** एक sentence में **do/does/did + another auxiliary = WRONG!** अगर पहले से be/have/modal है, तो do की ज़रूरत नहीं।
+
+---
+
+=== Common Mistakes with "Do" ⚠️
+
+[cols="1,1,2"]
+|===
+| ❌ Wrong | ✅ Right | Problem क्या है
+
+| She doesn't goes.
+| She doesn't *go*.
+| does + V1 (base form), -s/-es हटाओ!
+
+| Did he went?
+| Did he *go*?
+| did + V1 (base form), V2 नहीं!
+
+| I do not am ready.
+| I *am not* ready.
+| am पहले से auxiliary — do मत लगाओ
+
+| Do she likes tea?
+| *Does* she like tea?
+| She → does (not do) + V1 (like, not likes)
+
+| He don't know.
+| He *doesn't* know.
+| He → doesn't (not don't)
+
+| I didn't knew.
+| I didn't *know*.
+| did + V1!
+|===
+
+---
+
+=== Tips & Tricks for "Do" 💡
+
+* 🎯 **"Do = V-s का backup":**
+** Affirmative: He go**es**. (verb पर -s)
+** Negative: He **does**n't go. (does ने -s ले लिया)
+** Question: **Does** he go? (does ने -s ले लिया)
+** **Same with did** — did = -ed (past) ले लेता है, तो verb V1 में रहता है!
+* 🎯 **कब do/does/did use करो:**
+** ✅ Simple Present — negative, question
+** ✅ Simple Past — negative, question
+** ❌ Continuous, Perfect, Future — इनमें do नहीं!
+* 🎯 **Contractions:** don't = do not, doesn't = does not, didn't = did not
+* 🎯 **Emphatic Do** — ज़ोर देने के लिए: _I **do** love you! She **does** work hard!_
+
+---
+
+== Be vs Have vs Do — Comparison Table ⚔️
+
+[cols="1,2,2,2"]
+|===
+| Feature | Be | Have | Do
+
+| Forms
+| am, is, are, was, were, been, being
+| have, has, had
+| do, does, did
+
+| Main verb meaning
+| होना (state/identity)
+| पास होना (possession)
+| करना (action)
+
+| Auxiliary role
+| Continuous tenses + Passive
+| Perfect tenses
+| Negative + Questions (Simple tenses)
+
+| Negative बनाना
+| am/is/are/was/were + **not**
+| Perfect: has/have/had + **not** +V3
+| do/does/did + **not** + V1
+
+| Question बनाना
+| Am/Is/Are/Was/Were + Subject?
+| Has/Have/Had + Subject + V3?
+| Do/Does/Did + Subject + V1?
+
+| Continuous form?
+| ✅ being (passive)
+| ✅ having (action only)
+| ✅ doing
+|===
+
+---
+
+== Practice: खुद Translate करो! ✏️
+
+=== Questions
+
+1. मैं एक software engineer हूँ।
+2. क्या तुम्हारे पास laptop है?
+3. वो चाय नहीं पीती।
+4. बच्चे park में खेल रहे थे।
+5. उसने अपना काम कर लिया है।
+6. क्या तुम कल office आए थे?
+7. मुझे सच में उससे बात करनी चाहिए!
+8. मेरे पास बहुत कम time था।
+9. क्या वो यहाँ काम करता है?
+10. मैंने अपनी car wash करवाई।
+11. बारिश हो रही थी जब मैं office पहुँचा।
+12. उसने कभी pizza नहीं खाया है।
+13. तुम कहाँ हो?
+14. मुझे रोज़ 6 बजे उठना पड़ता है।
+15. काम हो चुका है।
+
+=== Answers
+
+[%collapsible]
+====
+1. I **am** a software engineer. _(be — identity)_
+2. Do you **have** a laptop? / Have you got a laptop? _(have — possession question)_
+3. She **does not (doesn't)** drink tea. _(do — negative Simple Present)_
+4. The children **were** playing in the park. _(be — Past Continuous auxiliary)_
+5. He **has** done his work. / He **has** finished his work. _(have — Present Perfect auxiliary)_
+6. **Did** you come to the office yesterday? _(do — Simple Past question)_
+7. I **do** need to talk to her! _(do — emphatic)_
+8. I **had** very little time. _(have — possession, past)_
+9. **Does** he work here? _(do — Simple Present question)_
+10. I **had** my car washed. _(have — causative)_
+11. It **was** raining when I reached the office. _(be — Past Continuous)_
+12. He **has** never eaten pizza. _(have — Present Perfect)_
+13. Where **are** you? _(be — location question)_
+14. I **have to** wake up at 6 every day. _(have to — obligation)_
+15. The work **is** done. / The work **has been** done. _(be — passive voice / have+be — perfect passive)_
+====

@@ -1,0 +1,827 @@
+= Modal Auxiliary Verbs — Complete Guide 🎭
+:toc: left
+:toc-title: Modal Auxiliaries
+:toclevels: 3
+:icons: font
+
+== Overview — Modal Verbs क्या हैं?
+
+Modal Verbs वो special auxiliary verbs हैं जो **mood / attitude** बताते हैं — ability (सकता हूँ), permission (सकता हूँ), possibility (शायद), advice (चाहिए), obligation (ज़रूर करो)।
+
+=== Modal Verbs के Golden Rules ⭐
+
+[NOTE]
+====
+1. **Modal + V1 (base form)** — हमेशा! कोई -s, -ed, -ing नहीं!
+** ❌ He can goes. → ✅ He can **go**.
+2. **दो modals एक साथ नहीं आ सकते!**
+** ❌ He will can come. → ✅ He **will be able to** come.
+3. **Modals की form नहीं बदलती** — कोई cans, musts, shoulds नहीं!
+4. **Negative**: Modal + **not** + V1 → _I cannot go. You should not worry._
+5. **Question**: Modal + Subject + V1? → _Can you swim? Should I wait?_
+====
+
+---
+
+== 1. CAN — सकता हूँ 💪
+
+=== कब Use करें?
+
+==== Situation 1: Ability (क्षमता / योग्यता)
+कोई काम कर **सकते** हो।
+
+* मैं तैर सकता हूँ। → _I **can** swim._
+* वो 5 languages बोल सकता है। → _He **can** speak 5 languages._
+* मैं guitar बजा सकता हूँ। → _I **can** play the guitar._
+
+==== Situation 2: Permission (Informal) — "सकता हूँ क्या?"
+दोस्तों, family से permission माँगना।
+
+* क्या मैं तुम्हारा phone use कर सकता हूँ? → _**Can** I use your phone?_
+* क्या हम यहाँ बैठ सकते हैं? → _**Can** we sit here?_
+
+==== Situation 3: Possibility (सामान्य)
+कोई चीज़ possible है।
+
+* Delhi में winters बहुत ठंडी हो सकती हैं। → _Winters in Delhi **can** be very cold._
+* ये road busy हो सकती है। → _This road **can** be busy._
+
+==== Situation 4: Request (Informal)
+किसी से कुछ करने को कहना।
+
+* क्या तुम window बंद कर सकते हो? → _**Can** you close the window?_
+* क्या तुम मुझे ये pass कर सकते हो? → _**Can** you pass me this?_
+
+=== Pattern
+
+[cols="1,3,3"]
+|===
+| Type | Pattern | Example
+
+| ✅ Affirmative
+| Subject + can + V1
+| I can drive.
+
+| ❌ Negative
+| Subject + cannot (can't) + V1
+| She can't cook.
+
+| ❓ Question
+| Can + Subject + V1?
+| Can you help me?
+|===
+
+=== Common Mistakes
+
+[cols="1,1,2"]
+|===
+| ❌ Wrong | ✅ Right | Why
+
+| He can speaks English.
+| He can *speak* English.
+| Modal + V1 (no -s!)
+
+| I can to swim.
+| I can swim.
+| Can + V1 (no "to"!)
+
+| Can you to help?
+| Can you help?
+| same — no "to" after modal
+|===
+
+---
+
+== 2. COULD — सकता था / क्या आप कृपया... 🎩
+
+"Could" कई roles play करता है — past ability, polite requests, और possibility!
+
+=== कब Use करें?
+
+==== Situation 1: Past Ability — "कर सकता था"
+बचपन या पहले कुछ कर **सकते** थे।
+
+* मैं बचपन में बहुत तेज़ दौड़ सकता था। → _I **could** run very fast in childhood._
+* वो पहले French बोल सकती थी। → _She **could** speak French before._
+
+==== Situation 2: Polite Request — "क्या आप... कृपया"
+**Can** से ज़्यादा polite!
+
+* क्या आप कृपया दरवाज़ा बंद कर सकते हैं? → _**Could** you please close the door?_
+* क्या आप मुझे रास्ता बता सकते हैं? → _**Could** you tell me the way?_
+
+==== Situation 3: Possibility (Uncertain) — "हो सकता है"
+* शायद बारिश हो सकती है। → _It **could** rain._
+* वो सच हो सकता है। → _That **could** be true._
+
+==== Situation 4: Suggestion — "कर सकते हो"
+* तुम उसे call कर सकते हो। → _You **could** call him._
+* हम कल try कर सकते हैं। → _We **could** try tomorrow._
+
+==== Situation 5: Past Permission (Reported)
+* Teacher ने कहा हम जा सकते थे। → _The teacher said we **could** leave._
+
+=== Pattern
+
+[cols="1,3,3"]
+|===
+| Type | Pattern | Example
+
+| ✅ Affirmative
+| Subject + could + V1
+| I could swim when I was 5.
+
+| ❌ Negative
+| Subject + could not (couldn't) + V1
+| She couldn't find her keys.
+
+| ❓ Question
+| Could + Subject + V1?
+| Could you help me, please?
+|===
+
+=== "Could have + V3" — "कर सकता था (पर नहीं किया)" 😔
+
+Past में **ability थी पर action नहीं किया** — regret / missed opportunity!
+
+[cols="2,3"]
+|===
+| Hindi | English
+
+| तुम उसे call कर सकते थे (पर नहीं किया)।
+| You *could have called* him.
+
+| मैं exam pass कर सकता था (लेकिन नहीं पढ़ा)।
+| I *could have passed* the exam.
+
+| वो हमारी help कर सकते थे।
+| They *could have helped* us.
+|===
+
+TIP: **Could have + V3** = past regret! जो **हो सकता था पर नहीं हुआ**।
+
+---
+
+== 3. MAY — शायद / क्या मैं... (Formal) 🎓
+
+=== कब Use करें?
+
+==== Situation 1: Formal Permission — "क्या मैं... कर सकता हूँ?"
+Teacher, boss, elders से permission — very polite!
+
+* क्या मैं अंदर आ सकता हूँ? → _**May** I come in?_
+* क्या मैं एक question पूछ सकता हूँ? → _**May** I ask a question?_
+* आप जा सकते हैं। → _You **may** leave now._
+
+==== Situation 2: Possibility (50-50) — "शायद / हो सकता है"
+* शायद बारिश हो। → _It **may** rain._
+* शायद वो आज late आए। → _He **may** come late today._
+* शायद ये plan काम करे। → _This plan **may** work._
+
+==== Situation 3: Wish / Blessing (Formal)
+* भगवान तुम्हें लंबी उम्र दे। → _**May** God bless you with a long life._
+* तुम्हारी journey safe हो। → _**May** your journey be safe._
+
+=== Pattern
+
+[cols="1,3,3"]
+|===
+| Type | Pattern | Example
+
+| ✅ Affirmative
+| Subject + may + V1
+| She may come tomorrow.
+
+| ❌ Negative
+| Subject + may not + V1
+| He may not attend the meeting.
+
+| ❓ Question
+| May + Subject + V1?
+| May I sit here?
+|===
+
+NOTE: **May not** — usually contracted form (mayn't) use **नहीं** होता। पूरा बोलो: _may not_!
+
+---
+
+== 4. MIGHT — शायद (कम chances) 🤷
+
+=== कब Use करें?
+
+==== Situation 1: Weak Possibility — "हो सकता है (पर pata nahi)"
+May से **कम chances** express करता है।
+
+* शायद बारिश हो... (कम chance)। → _It **might** rain._
+* शायद वो आए, शायद न आए। → _He **might** come, he **might** not._
+* शायद ये idea काम करे। → _This idea **might** work._
+
+==== Situation 2: Hypothetical / Unreal Situations
+* अगर मैं lottery जीत जाता, तो Goa में घर ले लेता शायद। → _If I won the lottery, I **might** buy a house in Goa._
+
+==== Situation 3: Polite Suggestion — "शायद आप... कर सकते हैं"
+* शायद तुम doctor से मिल लो। → _You **might** want to see a doctor._
+
+=== Pattern
+
+[cols="1,3,3"]
+|===
+| Type | Pattern | Example
+
+| ✅ Affirmative
+| Subject + might + V1
+| She might visit us this weekend.
+
+| ❌ Negative
+| Subject + might not + V1
+| It might not work.
+
+| ❓ Question
+| Might + Subject + V1? (rare!)
+| Might I suggest something? (very formal)
+|===
+
+=== "May have" vs "Might have" + V3 — Past Possibility 🕰️
+
+[cols="2,3"]
+|===
+| Hindi | English
+
+| शायद वो पहुँच गया हो। (50%)
+| He *may have reached*.
+
+| शायद उसने message देखा हो। (कम chance)
+| She *might have seen* the message.
+
+| शायद बारिश हुई हो कल रात।
+| It *may/might have rained* last night.
+|===
+
+---
+
+== 5. SHALL — करें? / चलें? 📜
+
+=== कब Use करें?
+
+==== Situation 1: Suggestion / Offer (I / We)
+किसी चीज़ का suggestion या offer — **सिर्फ I / We** के साथ!
+
+* चलें? → _**Shall** we go?_
+* मैं window खोलूँ? → _**Shall** I open the window?_
+* हम कहाँ बैठें? → _Where **shall** we sit?_
+* चाय बनाऊँ? → _**Shall** I make tea?_
+
+==== Situation 2: Formal Promise / Determination (Rare)
+* मैं ज़रूर आऊँगा। → _I **shall** definitely come._ (formal/literary)
+
+=== Pattern
+
+[cols="1,3,3"]
+|===
+| Type | Pattern | Example
+
+| ✅ Affirmative
+| I/We + shall + V1
+| We shall overcome.
+
+| ❌ Negative
+| I/We + shall not (shan't) + V1
+| I shall not forget. (formal)
+
+| ❓ Question
+| Shall + I/We + V1?
+| Shall I help you?
+|===
+
+TIP: Modern English में **shall** सिर्फ questions/suggestions में use होता है: _Shall I...? Shall we...?_ बाकी जगह **will** use करो!
+
+---
+
+== 6. SHOULD — चाहिए 📝
+
+=== कब Use करें?
+
+==== Situation 1: Advice / Recommendation — "तुम्हें... करना चाहिए"
+* तुम्हें ज़्यादा पानी पीना चाहिए। → _You **should** drink more water._
+* उसे doctor से मिलना चाहिए। → _He **should** see a doctor._
+* तुम्हें रोज़ exercise करनी चाहिए। → _You **should** exercise daily._
+
+==== Situation 2: Expectation — "होना चाहिए"
+* वो अब तक पहुँच गया होगा। → _He **should** be there by now._
+* ये काम 2 घंटे में हो जाना चाहिए। → _This work **should** be done in 2 hours._
+
+==== Situation 3: Mild Obligation / Duty
+* हमें बड़ों का respect करना चाहिए। → _We **should** respect our elders._
+* तुम्हें time पर आना चाहिए। → _You **should** come on time._
+
+==== Situation 4: Opinion — "मेरे हिसाब से... करना चाहिए"
+* मेरे हिसाब से तुम्हें वो job ले लेनी चाहिए। → _I think you **should** take that job._
+
+=== Pattern
+
+[cols="1,3,3"]
+|===
+| Type | Pattern | Example
+
+| ✅ Affirmative
+| Subject + should + V1
+| You should study hard.
+
+| ❌ Negative
+| Subject + should not (shouldn't) + V1
+| You shouldn't eat junk food.
+
+| ❓ Question
+| Should + Subject + V1?
+| Should I wait?
+|===
+
+=== "Should have + V3" — "करना चाहिए था (पर नहीं किया)" 😞
+
+Past regret! जो **करना चाहिए था लेकिन नहीं किया!**
+
+[cols="2,3"]
+|===
+| Hindi | English
+
+| मुझे harder पढ़ना चाहिए था।
+| I *should have studied* harder.
+
+| तुम्हें उससे माफ़ी माँगनी चाहिए थी।
+| You *should have apologized* to her.
+
+| उसे doctor से मिलना चाहिए था।
+| He *should have seen* a doctor.
+
+| हमें ज़्यादा carefully drive करना चाहिए था।
+| We *should have driven* more carefully.
+|===
+
+WARNING: **Should have + V3** = regret about past! Spoken English में बहुत common — "should've" (should'vuh) बोलते हैं।
+
+---
+
+== 7. WILL — गा / गी / गे 🚀
+
+=== कब Use करें?
+
+==== Situation 1: Future Actions
+* मैं कल आऊँगा। → _I **will** come tomorrow._
+* वो अगले साल शादी करेगा। → _He **will** get married next year._
+
+==== Situation 2: Instant Decision
+* Phone बज रहा है — मैं उठाता हूँ। → _The phone is ringing — I **will** get it._
+* ठीक है, मैं pizza order करता हूँ। → _Okay, I **will** order pizza._
+
+==== Situation 3: Promise
+* मैं promise करता हूँ, late नहीं आऊँगा। → _I promise I **will** not be late._
+* मैं तुम्हारी मदद करूँगा। → _I **will** help you._
+
+==== Situation 4: Prediction
+* India ये match जीतेगा। → _India **will** win this match._
+* कल बारिश होगी शायद। → _It **will** probably rain tomorrow._
+
+==== Situation 5: Offer / Request
+* मैं door खोल देता हूँ। → _I'**ll** open the door._
+* क्या तुम मेरी help करोगे? → _**Will** you help me?_
+
+=== Pattern
+
+[cols="1,3,3"]
+|===
+| Type | Pattern | Example
+
+| ✅ Affirmative
+| Subject + will + V1
+| I will call you later.
+
+| ❌ Negative
+| Subject + will not (won't) + V1
+| She won't come today.
+
+| ❓ Question
+| Will + Subject + V1?
+| Will you marry me?
+|===
+
+TIP: Spoken English में **"I'll"** = I will, **"won't"** = will not — ये contractions बहुत common हैं!
+
+---
+
+== 8. WOULD — ता (conditional) / polite 🎩
+
+"Would" सबसे versatile modal है — इसके बहुत सारे uses हैं!
+
+=== कब Use करें?
+
+==== Situation 1: Polite Request / Offer
+* क्या आप कृपया window खोल देंगे? → _**Would** you please open the window?_
+* क्या आप चाय लेंगे? → _**Would** you like some tea?_
+* मैं coffee लूँगा। → _I **would** like a coffee, please._
+
+==== Situation 2: Conditional / Imaginary (अगर... तो)
+* अगर मेरे पास पैसे होते, तो मैं Germany जाता। → _If I had money, I **would** go to Germany._
+* अगर मैं तुम्हारी जगह होता, तो माफ़ी माँग लेता। → _If I were you, I **would** apologize._
+
+==== Situation 3: Past Habit (Repeated Action)
+* हम बचपन में शाम को cricket खेला करते थे। → _We **would** play cricket every evening in childhood._
+* दादी हमें कहानियाँ सुनाया करती थीं। → _Grandma **would** tell us stories._
+
+==== Situation 4: Preference (Would rather)
+* मैं घर पर रहना पसंद करूँगा। → _I **would rather** stay at home._
+* मैं coffee के बजाय चाय पसंद करूँगा। → _I **would rather** have tea than coffee._
+
+==== Situation 5: Future in the Past (Reported Speech)
+* उसने कहा कि वो आएगा। → _He said he **would** come._
+* मुझे लगा था बारिश होगी। → _I thought it **would** rain._
+
+=== Pattern
+
+[cols="1,3,3"]
+|===
+| Type | Pattern | Example
+
+| ✅ Affirmative
+| Subject + would + V1
+| I would love to come.
+
+| ❌ Negative
+| Subject + would not (wouldn't) + V1
+| She wouldn't listen.
+
+| ❓ Question
+| Would + Subject + V1?
+| Would you like some coffee?
+|===
+
+=== "Would have + V3" — "होता / करता (पर हुआ नहीं)" 💭
+
+Unreal past! **अगर ऐसा होता तो... लेकिन नहीं हुआ।**
+
+[cols="2,3"]
+|===
+| Hindi | English
+
+| अगर बारिश नहीं होती, तो हम picnic गए होते।
+| If it hadn't rained, we *would have gone* for a picnic.
+
+| अगर मुझे पता होता, तो मैं ज़रूर आता।
+| If I had known, I *would have* definitely *come*.
+
+| अगर तुमने बताया होता, तो मैं help कर देता।
+| If you had told me, I *would have helped*.
+|===
+
+---
+
+== 9. MUST — ज़रूर / ज़रूरी है 🔒
+
+=== कब Use करें?
+
+==== Situation 1: Strong Obligation / Compulsion — "ज़रूर करो!"
+* तुम्हें helmet पहनना ज़रूरी है! → _You **must** wear a helmet!_
+* हमें rules follow करने चाहिए। → _We **must** follow the rules._
+* तुम्हें ये medicine time पर खानी होगी। → _You **must** take this medicine on time._
+
+==== Situation 2: Prohibition — "ये मना है!" (must not)
+* यहाँ smoking मना है! → _You **must not** smoke here!_
+* ये किसी को मत बताना! → _You **must not** tell anyone!_
+* इस area में entry मना है। → _You **must not** enter this area._
+
+==== Situation 3: Logical Deduction — "ज़रूर... होगा"
+Evidence-based guess — तुम्हें **strong feel** हो रहा है कि ऐसा ही है।
+
+* वो बहुत थका हुआ होगा (12 घंटे काम किया)। → _He **must** be very tired._ (logical guess)
+* कोई घर पर है — lights on हैं। → _Someone **must** be at home — the lights are on._
+* ये correct answer ही होगा। → _This **must** be the correct answer._
+
+==== Situation 4: Strong Recommendation — "ज़रूर try करो!"
+* तुम्हें ये movie ज़रूर देखनी चाहिए! → _You **must** watch this movie!_
+* ये restaurant ज़रूर try करो! → _You **must** try this restaurant!_
+
+=== Pattern
+
+[cols="1,3,3"]
+|===
+| Type | Pattern | Example
+
+| ✅ Affirmative
+| Subject + must + V1
+| You must study hard.
+
+| ❌ Negative
+| Subject + must not (mustn't) + V1
+| You mustn't cheat.
+
+| ❓ Question
+| Must + Subject + V1? (rare)
+| Must I finish today?
+|===
+
+=== "Must have + V3" — "ज़रूर... किया होगा" 🕵️
+
+Past logical deduction! **Strong guess about past** — ज़रूर ऐसा ही हुआ होगा।
+
+[cols="2,3"]
+|===
+| Hindi | English
+
+| उसने ज़रूर message देखा होगा।
+| She *must have seen* the message.
+
+| वो ज़रूर बहुत tired हुआ होगा।
+| He *must have been* very tired.
+
+| उन्होंने ज़रूर बहुत practice की होगी।
+| They *must have practiced* a lot.
+
+| ज़रूर बारिश हुई होगी — सड़कें गीली हैं।
+| It *must have rained* — the roads are wet.
+|===
+
+IMPORTANT: **Must not** ≠ **Don't have to** — ये बहुत important है! +
+**Must not** = मना है! _You **mustn't** lie._ (झूठ मत बोलो!) +
+**Don't have to** = ज़रूरी नहीं। _You **don't have to** come._ (आने की ज़रूरत नहीं — optional)
+
+---
+
+== 10. OUGHT TO — करना चाहिए (Moral) ⚖️
+
+"Ought to" basically **should** जैसा ही है — बस थोड़ा ज़्यादा formal और moral duty वाला!
+
+=== कब Use करें?
+
+==== Situation 1: Moral Duty / Right Thing
+* हमें गरीबों की मदद करनी चाहिए। → _We **ought to** help the poor._
+* तुम्हें अपने parents का respect करना चाहिए। → _You **ought to** respect your parents._
+
+==== Situation 2: Expectation (like should)
+* वो अभी तक पहुँच गया होगा। → _He **ought to** have reached by now._
+
+=== Pattern
+
+[cols="1,3,3"]
+|===
+| Type | Pattern | Example
+
+| ✅ Affirmative
+| Subject + ought to + V1
+| You ought to exercise.
+
+| ❌ Negative
+| Subject + ought not to + V1
+| You ought not to lie. (formal)
+
+| ❓ Question
+| Ought + Subject + to + V1? (very rare)
+| Ought I to apologize?
+|===
+
+TIP: Daily conversation में **should** use करो — **ought to** formal writing या moral lectures में ज़्यादा suit करता है!
+
+---
+
+== 11. NEED — ज़रूरत है 🎯
+
+"Need" दो तरह से काम करता है — **Modal** और **Normal Verb**!
+
+=== As Normal Verb (ज़्यादा common)
+
+----
+Subject + need/needs + to + V1
+Subject + don't/doesn't need + to + V1
+Do/Does + Subject + need + to + V1?
+----
+
+[cols="2,3"]
+|===
+| Hindi | English
+
+| मुझे पानी चाहिए।
+| I *need* water. / I *need to* drink water.
+
+| उसे आराम की ज़रूरत है।
+| He *needs* to rest.
+
+| तुम्हें यहाँ आने की ज़रूरत नहीं।
+| You *don't need to* come here.
+
+| क्या मुझे ये form भरना है?
+| *Do* I *need to* fill this form?
+|===
+
+=== As Modal Verb (Formal — mainly negative/question)
+
+----
+Subject + need not (needn't) + V1
+Need + Subject + V1?
+----
+
+[cols="2,3"]
+|===
+| Hindi | English
+
+| तुम्हें चिंता करने की ज़रूरत नहीं।
+| You *need not (needn't)* worry.
+
+| उसे आने की ज़रूरत नहीं।
+| He *need not (needn't)* come.
+
+| क्या मुझे wait करने की ज़रूरत है?
+| *Need* I wait?
+|===
+
+IMPORTANT: **Need not (needn't)** = ज़रूरी नहीं (no obligation) +
+**Must not (mustn't)** = मना है! (prohibition) +
+_You **needn't** come._ = आने की ज़रूरत नहीं ✅ +
+_You **mustn't** come._ = मत आना! ❌
+
+---
+
+== 12. DARE — हिम्मत करना 🦁
+
+"Dare" भी dual nature है — Modal और Normal Verb दोनों!
+
+=== As Normal Verb
+
+[cols="2,3"]
+|===
+| Hindi | English
+
+| क्या तुम ये करने की हिम्मत रखते हो?
+| *Do* you *dare to* do this?
+
+| मैंने उससे बात करने की हिम्मत नहीं की।
+| I *didn't dare to* talk to him.
+
+| उसमें सच बोलने की हिम्मत है।
+| She *dares to* speak the truth.
+|===
+
+=== As Modal Verb (Mainly negative/question — formal)
+
+[cols="2,3"]
+|===
+| Hindi | English
+
+| तुम्हारी हिम्मत कैसे हुई??
+| How *dare* you!
+
+| उसकी हिम्मत नहीं हुई बोलने की।
+| He *dare not (daren't)* speak.
+
+| मुझसे ज़बान मत लड़ाओ!
+| Don't you *dare* talk back to me!
+|===
+
+TIP: "How dare you!" — ये सबसे famous expression है। Anger / shock express करता है!
+
+---
+
+== 13. USED TO — करता था (Past Habit) 🔙
+
+"Used to" past की habit बताता है — जो **पहले करते थे, अब नहीं करते!**
+
+=== कब Use करें?
+
+==== Situation 1: Past Regular Action (अब नहीं करते)
+* मैं पहले रोज़ cricket खेलता था। → _I **used to** play cricket daily._
+* वो पहले यहाँ काम करती थी। → _She **used to** work here._
+* हम बचपन में बहुत शरारतें करते थे। → _We **used to** be very naughty in childhood._
+
+==== Situation 2: Past State (अब नहीं है)
+* मैं पहले Delhi में रहता था। → _I **used to** live in Delhi._
+* वो पहले बहुत shy था। → _He **used to** be very shy._
+* यहाँ पहले एक park हुआ करता था। → _There **used to** be a park here._
+
+=== Pattern
+
+[cols="1,3,3"]
+|===
+| Type | Pattern | Example
+
+| ✅ Affirmative
+| Subject + used to + V1
+| I used to smoke. (अब नहीं)
+
+| ❌ Negative
+| Subject + didn't + use to + V1
+| I didn't use to like coffee.
+
+| ❓ Question
+| Did + Subject + use to + V1?
+| Did you use to play sports?
+|===
+
+=== तीन अलग-अलग "Used" — Confusion Clear करो! ⚠️
+
+[cols="1,2,3"]
+|===
+| Expression | Meaning | Example
+
+| **used to + V1**
+| पहले करता था (past habit)
+| I *used to* smoke. (अब नहीं)
+
+| **be used to + V-ing/Noun**
+| आदत है / habitual (present)
+| I *am used to* waking up early. (आदत है)
+
+| **get used to + V-ing/Noun**
+| आदत पड़ रहा है / adjusting
+| I am *getting used to* the new job. (adjust हो रहा हूँ)
+|===
+
+WARNING: ये तीनों बहुत confuse करते हैं! +
+❌ I am used to wake up early. → ✅ I am used to **waking** up early. +
+❌ I used to waking up early. → ✅ I **am** used to waking up early.
+
+---
+
+== Modal + Have + V3 — Past Modal Summary 📋
+
+ये सबसे important pattern है modals का! **Past** में कुछ बताने के लिए:
+
+[cols="2,3,3"]
+|===
+| Structure | Meaning | Example
+
+| **could have + V3**
+| कर सकता था (पर नहीं किया) — ability
+| I *could have helped* you. (पर नहीं किया)
+
+| **should have + V3**
+| करना चाहिए था (पर नहीं किया) — regret
+| You *should have studied*. (पर नहीं पढ़ा)
+
+| **would have + V3**
+| करता / होता (पर हुआ नहीं) — conditional
+| I *would have come* if you had called.
+
+| **must have + V3**
+| ज़रूर किया होगा — logical deduction
+| She *must have left* already.
+
+| **may have + V3**
+| शायद किया हो — possibility (50%)
+| He *may have seen* the message.
+
+| **might have + V3**
+| शायद किया हो — possibility (30%)
+| It *might have rained* last night.
+
+| **needn't have + V3**
+| करने की ज़रूरत नहीं थी (पर कर दिया)
+| You *needn't have bought* this. (ज़रूरत नहीं थी)
+|===
+
+IMPORTANT: **Modal + have + V3** = past situation के बारे में बात। ये pattern बहुत powerful है — इसे अच्छे से practice करो!
+
+---
+
+== Practice: खुद Translate करो! ✏️
+
+=== Questions
+
+1. क्या मैं अंदर आ सकता हूँ? (formal)
+2. तुम्हें ज़्यादा पानी पीना चाहिए।
+3. वो तैर सकता है।
+4. शायद कल बारिश हो। (कम chance)
+5. तुम्हें helmet पहनना ज़रूरी है!
+6. मैं बचपन में guitar बजाता था।
+7. क्या आप कृपया door बंद कर सकते हैं? (polite)
+8. अगर मेरे पास पैसे होते, तो मैं business शुरू करता।
+9. उसने ज़रूर मेरा message देखा होगा।
+10. मुझे harder पढ़ना चाहिए था।
+11. तुम्हें चिंता करने की ज़रूरत नहीं।
+12. यहाँ smoking मना है!
+13. चलें? बाहर खाना खाते हैं।
+14. तुम्हारी हिम्मत कैसे हुई!
+15. तुम उसे call कर सकते थे (पर नहीं किया)।
+16. क्या आप चाय लेंगे?
+17. मैं अब early morning workout की आदत हो गई है।
+18. मुझे office जाना पड़ता है रोज़।
+
+=== Answers
+
+[%collapsible]
+====
+1. **May** I come in? _(may — formal permission)_
+2. You **should** drink more water. _(should — advice)_
+3. He **can** swim. _(can — ability)_
+4. It **might** rain tomorrow. _(might — weak possibility)_
+5. You **must** wear a helmet! _(must — strong obligation)_
+6. I **used to** play guitar in childhood. _(used to — past habit)_
+7. **Could** you please close the door? _(could — polite request)_
+8. If I had money, I **would** start a business. _(would — conditional)_
+9. He **must have seen** my message. _(must have + V3 — logical deduction about past)_
+10. I **should have studied** harder. _(should have + V3 — past regret)_
+11. You **need not (needn't)** worry. / You **don't need to** worry. _(need — no necessity)_
+12. You **must not** smoke here! _(must not — prohibition)_
+13. **Shall** we go? Let's eat out. _(shall — suggestion)_
+14. How **dare** you! _(dare — shock/anger)_
+15. You **could have called** him. _(could have + V3 — missed opportunity)_
+16. **Would** you like some tea? _(would — polite offer)_
+17. I **am used to** early morning workouts now. _(be used to — habitual present)_
+18. I **have to** go to office every day. _(have to — external obligation)_
+====

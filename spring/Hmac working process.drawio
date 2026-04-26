@@ -1,0 +1,49 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36" version="29.2.10">
+  <diagram name="Page-1" id="jAhl4lDimWBxf8FCVB8j">
+    <mxGraphModel dx="613" dy="316" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="Gxqn4os66Z-D9SCN9zvy-2" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;rounded=0;" value="&lt;font style=&quot;font-size: 17px;&quot;&gt;&lt;b style=&quot;&quot;&gt;On Service 1 | Client&lt;/b&gt;&lt;/font&gt;" vertex="1">
+          <mxGeometry height="30" width="290" x="40" y="210" as="geometry" />
+        </mxCell>
+        <mxCell id="Gxqn4os66Z-D9SCN9zvy-3" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;rounded=0;" value="&lt;font style=&quot;font-size: 24px;&quot;&gt;&lt;b&gt;HMAC overview&lt;/b&gt;&lt;/font&gt;" vertex="1">
+          <mxGeometry height="30" width="290" x="190" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="Gxqn4os66Z-D9SCN9zvy-4" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;rounded=0;" value="&lt;b style=&quot;&quot;&gt;&lt;font style=&quot;font-size: 15px;&quot;&gt;Pre Conditions and usecase&lt;/font&gt;&lt;/b&gt;" vertex="1">
+          <mxGeometry height="30" width="240" x="80" y="80" as="geometry" />
+        </mxCell>
+        <mxCell id="Gxqn4os66Z-D9SCN9zvy-5" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;rounded=0;" value="A Same secret key on client and server both side" vertex="1">
+          <mxGeometry height="30" width="270" x="110" y="120" as="geometry" />
+        </mxCell>
+        <mxCell id="Gxqn4os66Z-D9SCN9zvy-7" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;rounded=0;" value="Data to Sign(encrypt) =&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;&amp;nbsp;Http Method + URL + Body Hash + Timestamp +&amp;nbsp;nonce&lt;/span&gt;" vertex="1">
+          <mxGeometry height="30" width="550" x="100" y="290" as="geometry" />
+        </mxCell>
+        <mxCell id="Gxqn4os66Z-D9SCN9zvy-9" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;rounded=0;" value="String signature = HmacUtil.generateHmac(dataToSign, secretKey);" vertex="1">
+          <mxGeometry height="30" width="370" x="160" y="370" as="geometry" />
+        </mxCell>
+        <mxCell id="Gxqn4os66Z-D9SCN9zvy-10" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;rounded=0;" value="&lt;div&gt;headers.set(&quot;X-Client-Id&quot;, &quot;order-service&quot;);&lt;/div&gt;&lt;div&gt;headers.set(&quot;X-Timestamp&quot;, timestamp);&lt;/div&gt;&lt;div&gt;headers.set(&quot;X-Nonce&quot;, nonce);&lt;/div&gt;&lt;div&gt;headers.set(&quot;X-Signature&quot;, signature);&lt;/div&gt;" vertex="1">
+          <mxGeometry height="100" width="310" x="160" y="420" as="geometry" />
+        </mxCell>
+        <mxCell id="Gxqn4os66Z-D9SCN9zvy-11" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;rounded=0;" value="Make REST call" vertex="1">
+          <mxGeometry height="30" width="160" x="160" y="530" as="geometry" />
+        </mxCell>
+        <mxCell id="Gxqn4os66Z-D9SCN9zvy-12" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;rounded=0;" value="&lt;font style=&quot;font-size: 17px;&quot;&gt;&lt;b style=&quot;&quot;&gt;On Service 2 | Server&lt;/b&gt;&lt;/font&gt;" vertex="1">
+          <mxGeometry height="30" width="290" x="30" y="630" as="geometry" />
+        </mxCell>
+        <mxCell id="Gxqn4os66Z-D9SCN9zvy-14" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;rounded=0;" value="Extract the details from request&lt;br&gt;&lt;div style=&quot;color: rgb(248, 248, 242); background-color: rgb(39, 40, 34); font-family: &amp;quot;Droid Sans Mono&amp;quot;, &amp;quot;monospace&amp;quot;, monospace; font-size: 14px; line-height: 19px; white-space: pre;&quot;&gt;&lt;div&gt;X&lt;span style=&quot;color: #f92672;&quot;&gt;-&lt;/span&gt;Client&lt;span style=&quot;color: #f92672;&quot;&gt;-&lt;/span&gt;&lt;span style=&quot;color: #66d9ef;font-style: italic;&quot;&gt;Id&lt;/span&gt;&lt;/div&gt;&lt;div&gt;X&lt;span style=&quot;color: #f92672;&quot;&gt;-&lt;/span&gt;&lt;span style=&quot;color: #66d9ef;font-style: italic;&quot;&gt;Timestamp&lt;/span&gt;&lt;/div&gt;&lt;div&gt;X&lt;span style=&quot;color: #f92672;&quot;&gt;-&lt;/span&gt;&lt;span style=&quot;color: #66d9ef;font-style: italic;&quot;&gt;Nonce&lt;/span&gt;&lt;/div&gt;&lt;div&gt;X&lt;span style=&quot;color: #f92672;&quot;&gt;-&lt;/span&gt;&lt;span style=&quot;color: #66d9ef;font-style: italic;&quot;&gt;Signature&lt;/span&gt;&lt;/div&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="80" width="290" x="130" y="730" as="geometry" />
+        </mxCell>
+        <mxCell id="Gxqn4os66Z-D9SCN9zvy-15" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="Use the&amp;nbsp; extracted details and create HMAC on client side also" vertex="1">
+          <mxGeometry height="30" width="420" x="130" y="840" as="geometry" />
+        </mxCell>
+        <mxCell id="Gxqn4os66Z-D9SCN9zvy-16" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="Match the newly created HMAC with server HMAC and not match then throw unauthorised" vertex="1">
+          <mxGeometry height="30" width="400" x="160" y="870" as="geometry" />
+        </mxCell>
+        <mxCell id="Gxqn4os66Z-D9SCN9zvy-17" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;rounded=0;" value="&lt;div&gt;POST|/api/payments|&amp;lt;BODY_SHA256&amp;gt;|&amp;lt;TIMESTAMP&amp;gt;|&amp;lt;NONCE&amp;gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="30" width="550" x="100" y="250" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

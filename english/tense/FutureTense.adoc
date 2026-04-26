@@ -1,0 +1,768 @@
+= Future Tense — पूरी Detail 🚀
+:toc: left
+:toc-title: Future Tense Sections
+:toclevels: 3
+:icons: font
+
+link:Tense.adoc[⌂ Home] &#160;&#160;&#160;&#160;&#160;&#160;
+link:PastTense.adoc[◀ Past] &#160;&#160;&#160;&#160;&#160;&#160;
+link:PresentTense.adoc[Present ▶]
+
+== Overview — Future Tense क्या है?
+
+Future Tense का मतलब है — **आने वाले समय** की बात। जो काम होगा, हो रहा होगा, या तब तक हो चुका होगा — ये सब Future Tense में आता है।
+
+Future Tense के 4 types हैं:
+
+[cols="1,2,2"]
+|===
+| Type | कब Use करते हैं | Hindi Clue
+
+| Simple Future
+| आगे होगा / करेगा
+| गा, गी, गे
+
+| Future Continuous
+| आगे हो रहा होगा
+| रहा होगा, रही होगी, रहे होंगे
+
+| Future Perfect
+| तब तक हो चुका होगा
+| चुका होगा, चुकी होगी, लिया होगा
+
+| Future Perfect Continuous
+| कब से हो रहा होगा
+| रहा होगा + कब से / तक
+|===
+
+---
+
+== 1. Simple Future Tense ✅
+
+=== पहचान कैसे करें? 🔍
+
+**Hindi में ending**: गा, गी, गे, ऊँगा, ऊँगी, एगा, एगी, एंगे
+
+**English Signal Words**: tomorrow, next week, next month, next year, soon, later, tonight, in the future, I think, probably, I hope
+
+NOTE: जब भी "कल करूँगा", "अगले हफ्ते होगा", "शायद" जैसी बात हो — Simple Future!
+
+=== कब Use करें? 📌
+
+==== Situation 1: Future Prediction / Expectation
+जो आगे होगा — अनुमान या उम्मीद।
+
+* कल बारिश होगी। → _It will rain tomorrow._
+* India ये match जीतेगा। → _India will win this match._
+
+==== Situation 2: Instant / Spontaneous Decision
+अभी decide किया — पहले से plan नहीं था।
+
+* कोई door पर है। मैं खोलता हूँ। → _Someone is at the door. I will open it._
+* तुम थके हुए हो? मैं चाय बनाता हूँ। → _You look tired. I will make you some tea._
+
+==== Situation 3: Promise / Offer / Request
+वादा, offer, या request।
+
+* मैं promise करता हूँ, मैं late नहीं आऊँगा। → _I promise, I will not come late._
+* क्या तुम मेरी मदद करोगे? → _Will you help me?_
+
+==== Situation 4: Warning / Threat
+चेतावनी देना।
+
+* अगर तुमने पढ़ाई नहीं की तो fail हो जाओगे। → _If you don't study, you will fail._
+* जल्दी करो, वरना bus छूट जाएगी। → _Hurry up, or you will miss the bus._
+
+==== Situation 5: Facts about Future
+Future में होने वाले facts।
+
+* अगला World Cup 2027 में होगा। → _The next World Cup will be in 2027._
+* मैं अगले साल 25 का हो जाऊँगा। → _I will turn 25 next year._
+
+---
+
+=== Will vs Going to — फ़र्क समझो 🤔
+
+[cols="1,1"]
+|===
+| **Will** | **Going to**
+
+| अभी decide किया (instant)
+| पहले से plan है
+
+| _I will have pizza._ (menu देखकर decide किया)
+| _I am going to have pizza._ (पहले से सोच रखा था)
+
+| Prediction (without evidence)
+| Prediction (with evidence)
+
+| _I think it will rain._ (लगता है)
+| _Look at those clouds! It is going to rain._ (clouds दिख रहे — evidence)
+
+| Promise / Offer
+| Intention / Plan
+
+| _I will help you._ (offer)
+| _I am going to start gym from Monday._ (plan)
+|===
+
+TIP: Confusion हो तो simply **will** use करो — ज़्यादातर situations में दोनों acceptable हैं!
+
+---
+
+=== Pattern / Formula 📐
+
+==== Affirmative ✅
+----
+Subject + will + V1 + Object
+----
+OR
+----
+Subject + is/am/are + going to + V1 + Object
+----
+
+[cols="2,3"]
+|===
+| Hindi | English
+
+| मैं कल Delhi जाऊँगा।
+| I will go to Delhi tomorrow.
+
+| वो अगले month शादी करेगा।
+| He will get married next month.
+
+| हम Sunday को picnic पर जाएँगे।
+| We will go for a picnic on Sunday.
+
+| मैं तुम्हें बाद में call करूँगा।
+| I will call you later.
+
+| वो इस project पर काम करेगी।
+| She will work on this project.
+|===
+
+==== Negative ❌
+----
+Subject + will + not + V1 + Object
+----
+
+[cols="2,3"]
+|===
+| Hindi | English
+
+| मैं आज party में नहीं जाऊँगा।
+| I will not (won't) go to the party today.
+
+| वो अब और wait नहीं करेगा।
+| He will not (won't) wait anymore.
+
+| हम ये proposal accept नहीं करेंगे।
+| We will not (won't) accept this proposal.
+
+| बारिश शायद नहीं होगी।
+| It probably will not (won't) rain.
+
+| मैं तुमसे इस बारे में बात नहीं करूँगा।
+| I will not (won't) talk to you about this.
+|===
+
+==== Interrogative ❓
+----
+Will + Subject + V1 + Object + ?
+----
+
+[cols="2,3"]
+|===
+| Hindi | English
+
+| क्या तुम कल आओगे?
+| Will you come tomorrow?
+
+| क्या वो हमें help करेगा?
+| Will he help us?
+
+| Party कब होगी?
+| When will the party be?
+
+| तुम कहाँ रहोगे?
+| Where will you stay?
+
+| क्या वो exam pass करेगी?
+| Will she pass the exam?
+|===
+
+---
+
+=== Common Mistakes ⚠️
+
+[cols="1,1,2"]
+|===
+| ❌ Wrong | ✅ Right | Problem क्या है
+
+| I will goes tomorrow.
+| I will *go* tomorrow.
+| Will के बाद V1 (base form) — कोई -s/-es नहीं!
+
+| He will went there.
+| He will *go* there.
+| Will के बाद V1, V2 नहीं!
+
+| I will can do it.
+| I will *be able to* do it.
+| दो modals (will + can) एक साथ नहीं आते!
+
+| She wills help you.
+| She *will* help you.
+| Will में कभी -s नहीं लगता!
+
+| I am will go.
+| I *will go*.
+| am/is/are + will → wrong! सिर्फ will + V1
+|===
+
+---
+
+=== Tips & Tricks 💡
+
+* 🎯 **Will = गा/गी/गे** — बस इतना formula काफ़ी है!
+* 🎯 **Won't = Will not** — spoken English में won't ज़्यादा use होता है।
+* 🎯 **"Shall" vs "Will":**
+** Shall = formal / suggestions: _Shall we go?_ (चलें क्या?)
+** Modern English में ज़्यादातर will ही use होता है। Shall सिर्फ I/We के साथ suggestions में: _Shall I help you?_
+* 🎯 **First Conditional Pattern:** If + Simple Present, will + V1
+** _If it rains, I will stay home._ (अगर बारिश हुई, तो मैं घर रहूँगा।)
+
+---
+
+== 2. Future Continuous Tense 🔄
+
+=== पहचान कैसे करें? 🔍
+
+**Hindi में ending**: रहा होगा, रही होगी, रहे होंगे
+
+**English Signal Words**: at this time tomorrow, at 8 PM, by then, this time next week, when, while, still
+
+NOTE: जब भी "कल इस time _हो रहा होगा_" जैसी बात हो — Future Continuous!
+
+=== कब Use करें? 📌
+
+==== Situation 1: Future में किसी specific time पर काम चल रहा होगा
+* कल इस time मैं flight में बैठा होऊँगा। → _This time tomorrow, I will be sitting in a flight._
+* रात 10 बजे वो सो रही होगी। → _She will be sleeping at 10 PM._
+
+==== Situation 2: Expected / Normal Action in Future
+जो naturally होगा — plan नहीं, expectation है।
+
+* मैं office जा रहा होऊँगा, तो रास्ते में तुम्हें pick कर लूँगा। → _I will be going to office, so I'll pick you up on the way._
+* वो शाम को party attend कर रही होगी। → _She will be attending the party in the evening._
+
+==== Situation 3: Polite Inquiry (Polite way of asking)
+Politely पूछना कि कोई कुछ करेगा या नहीं।
+
+* क्या तुम उसे ये message pass कर दोगे? → _Will you be passing this message to him?_
+* क्या तुम कल office आ रहे हो? → _Will you be coming to the office tomorrow?_
+
+==== Situation 4: Parallel Actions in Future
+Future में दो काम एक साथ चल रहे होंगे।
+
+* जब तुम exam दे रहे होगे, मैं तुम्हारा wait कर रहा होऊँगा। → _While you will be taking the exam, I will be waiting for you._
+
+---
+
+=== Pattern / Formula 📐
+
+==== Affirmative ✅
+----
+Subject + will + be + V1+ing + Object
+----
+
+[cols="2,3"]
+|===
+| Hindi | English
+
+| मैं कल इस time Delhi में घूम रहा होऊँगा।
+| I will be roaming in Delhi at this time tomorrow.
+
+| वो शाम 7 बजे खाना बना रही होगी।
+| She will be cooking dinner at 7 PM.
+
+| बच्चे स्कूल में पढ़ रहे होंगे।
+| The children will be studying in school.
+
+| हम अगले हफ्ते project पर काम कर रहे होंगे।
+| We will be working on the project next week.
+
+| वो अभी सो रहा होगा।
+| He will be sleeping right now. _(guess about present!)_
+|===
+
+TIP: **अभी** के बारे में guess लगाना: _He **will be** sleeping right now._ — ये actually present के बारे में assumption है, future नहीं! ये special use है।
+
+==== Negative ❌
+----
+Subject + will + not + be + V1+ing + Object
+----
+
+[cols="2,3"]
+|===
+| Hindi | English
+
+| मैं कल काम नहीं कर रहा होऊँगा।
+| I will not (won't) be working tomorrow.
+
+| वो शाम को party attend नहीं कर रही होगी।
+| She will not (won't) be attending the party in the evening.
+
+| बच्चे उस time पढ़ नहीं रहे होंगे।
+| The children will not (won't) be studying at that time.
+
+| हम next week office नहीं आ रहे होंगे।
+| We will not (won't) be coming to the office next week.
+
+| वो अभी सो नहीं रहा होगा।
+| He will not (won't) be sleeping right now.
+|===
+
+==== Interrogative ❓
+----
+Will + Subject + be + V1+ing + Object + ?
+----
+
+[cols="2,3"]
+|===
+| Hindi | English
+
+| क्या तुम कल office आ रहे होगे?
+| Will you be coming to the office tomorrow?
+
+| क्या वो शाम को free होगी?
+| Will she be free in the evening?
+
+| तुम कितने बजे travel कर रहे होगे?
+| What time will you be traveling?
+
+| क्या बारिश हो रही होगी कल?
+| Will it be raining tomorrow?
+
+| कौन-कौन party attend कर रहे होंगे?
+| Who all will be attending the party?
+|===
+
+---
+
+=== Common Mistakes ⚠️
+
+[cols="1,1,2"]
+|===
+| ❌ Wrong | ✅ Right | Problem क्या है
+
+| I will being working.
+| I will *be* working.
+| will + be, not will + being
+
+| She will be work tomorrow.
+| She will be *working* tomorrow.
+| be के बाद -ing ज़रूरी!
+
+| Will he be go there?
+| Will he be *going* there?
+| -ing भूल गए
+
+| I will be knowing by then.
+| I will *know* by then.
+| Know stative verb — continuous नहीं!
+
+| He will be has a meeting.
+| He will be *having* a meeting.
+| has/have नहीं, having (V1+ing)
+|===
+
+---
+
+=== Tips & Tricks 💡
+
+* 🎯 **Simple Future vs Future Continuous:**
+** _I will eat dinner at 8._ → 8 बजे खाऊँगा (action)
+** _I will be eating dinner at 8._ → 8 बजे खाना खा **रहा** होऊँगा (middle of action)
+* 🎯 **Polite questions** बनाने का trick — Future Continuous ज़्यादा polite लगता है:
+** _Will you **use** the car tonight?_ (direct)
+** _Will you **be using** the car tonight?_ (polite — जैसे normally पूछ रहे हो)
+* 🎯 **Formula एक ही है: will + be + V1ing** — सबके लिए same!
+
+---
+
+== 3. Future Perfect Tense ✨
+
+=== पहचान कैसे करें? 🔍
+
+**Hindi में ending**: चुका होगा, चुकी होगी, चुके होंगे, लिया होगा, दिया होगा, कर लिया होगा
+
+**English Signal Words**: by tomorrow, by next week, by the time, by then, before, by 2027, by the end of
+
+NOTE: जब बताना हो कि **future में किसी time तक काम complete हो चुका होगा** — Future Perfect!
+
+=== कब Use करें? 📌
+
+==== Situation 1: Future में किसी time तक काम पूरा हो चुका होगा
+* मैं शाम तक ये काम कर लूँगा। → _I will have finished this work by evening._
+* वो अगले month तक 1000 books बेच चुकी होगी। → _She will have sold 1000 books by next month._
+
+==== Situation 2: Before another future action
+एक future action से **पहले** दूसरा complete हो चुका होगा।
+
+* जब तुम आओगे, मैं खाना बना चुका होऊँगा। → _By the time you come, I will have cooked the food._
+* जब वो call करेगा, हम पहुँच चुके होंगे। → _When he calls, we will have reached._
+
+==== Situation 3: Achievement / Milestone by Future Date
+Future में milestone बताना।
+
+* 2027 तक मैं MBA कर चुका होऊँगा। → _By 2027, I will have completed my MBA._
+* अगले साल तक हम 5 साल की शादी पूरी कर चुके होंगे। → _By next year, we will have completed 5 years of marriage._
+
+==== Situation 4: Assumption about Past/Present (guess)
+कोई काम अब तक हो गया होगा — guess लगा रहे हो।
+
+* अब तक उसे mail मिल गया होगा। → _He will have received the email by now._
+* वो अब तक पहुँच गई होगी। → _She will have reached by now._
+
+---
+
+=== Pattern / Formula 📐
+
+==== Affirmative ✅
+----
+Subject + will + have + V3 + Object
+----
+
+[cols="2,3"]
+|===
+| Hindi | English
+
+| मैं शाम 6 बजे तक report submit कर चुका होऊँगा।
+| I will have submitted the report by 6 PM.
+
+| वो अगले साल तक graduation कर चुकी होगी।
+| She will have graduated by next year.
+
+| जब तुम आओगे, मैं lunch कर चुका होऊँगा।
+| By the time you arrive, I will have had lunch.
+
+| हम December तक ये project complete कर चुके होंगे।
+| We will have completed this project by December.
+
+| अब तक उसे message मिल गया होगा।
+| He will have received the message by now.
+|===
+
+==== Negative ❌
+----
+Subject + will + not + have + V3 + Object
+----
+
+[cols="2,3"]
+|===
+| Hindi | English
+
+| मैं शाम तक ये काम पूरा नहीं कर पाऊँगा।
+| I will not (won't) have finished this work by evening.
+
+| वो तब तक नहीं पहुँची होगी।
+| She will not (won't) have arrived by then.
+
+| हम deadline तक project complete नहीं कर पाएँगे।
+| We will not (won't) have completed the project by the deadline.
+
+| बारिश शायद तब तक नहीं रुकी होगी।
+| The rain will not (won't) have stopped by then.
+
+| उसने अभी तक decide नहीं किया होगा।
+| He will not (won't) have decided yet.
+|===
+
+==== Interrogative ❓
+----
+Will + Subject + have + V3 + Object + ?
+----
+
+[cols="2,3"]
+|===
+| Hindi | English
+
+| क्या तुम तब तक काम खत्म कर चुके होगे?
+| Will you have finished the work by then?
+
+| क्या वो अगले साल तक MBA कर चुका होगा?
+| Will he have completed his MBA by next year?
+
+| शाम तक कितने chapters complete हो चुके होंगे?
+| How many chapters will have been completed by evening?
+
+| क्या train तब तक आ चुकी होगी?
+| Will the train have arrived by then?
+
+| वो कब तक ये project finish कर चुकी होगी?
+| By when will she have finished this project?
+|===
+
+---
+
+=== Common Mistakes ⚠️
+
+[cols="1,1,2"]
+|===
+| ❌ Wrong | ✅ Right | Problem क्या है
+
+| I will have went.
+| I will have *gone*.
+| V3 (gone), V2 (went) नहीं!
+
+| She will has finished.
+| She will *have* finished.
+| Will के बाद हमेशा have, has नहीं!
+
+| By tomorrow I finished the work.
+| By tomorrow I *will have finished* the work.
+| Future है — will have + V3 चाहिए
+
+| He will have complete the project.
+| He will have *completed* the project.
+| V3 (completed), V1 (complete) नहीं!
+
+| I will have been finish by 5.
+| I will have *finished* by 5.
+| been + V1 → Future Perfect Continuous है, ये Future Perfect है!
+|===
+
+---
+
+=== Tips & Tricks 💡
+
+* 🎯 **"By" = तक** — ये keyword दिखे तो Future Perfect सोचो!
+** _**By** tomorrow, **By** next month, **By the time** you come..._
+* 🎯 **Formula: will + have + V3** — सबके लिए same, कोई change नहीं!
+* 🎯 **Future Perfect vs Simple Future:**
+** _I will finish by 5._ → Simple Future (5 बजे खत्म करूँगा)
+** _I will have finished by 5._ → Future Perfect (5 बजे तक खत्म हो **चुका** होगा)
+** फ़र्क: "चुका" — completion emphasis!
+* 🎯 **By now = अब तक** — Present situation guess करने के लिए: _She will have reached **by now**._
+
+---
+
+== 4. Future Perfect Continuous Tense ⏳
+
+=== पहचान कैसे करें? 🔍
+
+**Hindi में ending**: रहा होगा / रही होगी / रहे होंगे + **कब से / से / तक**
+
+**English Signal Words**: for, since, by, by the time, by next year, how long, by then
+
+NOTE: जब बताना हो कि **future में किसी point तक कोई काम कितने time से चल रहा होगा** — Future Perfect Continuous!
+
+=== कब Use करें? 📌
+
+==== Situation 1: Future में किसी time तक duration बताना
+Future point तक कितने time से काम continuous चल रहा होगा।
+
+* अगले month तक मैं यहाँ 2 साल से काम कर रहा होऊँगा। → _By next month, I will have been working here for 2 years._
+* December तक वो 6 months से training ले रही होगी। → _By December, she will have been training for 6 months._
+
+==== Situation 2: Emphasizing Duration at a Future Point
+Duration पर ज़ोर देना।
+
+* 2027 तक हम 10 साल से एक-दूसरे को जान रहे होंगे। → _By 2027, we will have been knowing each other for 10 years._ ❌ (know stative है) → _By 2027, we will have known each other for 10 years._ ✅
+* शाम 8 बजे तक मैं 4 घंटे से पढ़ रहा होऊँगा। → _By 8 PM, I will have been studying for 4 hours._
+
+==== Situation 3: Cause-Effect in Future
+Future में कोई result होगा, और उसकी वजह duration activity।
+
+* आज शाम तक मैं थक जाऊँगा क्योंकि पूरा दिन काम कर रहा होऊँगा। → _I will be tired by this evening because I will have been working the whole day._
+
+---
+
+=== Pattern / Formula 📐
+
+==== Affirmative ✅
+----
+Subject + will + have + been + V1+ing + for/since + Time
+----
+
+[cols="2,3"]
+|===
+| Hindi | English
+
+| अगले March तक मैं यहाँ 3 साल से रह रहा होऊँगा।
+| By next March, I will have been living here for 3 years.
+
+| शाम 6 बजे तक वो 5 घंटे से पढ़ रही होगी।
+| By 6 PM, she will have been studying for 5 hours.
+
+| जब तुम आओगे, मैं 2 घंटे से wait कर रहा होऊँगा।
+| By the time you come, I will have been waiting for 2 hours.
+
+| 2030 तक वो 15 साल से teach कर रहा होगा।
+| By 2030, he will have been teaching for 15 years.
+
+| अगले हफ्ते तक हम 1 month से इस project पर काम कर रहे होंगे।
+| By next week, we will have been working on this project for 1 month.
+|===
+
+==== Negative ❌
+----
+Subject + will + not + have + been + V1+ing + for/since + Time
+----
+
+[cols="2,3"]
+|===
+| Hindi | English
+
+| तब तक वो ज़्यादा देर से काम नहीं कर रहा होगा।
+| He will not (won't) have been working for too long by then.
+
+| अगले month तक मैं ज़्यादा time से practice नहीं कर रहा होऊँगा।
+| By next month, I will not (won't) have been practicing for much time.
+
+| शाम तक बारिश ज़्यादा देर से नहीं हो रही होगी।
+| It will not (won't) have been raining for too long by evening.
+
+| December तक वो बहुत time से gym नहीं जा रही होगी।
+| By December, she will not (won't) have been going to the gym for much time.
+
+| हम बहुत देर से drive नहीं कर रहे होंगे तब तक।
+| We will not (won't) have been driving for too long by then.
+|===
+
+==== Interrogative ❓
+----
+Will + Subject + have + been + V1+ing + for/since + Time + ?
+----
+
+[cols="2,3"]
+|===
+| Hindi | English
+
+| अगले साल तक तुम कितने time से यहाँ काम कर रहे होगे?
+| How long will you have been working here by next year?
+
+| शाम तक वो कितने घंटे से पढ़ रही होगी?
+| How many hours will she have been studying by evening?
+
+| क्या 2028 तक वो 10 साल से teach कर रहा होगा?
+| Will he have been teaching for 10 years by 2028?
+
+| जब train आएगी, क्या तुम 1 घंटे से wait कर रहे होगे?
+| Will you have been waiting for 1 hour when the train arrives?
+
+| December तक कितने months से training चल रही होगी?
+| How many months will the training have been going on by December?
+|===
+
+---
+
+=== Common Mistakes ⚠️
+
+[cols="1,1,2"]
+|===
+| ❌ Wrong | ✅ Right | Problem क्या है
+
+| I will have been work for 2 hours.
+| I will have been *working* for 2 hours.
+| been के बाद V1+ing!
+
+| He will have been working since 3 hours.
+| He will have been working *for* 3 hours.
+| Duration = for (3 hours, 5 years), Point = since (Monday, 2020)
+
+| She will have been knowing him for years.
+| She will have *known* him for years.
+| Know stative verb — continuous में नहीं!
+
+| They will has been waiting.
+| They will *have* been waiting.
+| Will के बाद have, has नहीं!
+
+| By 2030, I will been working here for 10 years.
+| By 2030, I will *have* been working here for 10 years.
+| have भूल गए!
+|===
+
+---
+
+=== Tips & Tricks 💡
+
+* 🎯 **Future Perfect vs Future Perfect Continuous:**
+** _I **will have read** 5 books by December._ → **कितने** (count/result) → Future Perfect
+** _I **will have been reading** for 3 months by December._ → **कितने time से** (duration) → Future Perfect Continuous
+* 🎯 **Formula: will + have + been + V1ing** — सबके लिए exactly same!
+* 🎯 **ये tense बहुत rarely use होता है** daily conversation में। लेकिन जानना ज़रूरी है — exams और formal writing में काम आता है!
+* 🎯 **"By + future time" = तक / तब तक** — ये keyword दिखे, और duration भी हो, तो Future Perfect Continuous!
+* 🎯 **Since vs For** — हमेशा same rule:
+** **Since** = specific point (since 2020, since Monday, since morning)
+** **For** = duration (for 2 hours, for 5 years, for ages)
+
+---
+
+== Practice: खुद Translate करो! ✏️
+
+=== Questions
+
+1. मैं कल तुम्हें call करूँगा।
+2. वो अभी सो रहा होगा।
+3. शाम तक मैं ये काम कर चुका होऊँगा।
+4. अगले July तक वो 3 साल से यहाँ काम कर रहा होगा।
+5. क्या तुम party में आओगे?
+6. वो कल इस time exam दे रही होगी।
+7. 2028 तक मैं graduation कर चुका होऊँगा।
+8. जब तुम पहुँचोगे, मैं 1 घंटे से wait कर रहा होऊँगा।
+9. शायद बारिश होगी कल।
+10. मैं promise करता हूँ, मैं तुम्हें disappoint नहीं करूँगा।
+11. क्या वो तब तक project finish कर चुकी होगी?
+12. अगले month तक हम इस course को 6 months से कर रहे होंगे।
+
+=== Answers
+
+[%collapsible]
+====
+1. I will call you tomorrow. _(Simple Future — future action)_
+2. He will be sleeping right now. _(Future Continuous — guess/assumption about now)_
+3. I will have finished this work by evening. _(Future Perfect — by + completion)_
+4. By next July, he will have been working here for 3 years. _(Future Perfect Continuous — by + duration)_
+5. Will you come to the party? _(Simple Future — Interrogative)_
+6. She will be taking the exam at this time tomorrow. _(Future Continuous — specific future time + ongoing)_
+7. I will have graduated by 2028. _(Future Perfect — by + completion)_
+8. By the time you arrive, I will have been waiting for 1 hour. _(Future Perfect Continuous — by the time + duration)_
+9. It will probably rain tomorrow. _(Simple Future — prediction)_
+10. I promise, I will not disappoint you. _(Simple Future — promise)_
+11. Will she have finished the project by then? _(Future Perfect — Interrogative)_
+12. By next month, we will have been doing this course for 6 months. _(Future Perfect Continuous — by + duration)_
+====
+
+---
+
+== Final Summary — सब एक जगह 📋
+
+[cols="2,2,2"]
+|===
+| Tense | Hindi Clue (Ending) | English Formula
+
+| Simple Future
+| गा, गी, गे
+| will + V1
+
+| Future Continuous
+| रहा होगा, रही होगी
+| will + be + V1+ing
+
+| Future Perfect
+| चुका होगा, लिया होगा
+| will + have + V3
+
+| Future Perfect Continuous
+| रहा होगा + कब से
+| will + have + been + V1+ing
+|===
+
+TIP: Future Tense सबसे आसान है — सब में **will** common है। बस will के बाद क्या लगा — V1, be+V1ing, have+V3, या have+been+V1ing — वो decide करता है tense!
+
+link:Tense.adoc[⌂ Home] &#160;&#160;&#160;&#160;&#160;&#160;
+link:PastTense.adoc[◀ Past] &#160;&#160;&#160;&#160;&#160;&#160;
+link:PresentTense.adoc[Present ▶]

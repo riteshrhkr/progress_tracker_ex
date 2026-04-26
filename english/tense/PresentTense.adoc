@@ -1,0 +1,734 @@
+= Present Tense — पूरी Detail 🎯
+:toc: left
+:toc-title: Present Tense Sections
+:toclevels: 3
+:icons: font
+
+link:Tense.adoc[< Back] &#160;&#160;&#160;&#160;&#160;&#160;
+link:PastTense.adoc[Next >]
+
+
+== Overview — Present Tense क्या है?
+
+Present Tense का मतलब है — **अभी** से related बात। जो काम अभी हो रहा है, regularly होता है, या अभी-अभी हुआ है — ये सब Present Tense में आता है।
+
+Present Tense के 4 types हैं:
+
+[cols="1,2,2"]
+|===
+| Type | कब Use करते हैं | Hindi Clue
+
+| Simple Present
+| Regular / habitual / facts
+| ता है, ती है, ते हैं
+
+| Present Continuous
+| अभी हो रहा है
+| रहा है, रही है, रहे हैं
+
+| Present Perfect
+| अभी-अभी हुआ / experience
+| चुका है, लिया है, दिया है
+
+| Present Perfect Continuous
+| कब से लगातार हो रहा है
+| रहा है + (कब से / से)
+|===
+
+---
+
+== 1. Simple Present Tense ✅
+
+=== पहचान कैसे करें? 🔍
+
+**Hindi में ending**: ता हूँ, ती हूँ, ता है, ती है, ते हैं, ते हो
+
+**English Signal Words**: always, usually, often, sometimes, rarely, never, every day, every week, daily, generally, normally
+
+NOTE: जब भी sentence में "रोज़", "हमेशा", "कभी-कभी" जैसे words आएं — Simple Present use करो।
+
+=== कब Use करें? 📌
+
+==== Situation 1: Daily Habits / Routine
+जो काम तुम regularly करते हो।
+
+* मैं रोज़ सुबह 7 बजे उठता हूँ। → _I wake up at 7 AM every day._
+* वो हर Sunday cricket खेलता है। → _He plays cricket every Sunday._
+
+==== Situation 2: Universal Facts / Truth
+जो हमेशा सच है — science, nature, general truth।
+
+* सूरज पूरब से निकलता है। → _The sun rises in the east._
+* पानी 100°C पर उबलता है। → _Water boils at 100°C._
+
+==== Situation 3: Feelings / Emotions / States
+जो feel करते हो, जानते हो, पसंद करते हो।
+
+* मुझे चाय पसंद है। → _I like tea._
+* वो अपनी माँ से बहुत प्यार करता है। → _He loves his mother very much._
+
+==== Situation 4: Timetable / Schedule
+जो fix schedule पर होता है (bus, train, movie, etc.)
+
+* Train 5 बजे आती है। → _The train arrives at 5 o'clock._
+* Movie 9 बजे शुरू होती है। → _The movie starts at 9 PM._
+
+==== Situation 5: Instructions / Directions
+जब कोई instruction दे रहे हो।
+
+* पहले left लो, फिर right। → _First you take a left, then a right._
+
+---
+
+=== Pattern / Formula 📐
+
+==== Affirmative ✅
+----
+Subject + V1 (s/es for he/she/it) + Object
+----
+
+[cols="2,3"]
+|===
+| Hindi | English
+
+| मैं रोज़ office जाता हूँ।
+| I go to office daily.
+
+| वो school में पढ़ाती है।
+| She teaches in a school.
+
+| हम Sunday को आराम करते हैं।
+| We rest on Sundays.
+
+| राहुल हर सुबह दौड़ता है।
+| Rahul runs every morning.
+
+| बच्चे park में खेलते हैं।
+| Children play in the park.
+|===
+
+IMPORTANT: **He / She / It** के साथ verb में **-s / -es** लगता है! +
+go → go**es**, play → play**s**, watch → watch**es**, study → stud**ies**
+
+==== Negative ❌
+----
+Subject + do/does + not + V1 + Object
+----
+
+[cols="2,3"]
+|===
+| Hindi | English
+
+| मैं coffee नहीं पीता।
+| I do not (don't) drink coffee.
+
+| वो office late नहीं आता।
+| He does not (doesn't) come late to office.
+
+| हम Sunday को काम नहीं करते।
+| We do not (don't) work on Sundays.
+
+| अंकिता meat नहीं खाती।
+| Ankita does not (doesn't) eat meat.
+
+| वो लोग Hindi नहीं बोलते।
+| They do not (don't) speak Hindi.
+|===
+
+WARNING: Negative में **does** लगाने के बाद verb से **-s/-es हटाओ!** +
+❌ He doesn't go**es**. → ✅ He doesn't go.
+
+==== Interrogative ❓
+----
+Do/Does + Subject + V1 + Object + ?
+----
+
+[cols="2,3"]
+|===
+| Hindi | English
+
+| क्या तुम चाय पीते हो?
+| Do you drink tea?
+
+| क्या वो यहाँ काम करता है?
+| Does he work here?
+
+| क्या बच्चे school जाते हैं?
+| Do children go to school?
+
+| तुम कहाँ रहते हो?
+| Where do you live?
+
+| वो क्या करती है?
+| What does she do?
+|===
+
+TIP: WH-questions (what, where, when, why, how) में pattern: **WH + do/does + Subject + V1?**
+
+---
+
+=== Common Mistakes ⚠️
+
+[cols="1,1,2"]
+|===
+| ❌ Wrong | ✅ Right | Problem क्या है
+
+| He go to school.
+| He *goes* to school.
+| He/She/It के साथ -s/-es लगाओ
+
+| She don't like pizza.
+| She *doesn't* like pizza.
+| She के साथ doesn't, not don't
+
+| Does he goes?
+| Does he *go*?
+| Does के बाद V1 (बिना s)
+
+| I am go daily.
+| I *go* daily.
+| Simple Present में is/am/are नहीं लगता (verb की बात कर रहे हो तो)
+
+| He is know the answer.
+| He *knows* the answer.
+| Know एक stative verb है — is know wrong है
+|===
+
+---
+
+=== Tips & Tricks 💡
+
+* 🎯 **"Does = -s का काम कर देता है"** — जब does लगा दिया, तो verb से s हटाओ। Does ने s ले लिया!
+* 🎯 **Stative verbs** (know, like, love, believe, want, need) — इनके साथ continuous (-ing) नहीं use करते normally।
+** ❌ I am knowing. → ✅ I know.
+* 🎯 **V1+s कब लगता है?** सिर्फ Affirmative + He/She/It/Singular में। Negative और Question में नहीं!
+
+---
+
+== 2. Present Continuous Tense 🔄
+
+=== पहचान कैसे करें? 🔍
+
+**Hindi में ending**: रहा हूँ, रही हूँ, रहा है, रही है, रहे हैं, रहे हो
+
+**English Signal Words**: now, right now, at the moment, currently, today, these days, look!, listen!
+
+NOTE: जब भी "अभी", "इस वक्त", "देखो!", "सुनो!" जैसे words आएं — Present Continuous!
+
+=== कब Use करें? 📌
+
+==== Situation 1: अभी इस moment हो रहा है
+जो काम बिल्कुल अभी चल रहा है।
+
+* मैं अभी खाना खा रहा हूँ। → _I am eating food right now._
+* वो phone पर बात कर रही है। → _She is talking on the phone._
+
+==== Situation 2: Temporary Action (कुछ समय के लिए)
+कोई काम temporarily हो रहा है — permanent नहीं है।
+
+* मैं इन दिनों अपनी दादी के घर रह रहा हूँ। → _I am staying at my grandmother's house these days._
+* वो इस month extra hard काम कर रहा है। → _He is working extra hard this month._
+
+==== Situation 3: Near Future Plans (Fixed Plan)
+जो plan पक्का है, near future में होगा।
+
+* मैं कल Delhi जा रहा हूँ। → _I am going to Delhi tomorrow._
+* हम शाम को movie देखने जा रहे हैं। → _We are watching a movie this evening._
+
+==== Situation 4: Annoying Habits (with always)
+जब कोई irritating habit बताना हो — always/constantly के साथ।
+
+* वो हमेशा मेरी चीज़ें छूता रहता है। → _He is always touching my things!_
+* तुम हमेशा late आते हो! → _You are always coming late!_
+
+---
+
+=== Pattern / Formula 📐
+
+==== Affirmative ✅
+----
+Subject + is/am/are + V1+ing + Object
+----
+
+[cols="1,1"]
+|===
+| I → am
+| He/She/It → is
+
+| You → are
+| We/They → are
+|===
+
+[cols="2,3"]
+|===
+| Hindi | English
+
+| मैं अभी पढ़ रहा हूँ।
+| I am studying right now.
+
+| वो ऑफिस जा रहा है।
+| He is going to the office.
+
+| बच्चे बाहर खेल रहे हैं।
+| The children are playing outside.
+
+| माँ kitchen में खाना बना रही है।
+| Mom is cooking in the kitchen.
+
+| हम एक project पर काम कर रहे हैं।
+| We are working on a project.
+|===
+
+==== Negative ❌
+----
+Subject + is/am/are + not + V1+ing + Object
+----
+
+[cols="2,3"]
+|===
+| Hindi | English
+
+| मैं अभी काम नहीं कर रहा।
+| I am not working right now.
+
+| वो आज school नहीं जा रही।
+| She is not (isn't) going to school today.
+
+| वो लोग attend नहीं कर रहे।
+| They are not (aren't) attending.
+
+| बारिश नहीं हो रही।
+| It is not (isn't) raining.
+
+| तुम ध्यान नहीं दे रहे।
+| You are not (aren't) paying attention.
+|===
+
+==== Interrogative ❓
+----
+Is/Am/Are + Subject + V1+ing + Object + ?
+----
+
+[cols="2,3"]
+|===
+| Hindi | English
+
+| क्या तुम सुन रहे हो?
+| Are you listening?
+
+| क्या वो सो रहा है?
+| Is he sleeping?
+
+| तुम क्या कर रहे हो?
+| What are you doing?
+
+| वो कहाँ जा रही है?
+| Where is she going?
+
+| बच्चे क्यों रो रहे हैं?
+| Why are the children crying?
+|===
+
+---
+
+=== Common Mistakes ⚠️
+
+[cols="1,1,2"]
+|===
+| ❌ Wrong | ✅ Right | Problem क्या है
+
+| I studying now.
+| I *am studying* now.
+| is/am/are भूल गए — ये ज़रूरी है!
+
+| He is play cricket.
+| He is *playing* cricket.
+| -ing लगाना भूल गए
+
+| I am liking this movie.
+| I *like* this movie.
+| Like एक stative verb है — continuous में नहीं आता
+
+| She is knowing the answer.
+| She *knows* the answer.
+| Know stative verb है
+
+| I am having a car.
+| I *have* a car.
+| Have (possession) stative है — "I am having lunch" ✅ (action वाला)
+|===
+
+---
+
+=== Tips & Tricks 💡
+
+* 🎯 **-ing बनाने के rules:**
+** write → writ**ing** (e हटाओ, -ing लगाओ)
+** run → ru**nn**ing (short vowel + consonant → consonant double करो)
+** die → d**y**ing (ie → y + ing)
+** play → play**ing** (normally -ing लगाओ)
+* 🎯 **Stative verbs को continuous में मत डालो:** know, like, love, believe, want, need, belong, own, prefer, hate, understand
+* 🎯 **"Look!" / "Listen!" से sentence शुरू हो → Present Continuous use करो:** _Look! The baby is smiling!_
+
+---
+
+== 3. Present Perfect Tense ✨
+
+=== पहचान कैसे करें? 🔍
+
+**Hindi में ending**: चुका हूँ, चुकी हूँ, चुके हैं, लिया है, दिया है, किया है, गया है, देखा है
+
+**English Signal Words**: already, just, yet, ever, never, recently, so far, till now, up to now, since, for
+
+NOTE: ये tense **"काम हो चुका है" या "experience"** बताने के लिए है। कब हुआ — ये important नहीं है!
+
+=== कब Use करें? 📌
+
+==== Situation 1: काम अभी-अभी हुआ (Just completed)
+* मैंने अभी-अभी खाना खा लिया है। → _I have just eaten food._
+* वो अभी office पहुँच गया है। → _He has just reached the office._
+
+==== Situation 2: Life Experience
+कभी किया है या नहीं — experience बताना।
+
+* मैं कभी Goa नहीं गया। → _I have never been to Goa._
+* क्या तुमने कभी sushi खाया है? → _Have you ever eaten sushi?_
+
+==== Situation 3: काम हो चुका है (Result matters)
+काम complete है, और उसका असर अभी है।
+
+* मैंने अपना homework कर लिया है। → _I have done my homework._
+* बारिश रुक गई है। → _The rain has stopped._
+
+==== Situation 4: Since / For (कब से)
+कोई situation कब से चल रही है (लेकिन अभी भी relevant है)।
+
+* मैं 2020 से यहाँ रह रहा हूँ। → _I have lived here since 2020._
+* वो 5 साल से इस company में काम कर रहा है। → _He has worked in this company for 5 years._
+
+==== Situation 5: "अभी तक" / "पहले से"
+Already, yet, still से related situations।
+
+* मैंने already ticket book कर लिया है। → _I have already booked the ticket._
+* उसने अभी तक reply नहीं किया। → _He has not replied yet._
+
+---
+
+=== Pattern / Formula 📐
+
+==== Affirmative ✅
+----
+Subject + has/have + V3 (Past Participle) + Object
+----
+
+[cols="1,1"]
+|===
+| I/You/We/They → have
+| He/She/It → has
+|===
+
+[cols="2,3"]
+|===
+| Hindi | English
+
+| मैंने ये movie देखी है।
+| I have watched this movie.
+
+| उसने exam pass कर लिया है।
+| He has passed the exam.
+
+| हम lunch कर चुके हैं।
+| We have had lunch.
+
+| बच्चों ने homework कर लिया है।
+| The children have done their homework.
+
+| मैंने 3 books पढ़ी हैं इस month।
+| I have read 3 books this month.
+|===
+
+==== Negative ❌
+----
+Subject + has/have + not + V3 + Object
+----
+
+[cols="2,3"]
+|===
+| Hindi | English
+
+| मैंने अभी तक खाना नहीं खाया।
+| I have not (haven't) eaten food yet.
+
+| उसने call back नहीं किया।
+| She has not (hasn't) called back.
+
+| हम वहाँ कभी नहीं गए।
+| We have never been there.
+
+| मैंने ये movie नहीं देखी।
+| I have not (haven't) watched this movie.
+
+| उसने अभी तक decide नहीं किया।
+| He has not (hasn't) decided yet.
+|===
+
+==== Interrogative ❓
+----
+Has/Have + Subject + V3 + Object + ?
+----
+
+[cols="2,3"]
+|===
+| Hindi | English
+
+| क्या तुमने खाना खा लिया?
+| Have you eaten food?
+
+| क्या उसने call किया?
+| Has she called?
+
+| क्या तुम कभी विदेश गए हो?
+| Have you ever been abroad?
+
+| तुमने अभी तक क्यों नहीं किया?
+| Why haven't you done it yet?
+
+| कितने chapters complete हुए हैं?
+| How many chapters have been completed?
+|===
+
+---
+
+=== Common Mistakes ⚠️
+
+[cols="1,1,2"]
+|===
+| ❌ Wrong | ✅ Right | Problem क्या है
+
+| I have went to Goa.
+| I have *gone* to Goa.
+| V3 use करो (gone), V2 नहीं (went)
+
+| He has eat lunch.
+| He has *eaten* lunch.
+| Eat का V3 = eaten
+
+| I have seen him yesterday.
+| I *saw* him yesterday.
+| Yesterday = specific time → Simple Past use करो!
+
+| She have finished.
+| She *has* finished.
+| She के साथ has, have नहीं
+
+| Did you have finished?
+| *Have* you finished?
+| Present Perfect में did नहीं लगता
+|===
+
+---
+
+=== Tips & Tricks 💡
+
+* 🎯 **"कब" बताया → Simple Past। "कब" नहीं बताया → Present Perfect।**
+** _I ate pizza yesterday._ (कब? yesterday → Simple Past)
+** _I have eaten pizza._ (कब? नहीं बताया → Present Perfect)
+* 🎯 **Since vs For:**
+** **Since** = specific point of time (since 2020, since Monday, since morning)
+** **For** = duration (for 3 years, for 2 hours, for a long time)
+* 🎯 **Yet = अभी तक** (negative / question में) → sentence के end में आता है
+* 🎯 **Already = पहले से** (affirmative में) → has/have के बाद आता है
+* 🎯 **Just = अभी-अभी** → has/have के बाद आता है: _I have **just** finished._
+
+---
+
+== 4. Present Perfect Continuous Tense ⏳
+
+=== पहचान कैसे करें? 🔍
+
+**Hindi में ending**: रहा हूँ / रही हूँ / रहे हैं + **कब से / से / पिछले...**
+
+**English Signal Words**: since, for, how long, all day, all morning, the whole day
+
+NOTE: ये tense तब use करो जब कोई काम **past में शुरू हुआ और अभी भी चल रहा है**, और तुम बताना चाहो कि **कितनी देर से** चल रहा है।
+
+=== कब Use करें? 📌
+
+==== Situation 1: कब से हो रहा है (Duration बताना)
+* मैं सुबह से पढ़ रहा हूँ। → _I have been studying since morning._
+* वो 2 घंटे से wait कर रहा है। → _He has been waiting for 2 hours._
+
+==== Situation 2: Continuous Activity with Visible Result
+काम थोड़ी देर से चल रहा था, उसका result दिख रहा है।
+
+* तुम्हारी आँखें लाल हैं — क्या तुम रो रहे थे? → _Your eyes are red. Have you been crying?_
+* ज़मीन गीली है — बारिश हो रही थी शायद। → _The ground is wet. It has been raining._
+
+==== Situation 3: Recently Stopped but Effect Remains
+काम अभी-अभी बंद हुआ, लेकिन असर है।
+
+* मैं थक गया हूँ, मैं 3 घंटे से दौड़ रहा था। → _I am tired. I have been running for 3 hours._
+* उसके हाथ गंदे हैं, वो gardening कर रही थी। → _Her hands are dirty. She has been gardening._
+
+---
+
+=== Pattern / Formula 📐
+
+==== Affirmative ✅
+----
+Subject + has/have + been + V1+ing + since/for + Time
+----
+
+[cols="2,3"]
+|===
+| Hindi | English
+
+| मैं सुबह 6 बजे से पढ़ रहा हूँ।
+| I have been studying since 6 AM.
+
+| वो 3 साल से यहाँ काम कर रहा है।
+| He has been working here for 3 years.
+
+| बारिश सुबह से हो रही है।
+| It has been raining since morning.
+
+| हम 2 घंटे से meeting में बैठे हैं।
+| We have been sitting in the meeting for 2 hours.
+
+| वो पिछले 1 घंटे से phone पर बात कर रही है।
+| She has been talking on the phone for the last 1 hour.
+|===
+
+==== Negative ❌
+----
+Subject + has/have + not + been + V1+ing + since/for + Time
+----
+
+[cols="2,3"]
+|===
+| Hindi | English
+
+| मैं कल से ठीक से नहीं सो रहा।
+| I have not (haven't) been sleeping well since yesterday.
+
+| वो पिछले हफ्ते से gym नहीं जा रहा।
+| He has not (hasn't) been going to the gym for the last week.
+
+| बारिश काफ़ी दिनों से नहीं हो रही।
+| It has not (hasn't) been raining for many days.
+
+| हम काफ़ी time से बात नहीं कर रहे।
+| We have not (haven't) been talking for quite some time.
+
+| वो कुछ दिनों से ठीक से खाना नहीं खा रही।
+| She has not (hasn't) been eating properly for a few days.
+|===
+
+==== Interrogative ❓
+----
+Has/Have + Subject + been + V1+ing + since/for + Time + ?
+----
+
+[cols="2,3"]
+|===
+| Hindi | English
+
+| क्या तुम बहुत देर से यहाँ खड़े हो?
+| Have you been standing here for a long time?
+
+| वो कब से पढ़ रहा है?
+| How long has he been studying?
+
+| क्या बारिश सुबह से हो रही है?
+| Has it been raining since morning?
+
+| तुम कितने दिनों से exercise कर रहे हो?
+| How long have you been exercising?
+
+| क्या वो यहाँ 5 साल से काम कर रही है?
+| Has she been working here for 5 years?
+|===
+
+---
+
+=== Common Mistakes ⚠️
+
+[cols="1,1,2"]
+|===
+| ❌ Wrong | ✅ Right | Problem क्या है
+
+| I have been study since morning.
+| I have been *studying* since morning.
+| been के बाद V1+ing चाहिए
+
+| He has been working since 3 hours.
+| He has been working *for* 3 hours.
+| Duration = for, Point of time = since
+
+| She has been knowing him for years.
+| She *has known* him for years.
+| Know stative verb है — continuous में नहीं आता
+
+| I have been waited for 2 hours.
+| I have been *waiting* for 2 hours.
+| V3 नहीं, V1+ing चाहिए
+
+| They been working all day.
+| They *have* been working all day.
+| have/has भूल गए!
+|===
+
+---
+
+=== Tips & Tricks 💡
+
+* 🎯 **Present Perfect vs Present Perfect Continuous — फ़र्क:**
+** _I have read 3 books._ → **कितने** (count/result) → Present Perfect
+** _I have been reading since morning._ → **कब से** (duration) → Present Perfect Continuous
+* 🎯 **Since = fixed point:** since 2020, since Monday, since 8 AM, since childhood
+* 🎯 **For = duration:** for 5 years, for 3 hours, for a long time, for ages
+* 🎯 **Stative verbs** (know, like, love, believe, own, belong) — इनके साथ Present Perfect use करो, continuous नहीं
+* 🎯 **How long = कब से** — question बनाते time: _How long have you been living here?_
+
+---
+
+== Practice: खुद Translate करो! ✏️
+
+नीचे Hindi sentences दिए हैं। इन्हें English में translate करने की कोशिश करो, फिर answers check करो।
+
+=== Questions
+
+1. मैं रोज़ सुबह दूध पीता हूँ।
+2. वो अभी TV देख रहा है।
+3. क्या तुमने कभी पहाड़ों पर जाना है?
+4. वो 2 घंटे से phone पर बात कर रही है।
+5. मेरी बहन Dance class जाती है।
+6. बच्चे अभी सो नहीं रहे।
+7. मैंने ये movie 3 बार देखी है।
+8. क्या बारिश हो रही है बाहर?
+9. वो सुबह से कुछ नहीं खा रहा।
+10. हमने अभी तक project submit नहीं किया है।
+11. मेरा भाई हमेशा मेरी चीज़ें लेता है!
+12. तुम कब से यहाँ खड़े हो?
+
+=== Answers
+
+[%collapsible]
+====
+1. I drink milk every morning. _(Simple Present — daily habit)_
+2. He is watching TV right now. _(Present Continuous — अभी हो रहा है)_
+3. Have you ever been to the mountains? _(Present Perfect — experience)_
+4. She has been talking on the phone for 2 hours. _(Present Perfect Continuous — कब से)_
+5. My sister goes to dance class. _(Simple Present — routine)_
+6. The children are not sleeping right now. _(Present Continuous — Negative)_
+7. I have watched this movie 3 times. _(Present Perfect — count/experience)_
+8. Is it raining outside? _(Present Continuous — Interrogative)_
+9. He has not been eating anything since morning. _(Present Perfect Continuous — Negative)_
+10. We have not submitted the project yet. _(Present Perfect — yet = अभी तक)_
+11. My brother is always taking my things! _(Present Continuous + always — annoying habit)_
+12. How long have you been standing here? _(Present Perfect Continuous — Interrogative)_
+====
+
+link:Tense.adoc[⌂ Home] &#160;&#160;&#160;&#160;&#160;&#160;
+link:PastTense.adoc[◀ Past] &#160;&#160;&#160;&#160;&#160;&#160;
+link:FutureTense.adoc[Future ▶]

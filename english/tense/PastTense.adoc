@@ -1,0 +1,711 @@
+= Past Tense — पूरी Detail 🕰️
+:toc: left
+:toc-title: Past Tense Sections
+:toclevels: 3
+:icons: font
+
+link:Tense.adoc[⌂ Home] &#160;&#160;&#160;&#160;&#160;&#160;
+link:PresentTense.adoc[◀ Present] &#160;&#160;&#160;&#160;&#160;&#160;
+link:FutureTense.adoc[Future ▶]
+
+== Overview — Past Tense क्या है?
+
+Past Tense का मतलब है — **बीते हुए समय** की बात। जो काम हो चुका है, हो रहा था, या पहले हो चुका था — ये सब Past Tense में आता है।
+
+Past Tense के 4 types हैं:
+
+[cols="1,2,2"]
+|===
+| Type | कब Use करते हैं | Hindi Clue
+
+| Simple Past
+| काम हो गया (बीती बात)
+| ता था, गया, किया, खाया, आया
+
+| Past Continuous
+| Past में कोई काम चल रहा था
+| रहा था, रही थी, रहे थे
+
+| Past Perfect
+| एक काम दूसरे से पहले हो चुका था
+| चुका था, चुकी थी, लिया था
+
+| Past Perfect Continuous
+| कब से हो रहा था (past में)
+| रहा था + कब से / से
+|===
+
+---
+
+== 1. Simple Past Tense ✅
+
+=== पहचान कैसे करें? 🔍
+
+**Hindi में ending**: गया, गई, गए, किया, खाया, बोला, आया, लिया, दिया, ता था, ती थी, ते थे
+
+**English Signal Words**: yesterday, last week, last month, last year, ago, in 2020, in those days, when I was young, that day
+
+NOTE: जब काम **बीत चुका है** और **कब हुआ** ये बताना है — Simple Past!
+
+=== कब Use करें? 📌
+
+==== Situation 1: Completed Action in the Past
+जो काम हो गया — खत्म।
+
+* मैंने कल pizza खाया। → _I ate pizza yesterday._
+* वो पिछले साल Japan गई। → _She went to Japan last year._
+
+==== Situation 2: Past Habits / Routine
+जो पहले regularly करते थे (अब नहीं)।
+
+* मैं बचपन में रोज़ park जाता था। → _I went to the park daily in my childhood._
+* वो पहले यहाँ काम करता था। → _He worked here before._
+
+==== Situation 3: A Series of Past Actions (Story telling)
+कहानी या sequence बताना — एक के बाद एक।
+
+* मैं उठा, नहाया, और office चला गया। → _I woke up, took a bath, and went to office._
+* उसने door खोला, अंदर आया, और बैठ गया। → _He opened the door, came in, and sat down._
+
+==== Situation 4: Past Facts / Situations
+जो past में सच था।
+
+* मेरे दादाजी बहुत strong थे। → _My grandfather was very strong._
+* उस time internet इतना fast नहीं था। → _The internet was not that fast at that time._
+
+---
+
+=== Pattern / Formula 📐
+
+==== Affirmative ✅
+----
+Subject + V2 (Past form) + Object
+----
+
+[cols="2,3"]
+|===
+| Hindi | English
+
+| मैंने कल अपना room साफ किया।
+| I cleaned my room yesterday.
+
+| वो पिछले हफ्ते Delhi गया।
+| He went to Delhi last week.
+
+| हमने Sunday को party की।
+| We had a party on Sunday.
+
+| अंकिता ने exam बहुत अच्छा दिया।
+| Ankita did very well in the exam.
+
+| बच्चों ने पूरा दिन खेला।
+| The children played the whole day.
+|===
+
+IMPORTANT: Simple Past में हमेशा **V2** (second form of verb) use करो। go → **went**, eat → **ate**, play → **played**
+
+==== Negative ❌
+----
+Subject + did + not + V1 + Object
+----
+
+[cols="2,3"]
+|===
+| Hindi | English
+
+| मैंने कल खाना नहीं खाया।
+| I did not (didn't) eat food yesterday.
+
+| वो meeting में नहीं आया।
+| He did not (didn't) come to the meeting.
+
+| हमने वो movie नहीं देखी।
+| We did not (didn't) watch that movie.
+
+| बारिश नहीं हुई कल।
+| It did not (didn't) rain yesterday.
+
+| उसने मुझे call नहीं किया।
+| She did not (didn't) call me.
+|===
+
+WARNING: Negative में **did** लगाने के बाद **V1** use करो, V2 नहीं! +
+❌ I didn't went. → ✅ I didn't **go**.
+
+==== Interrogative ❓
+----
+Did + Subject + V1 + Object + ?
+----
+
+[cols="2,3"]
+|===
+| Hindi | English
+
+| क्या तुमने खाना खाया?
+| Did you eat food?
+
+| क्या वो कल आया था?
+| Did he come yesterday?
+
+| तुम कहाँ गए थे?
+| Where did you go?
+
+| उसने क्या कहा?
+| What did she say?
+
+| तुमने ये कब किया?
+| When did you do this?
+|===
+
+---
+
+=== Common Mistakes ⚠️
+
+[cols="1,1,2"]
+|===
+| ❌ Wrong | ✅ Right | Problem क्या है
+
+| I goed to school.
+| I *went* to school.
+| Go irregular verb है — V2 = went, goed नहीं!
+
+| He didn't came.
+| He didn't *come*.
+| did के बाद V1 (come), V2 (came) नहीं!
+
+| Did she went?
+| Did she *go*?
+| Same — Did के बाद V1!
+
+| I was go there.
+| I *went* there.
+| Simple Past में is/am/are/was/were + verb नहीं लगता
+
+| Yesterday I have eaten pizza.
+| Yesterday I *ate* pizza.
+| Yesterday → specific past time → Simple Past, not Present Perfect!
+|===
+
+---
+
+=== Tips & Tricks 💡
+
+* 🎯 **"Did = V2 का काम कर देता है"** — जब did लगा दिया, verb V1 में रहेगा। Did ने past tense का काम ले लिया!
+* 🎯 **Regular verbs** में V2 बनाना easy है — बस **-ed** लगाओ: play**ed**, watch**ed**, clean**ed**
+* 🎯 **Irregular verbs** की V2 याद करने का कोई shortcut नहीं — रोज़ 10 verbs practice करो (V1, V2, V3)
+* 🎯 **Was / Were** सिर्फ "to be" verb के लिए: _I **was** happy. They **were** tired._ — Action verbs के साथ was/were + V1 मत लगाओ!
+
+---
+
+== 2. Past Continuous Tense 🔄
+
+=== पहचान कैसे करें? 🔍
+
+**Hindi में ending**: रहा था, रही थी, रहे थे
+
+**English Signal Words**: when, while, at that time, at 8 PM yesterday, all day yesterday, the whole evening
+
+NOTE: जब past में कोई काम **चल रहा था** — बीच में था — तब Past Continuous!
+
+=== कब Use करें? 📌
+
+==== Situation 1: Past में कोई काम चल रहा था
+किसी specific time पर काम progress में था।
+
+* मैं रात 10 बजे सो रहा था। → _I was sleeping at 10 PM._
+* वो कल शाम को TV देख रही थी। → _She was watching TV yesterday evening._
+
+==== Situation 2: दो काम एक साथ चल रहे थे (while)
+दोनों काम parallel हो रहे थे।
+
+* मैं खाना बना रहा था और वो TV देख रहा था। → _I was cooking and he was watching TV._
+* जब बच्चे खेल रहे थे, माँ खाना बना रही थी। → _While the children were playing, mom was cooking._
+
+==== Situation 3: Background action + Interruption (when)
+एक काम चल रहा था, तभी दूसरा काम (sudden) हो गया।
+
+* मैं नहा रहा था जब phone बजा। → _I was taking a bath when the phone rang._
+* वो road cross कर रहा था जब accident हुआ। → _He was crossing the road when the accident happened._
+
+==== Situation 4: Setting a Scene (Story में background)
+कहानी में माहौल बताना।
+
+* बारिश हो रही थी, हवा चल रही थी, और सब अंदर बैठे थे। → _It was raining, the wind was blowing, and everyone was sitting inside._
+
+---
+
+=== Pattern / Formula 📐
+
+==== Affirmative ✅
+----
+Subject + was/were + V1+ing + Object
+----
+
+[cols="1,1"]
+|===
+| I/He/She/It → was
+| You/We/They → were
+|===
+
+[cols="2,3"]
+|===
+| Hindi | English
+
+| मैं कल 9 बजे पढ़ रहा था।
+| I was studying at 9 o'clock yesterday.
+
+| वो office जा रहा था।
+| He was going to the office.
+
+| बच्चे बारिश में खेल रहे थे।
+| The children were playing in the rain.
+
+| माँ kitchen में चाय बना रही थी।
+| Mom was making tea in the kitchen.
+
+| हम उस time meeting कर रहे थे।
+| We were having a meeting at that time.
+|===
+
+==== Negative ❌
+----
+Subject + was/were + not + V1+ing + Object
+----
+
+[cols="2,3"]
+|===
+| Hindi | English
+
+| मैं उस time सो नहीं रहा था।
+| I was not (wasn't) sleeping at that time.
+
+| वो कुछ नहीं कर रही थी।
+| She was not (wasn't) doing anything.
+
+| बच्चे पढ़ नहीं रहे थे।
+| The children were not (weren't) studying.
+
+| बारिश नहीं हो रही थी।
+| It was not (wasn't) raining.
+
+| हम उसका wait नहीं कर रहे थे।
+| We were not (weren't) waiting for him.
+|===
+
+==== Interrogative ❓
+----
+Was/Were + Subject + V1+ing + Object + ?
+----
+
+[cols="2,3"]
+|===
+| Hindi | English
+
+| क्या तुम सो रहे थे?
+| Were you sleeping?
+
+| वो क्या कर रही थी?
+| What was she doing?
+
+| क्या बारिश हो रही थी?
+| Was it raining?
+
+| तुम कहाँ जा रहे थे?
+| Where were you going?
+
+| कौन-कौन खेल रहे थे?
+| Who all were playing?
+|===
+
+---
+
+=== Common Mistakes ⚠️
+
+[cols="1,1,2"]
+|===
+| ❌ Wrong | ✅ Right | Problem क्या है
+
+| I were sleeping.
+| I *was* sleeping.
+| I के साथ was, were नहीं
+
+| He was play cricket.
+| He was *playing* cricket.
+| -ing भूल गए
+
+| When I was cooking, the phone was ringing.
+| When I was cooking, the phone *rang*.
+| Interruption (sudden action) Simple Past में — rang
+
+| They was watching TV.
+| They *were* watching TV.
+| They के साथ were, was नहीं
+
+| She was knowing the truth.
+| She *knew* the truth.
+| Know stative verb है!
+|===
+
+---
+
+=== Tips & Tricks 💡
+
+* 🎯 **When vs While:**
+** **While** → longer action (continuous): _**While** I was cooking..._
+** **When** → shorter/sudden action (simple past): _...the phone rang **when**..._
+** Pattern: **While + Past Continuous, Simple Past** या **Past Continuous + when + Simple Past**
+* 🎯 **दो continuous actions?** दोनों में Past Continuous: _I was cooking **while** he was sleeping._
+* 🎯 **Was/Were confusion?** बस याद रखो:
+** **Was**: I, He, She, It (singular)
+** **Were**: You, We, They (plural + you)
+
+---
+
+== 3. Past Perfect Tense 🔙
+
+=== पहचान कैसे करें? 🔍
+
+**Hindi में ending**: चुका था, चुकी थी, चुके थे, लिया था, दिया था, गया था, कर लिया था
+
+**English Signal Words**: before, after, by the time, already, when, until, never...before, just
+
+NOTE: जब **दो past actions** हों और बताना हो कि **कौन सा पहले** हुआ — Past Perfect (पहले वाले के लिए)!
+
+=== कब Use करें? 📌
+
+==== Situation 1: पहले वाला काम (दो past actions में)
+एक काम दूसरे से **पहले** हो चुका था।
+
+* जब मैं station पहुँचा, train जा चुकी थी। → _When I reached the station, the train had already left._
+* उसने खाना खा लिया था उससे पहले कि मैं पहुँचता। → _He had eaten food before I arrived._
+
+==== Situation 2: Experience till that point in past
+किसी past point तक का experience।
+
+* 2020 तक मैंने कभी flight नहीं ली थी। → _I had never taken a flight until 2020._
+* उस time तक वो 3 companies में काम कर चुका था। → _By that time, he had already worked in 3 companies._
+
+==== Situation 3: Reported Speech / Indirect Speech
+कोई बात past में किसी ने कही थी।
+
+* उसने बताया कि वो exam pass कर चुका था। → _He told me that he had passed the exam._
+* Teacher ने कहा कि उसने homework नहीं किया था। → _The teacher said that he had not done his homework._
+
+==== Situation 4: Third Conditional (काश...)
+जो हो नहीं पाया — regret बताना।
+
+* काश मैंने harder पढ़ाई की होती। → _If I had studied harder, I would have passed._
+* काश वो time पर आ गया होता। → _If he had come on time, we would have caught the train._
+
+---
+
+=== Pattern / Formula 📐
+
+==== Affirmative ✅
+----
+Subject + had + V3 (Past Participle) + Object
+----
+
+[cols="2,3"]
+|===
+| Hindi | English
+
+| Train आने से पहले वो पहुँच चुका था।
+| He had reached before the train arrived.
+
+| जब मैं office पहुँचा, meeting शुरू हो चुकी थी।
+| When I reached the office, the meeting had already started.
+
+| उसने बताया कि वो lunch कर चुका था।
+| He said that he had already had lunch.
+
+| 2019 तक वो 5 books लिख चुकी थी।
+| By 2019, she had written 5 books.
+
+| हम खाना order कर चुके थे जब वो आया।
+| We had ordered food when he arrived.
+|===
+
+==== Negative ❌
+----
+Subject + had + not + V3 + Object
+----
+
+[cols="2,3"]
+|===
+| Hindi | English
+
+| मैंने तब तक वो movie नहीं देखी थी।
+| I had not (hadn't) watched that movie until then.
+
+| उसने अभी तक homework नहीं किया था।
+| He had not (hadn't) done his homework yet.
+
+| Train जाने से पहले वो नहीं पहुँचा था।
+| He had not (hadn't) reached before the train left.
+
+| हमने कभी ऐसा खाना नहीं खाया था।
+| We had never eaten such food before.
+
+| वो कभी विदेश नहीं गई थी उस time तक।
+| She had never been abroad until that time.
+|===
+
+==== Interrogative ❓
+----
+Had + Subject + V3 + Object + ?
+----
+
+[cols="2,3"]
+|===
+| Hindi | English
+
+| क्या तुमने पहले ये movie देखी थी?
+| Had you watched this movie before?
+
+| क्या वो पहले कभी Delhi आया था?
+| Had he ever been to Delhi before?
+
+| क्या तुमने खाना खा लिया था?
+| Had you eaten food?
+
+| क्या meeting शुरू हो चुकी थी?
+| Had the meeting already started?
+
+| उसने तब तक कितनी jobs change की थीं?
+| How many jobs had he changed by then?
+|===
+
+---
+
+=== Common Mistakes ⚠️
+
+[cols="1,1,2"]
+|===
+| ❌ Wrong | ✅ Right | Problem क्या है
+
+| When I reached, the train has left.
+| When I reached, the train *had* left.
+| Past की बात है → had, not has
+
+| I had went there before.
+| I had *gone* there before.
+| had के बाद V3 (gone), V2 (went) नहीं!
+
+| He had ate lunch.
+| He had *eaten* lunch.
+| Eat का V3 = eaten
+
+| Before I arrived, he left.
+| Before I arrived, he *had* left.
+| पहले वाले action को had + V3 से mark करो
+
+| I had been to Goa yesterday.
+| I *went* to Goa yesterday.
+| Simple one-time past action with time → Simple Past enough है
+|===
+
+---
+
+=== Tips & Tricks 💡
+
+* 🎯 **Past Perfect = "Past का Past"** — जो Simple Past से भी **पहले** हुआ!
+* 🎯 **Formula याद करो: had + V3** — सबके लिए same (I had, he had, they had — कोई change नहीं!)
+* 🎯 **Before/After trick:**
+** _He **had eaten** before I came._ (had eaten → पहले वाला action)
+** _After he **had eaten**, he went to sleep._ (same — after + had V3)
+* 🎯 **अगर दोनों actions sequence में clear हैं, Simple Past भी चलता है:** _I came home and ate dinner._ — ये भी correct है। Past Perfect ज़रूरी नहीं हमेशा, बस जब emphasis करना हो कि **पहले** हुआ।
+
+---
+
+== 4. Past Perfect Continuous Tense ⏳
+
+=== पहचान कैसे करें? 🔍
+
+**Hindi में ending**: रहा था / रही थी / रहे थे + **कब से / से / पिछले...**
+
+**English Signal Words**: for, since, before, when, how long, all day, the whole morning
+
+NOTE: ये तब use करो जब बताना हो कि past में किसी event से **पहले कितने time** से कोई काम चल रहा था।
+
+=== कब Use करें? 📌
+
+==== Situation 1: Duration before a past event
+एक past event से पहले कोई काम कितने time से चल रहा था।
+
+* जब वो आया, मैं 2 घंटे से wait कर रहा था। → _When he arrived, I had been waiting for 2 hours._
+* उसने job छोड़ दी जहाँ वो 5 साल से काम कर रहा था। → _He quit the job where he had been working for 5 years._
+
+==== Situation 2: Cause of Past Result (किसी past result की वजह)
+Past में कोई result था, और उसकी वजह ये थी कि काम कुछ देर से चल रहा था।
+
+* वो थका हुआ था क्योंकि वो 3 घंटे से दौड़ रहा था। → _He was tired because he had been running for 3 hours._
+* उसकी आँखें लाल थीं क्योंकि वो रो रही थी। → _Her eyes were red because she had been crying._
+
+==== Situation 3: Emphasis on Duration (ज़ोर देना कि कितने time तक)
+Duration emphasis करना past context में।
+
+* वो 10 साल से एक ही company में काम कर रहा था जब transfer हुआ। → _He had been working in the same company for 10 years when he got transferred._
+* मैं सुबह से खाना बना रहा था जब guests आए। → _I had been cooking since morning when the guests arrived._
+
+---
+
+=== Pattern / Formula 📐
+
+==== Affirmative ✅
+----
+Subject + had + been + V1+ing + since/for + Time
+----
+
+[cols="2,3"]
+|===
+| Hindi | English
+
+| मैं 2 घंटे से उसका wait कर रहा था।
+| I had been waiting for him for 2 hours.
+
+| वो सुबह से पढ़ रही थी जब लाइट गई।
+| She had been studying since morning when the power went out.
+
+| बारिश 3 दिनों से हो रही थी।
+| It had been raining for 3 days.
+
+| हम 1 घंटे से meeting कर रहे थे जब boss आया।
+| We had been having a meeting for 1 hour when the boss came.
+
+| बच्चे शाम से खेल रहे थे।
+| The children had been playing since evening.
+|===
+
+==== Negative ❌
+----
+Subject + had + not + been + V1+ing + since/for + Time
+----
+
+[cols="2,3"]
+|===
+| Hindi | English
+
+| वो काफ़ी दिनों से ठीक से नहीं खा रहा था।
+| He had not (hadn't) been eating properly for many days.
+
+| मैं कई दिनों से exercise नहीं कर रहा था।
+| I had not (hadn't) been exercising for several days.
+
+| वो लोग weeks से बात नहीं कर रहे थे।
+| They had not (hadn't) been talking for weeks.
+
+| बारिश कई हफ्तों से नहीं हो रही थी।
+| It had not (hadn't) been raining for many weeks.
+
+| वो months से job search नहीं कर रही थी।
+| She had not (hadn't) been searching for a job for months.
+|===
+
+==== Interrogative ❓
+----
+Had + Subject + been + V1+ing + since/for + Time + ?
+----
+
+[cols="2,3"]
+|===
+| Hindi | English
+
+| क्या तुम बहुत देर से यहाँ wait कर रहे थे?
+| Had you been waiting here for a long time?
+
+| वो कितने दिनों से बुखार में था?
+| How long had he been having a fever?
+
+| क्या वो 5 साल से वहाँ काम कर रही थी?
+| Had she been working there for 5 years?
+
+| तुम कब से phone try कर रहे थे?
+| How long had you been trying to call?
+
+| क्या बारिश सुबह से हो रही थी?
+| Had it been raining since morning?
+|===
+
+---
+
+=== Common Mistakes ⚠️
+
+[cols="1,1,2"]
+|===
+| ❌ Wrong | ✅ Right | Problem क्या है
+
+| I had been wait for 2 hours.
+| I had been *waiting* for 2 hours.
+| been के बाद V1+ing!
+
+| He had been working since 3 hours.
+| He had been working *for* 3 hours.
+| Duration = for, Time point = since
+
+| She had been knew him for years.
+| She *had known* him for years.
+| Know stative verb — continuous नहीं!
+
+| They had being working all day.
+| They had *been* working all day.
+| being नहीं, been!
+
+| I had been studied since morning.
+| I had been *studying* since morning.
+| V3 नहीं, V1+ing!
+|===
+
+---
+
+=== Tips & Tricks 💡
+
+* 🎯 **Past Perfect Continuous = "Past में कब से"** — ये याद रखो बस!
+* 🎯 **Past Perfect vs Past Perfect Continuous — फ़र्क:**
+** _I **had read** 3 books before the exam._ → **कितने** (count/result) → Past Perfect
+** _I **had been reading** for 3 hours before the exam._ → **कितने time से** (duration) → Past Perfect Continuous
+* 🎯 **Since vs For** — same rule as Present Perfect Continuous:
+** **Since** = point of time (since morning, since 2020)
+** **For** = duration (for 2 hours, for 5 years)
+* 🎯 **ज़्यादातर sentences में "when" या "before" से दूसरा action जुड़ता है:** _I had been waiting for 2 hours **when** he finally came._
+
+---
+
+== Practice: खुद Translate करो! ✏️
+
+=== Questions
+
+1. मैंने कल अपना phone घर पर भूल दिया।
+2. वो शाम 6 बजे खाना बना रही थी।
+3. जब मैं पहुँचा, meeting खत्म हो चुकी थी।
+4. वो 3 घंटे से सो रहा था जब alarm बजा।
+5. बच्चों ने पूरा दिन cricket खेला।
+6. क्या तुम उस time काम कर रहे थे?
+7. उसने बताया कि वो Delhi जा चुका था।
+8. मैं बारिश में भीग रहा था।
+9. जब lights गई, हम 1 घंटे से movie देख रहे थे।
+10. क्या उसने कभी Goa visit नहीं किया था?
+11. मैं खाना खा रहा था जब doorbell बजी।
+12. वो 2019 से इस company में काम कर रहा था जब उसे promotion मिला।
+
+=== Answers
+
+[%collapsible]
+====
+1. I forgot my phone at home yesterday. _(Simple Past — completed past action)_
+2. She was cooking food at 6 PM in the evening. _(Past Continuous — specific time पर चल रहा था)_
+3. When I reached, the meeting had already finished. _(Past Perfect — पहले हो चुका था)_
+4. He had been sleeping for 3 hours when the alarm rang. _(Past Perfect Continuous — कब से + when)_
+5. The children played cricket the whole day. _(Simple Past — completed action)_
+6. Were you working at that time? _(Past Continuous — Interrogative)_
+7. He told me that he had been to Delhi. _(Past Perfect — reported speech)_
+8. I was getting wet in the rain. _(Past Continuous — चल रहा था)_
+9. When the lights went off, we had been watching a movie for 1 hour. _(Past Perfect Continuous — duration before past event)_
+10. Had he never visited Goa before? _(Past Perfect — Interrogative + never)_
+11. I was eating food when the doorbell rang. _(Past Continuous + when + Simple Past — interruption)_
+12. He had been working in this company since 2019 when he got a promotion. _(Past Perfect Continuous — since + when)_
+====
+
+link:Tense.adoc[⌂ Home] &#160;&#160;&#160;&#160;&#160;&#160;
+link:PresentTense.adoc[◀ Present] &#160;&#160;&#160;&#160;&#160;&#160;
+link:FutureTense.adoc[Future ▶]

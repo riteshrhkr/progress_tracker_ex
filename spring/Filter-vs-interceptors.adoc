@@ -1,0 +1,148 @@
+= Filter VS Interceptors
+
+Filters and Interceptors are used to perform specific things like authentication, authorization, logging, validation etc before and after the controller level or we can say business logic.
+Both have the ability to intercept the request and response. Filter is the part of server container (eg- Tomcat, Jetty) where as the Interceptors are part of spring.
+
+== Filter
+
+It is the part of web server container like Tomcat or Jetty. They can intercept the request even before the api enters in spring echosystem. 
+
+[source,java]
+[.filters.java]
+----
+// Filter interface provided by the server
+class MyFilter implements Filter {
+
+    @Override
+    public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
+        // Do something before the request reaches the controller
+        chain.doFilter(request, response); // Continue the request to the controller. Missing this line will not allow the request to proceed further
+        // Do something after the response is prepared and ready to be sent back to the client
+    }
+}
+----
+
+== Interceptors
+
+It is the part of spring so it always execute after all filters process the request at there end for incomming request. And for outgoing request it execute before all filters.
+
+[source,java]
+[.interceptors.java]
+----
+// Interceptor interface provided by spring
+class MyInterceptor implements HandlerInterceptor {
+
+    @Override
+    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
+        // Do something before the request reaches the controller
+        return true; // True means continue the request to the controller, false means stop the request and return an error response like 401 or 403
+    }
+
+    @Override
+    public void postHandle(HttpServletRequest request, HttpServletResponse response, Object handler, ModelAndView modelAndView) throws Exception {
+        // Do something after the response is prepared.
+        // Note that it execute after the controller finished processing the request but before the view is rendered
+    }
+
+    @Override
+    public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) throws Exception {
+        // Do something after the response is prepared and view is also rendered. Now response is ready to be sent back to the client
+    }
+}
+
+// Now we have to register the interceptor in the dispatcher servlet
+@Configuration
+public class MyConfig implements WebMvcConfigurer {
+
+    @Override
+    public void addInterceptors(InterceptorRegistry registry) {
+        registry.addInterceptor(new MyInterceptor())
+                .addPathPatterns("/**")        // apply to all endpoints
+                .excludePathPatterns("/login"); // optional exclusions
+    }
+}
+----
+
+== Filter vs Interceptor vs AOP (In simple terms)
+
+=== Filter
+
+*Definition*  
+Filter is a web-level component that intercepts every HTTP request and response before it reaches Spring MVC.
+
+*In simple terms*  
+Filter works at the entry gate of your application.  
+It sees the request first, even before Spring knows which controller will handle it.
+
+*When it fits best*
+* HTTP request/response related logic
+* Logic common for all requests
+* Controller details are not required
+
+*One-liner*  
+*Filter = Handle request before Spring sees it*
+
+---
+
+=== Interceptor
+
+*Definition*  
+Interceptor is a Spring MVC component that intercepts requests before and after a controller method executes.
+
+*In simple terms*  
+Interceptor sits between Spring and your controller.  
+It knows which API or endpoint is being called.
+
+*When it fits best*
+* Logic depends on controller or endpoint
+* Access to handler or controller method is needed
+* API-level concerns
+
+*One-liner*  
+*Interceptor = Do something around controller execution*
+
+---
+
+=== AOP
+
+*Definition*  
+AOP (Aspect-Oriented Programming) is a technique to apply cross-cutting behavior around method execution.
+
+*In simple terms*  
+AOP watches methods and runs logic whenever they execute.  
+It is not tied to web requests.
+
+*When it fits best*
+* Logic applies to service or repository methods
+* Business-level concerns
+* Clean separation of cross-cutting logic
+
+*One-liner*  
+*AOP = Do something whenever a method runs*
+
+---
+
+=== Cheat Sheet
+
+[cols="1,1,2", options="header"]
+|===
+| Component | Think of it as | Best used for
+
+| Filter
+| Entry gate
+| HTTP-level logic
+
+| Interceptor
+| Controller guard
+| API-level logic
+
+| AOP
+| Method observer
+| Business-level logic
+|===
+
+=== Golden Rule
+
+* No Spring yet? → *Filter*
+* Inside Spring MVC? → *Interceptor*
+* Inside business logic? → *AOP*

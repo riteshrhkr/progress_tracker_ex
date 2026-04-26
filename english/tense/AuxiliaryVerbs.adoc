@@ -1,0 +1,540 @@
+= Auxiliary Verbs — Complete Guide 🛠️
+:toc: left
+:toc-title: इस Guide में क्या है
+:toclevels: 3
+:icons: font
+
+== Auxiliary Verb क्या है? 🤔
+
+भाई, सबसे पहले ये समझो — **Auxiliary Verb वो verb है जो main verb की मदद करता है।** इसीलिए इसे **"Helping Verb"** भी कहते हैं।
+
+बिना auxiliary verb के तुम:
+
+* ❌ Negative sentence नहीं बना सकते
+* ❌ Question नहीं बना सकते
+* ❌ Tenses properly नहीं use कर सकते
+* ❌ Passive voice नहीं बना सकते
+
+=== Example देखो:
+
+[cols="1,1,2"]
+|===
+| Sentence | Auxiliary | Role
+
+| I *am* eating.
+| am
+| Continuous tense बनाया
+
+| She *has* finished.
+| has
+| Perfect tense बनाया
+
+| *Do* you like tea?
+| Do
+| Question बनाया
+
+| He *can* swim.
+| can
+| Ability बताई
+
+| You *should* study.
+| should
+| Advice दी
+
+| I *don't* smoke.
+| don't (do+not)
+| Negative बनाया
+|===
+
+TIP: Auxiliary verb **अकेला मतलब नहीं देता** — ये हमेशा main verb के साथ काम करता है! (कुछ exceptions हैं जो हम आगे देखेंगे)
+
+---
+
+== दो Types — Primary vs Modal 📊
+
+Auxiliary verbs दो categories में बँटते हैं:
+
+[cols="1,2,2"]
+|===
+| Type | क्या हैं | Special बात
+
+| **Primary Auxiliaries**
+| be, have, do
+| ये **tenses बनाने**, negative बनाने, questions बनाने में help करते हैं। ये main verb की तरह भी काम कर सकते हैं!
+
+| **Modal Auxiliaries**
+| can, could, may, might, shall, should, will, would, must, ought to, need, dare, used to
+| ये **mood/attitude** बताते हैं — ability, permission, possibility, advice, obligation, etc.
+|===
+
+IMPORTANT: Primary auxiliaries की **forms बदलती हैं** (am/is/are, have/has/had, do/does/did) लेकिन Modals की **forms नहीं बदलतीं** (कोई -s, -ed, -ing नहीं लगता)!
+
+---
+
+== Quick Reference — सब एक नज़र में 📋
+
+=== Primary Auxiliaries
+
+[cols="1,2,2,3"]
+|===
+| Verb | Forms | Hindi Meaning | Example
+
+| **Be**
+| am, is, are, was, were, been, being
+| होना / रहना
+| I *am* going. He *was* sleeping.
+
+| **Have**
+| have, has, had
+| पास होना / चुका होना
+| She *has* eaten. I *have* a car.
+
+| **Do**
+| do, does, did
+| करना (helping role)
+| *Do* you know? I *don't* like it.
+|===
+
+=== Modal Auxiliaries
+
+[cols="1,2,3"]
+|===
+| Modal | Hindi Meaning | Example
+
+| **can**
+| सकता हूँ
+| I *can* swim.
+
+| **could**
+| सकता था / क्या आप...
+| *Could* you help me?
+
+| **may**
+| शायद / क्या मैं...
+| *May* I come in?
+
+| **might**
+| हो सकता है (कम chance)
+| It *might* rain.
+
+| **shall**
+| चलें? / करें?
+| *Shall* we go?
+
+| **should**
+| चाहिए
+| You *should* study.
+
+| **will**
+| गा / गी / गे
+| I *will* come tomorrow.
+
+| **would**
+| ता (conditional) / क्या आप...
+| *Would* you like tea?
+
+| **must**
+| ज़रूर करना चाहिए
+| You *must* wear a helmet.
+
+| **ought to**
+| करना चाहिए (moral)
+| We *ought to* help the poor.
+
+| **need**
+| ज़रूरत है
+| You *need not* worry.
+
+| **dare**
+| हिम्मत करना
+| How *dare* you!
+
+| **used to**
+| करता था (past habit)
+| I *used to* play cricket.
+|===
+
+---
+
+== Subject-wise Form Selection 🎯
+
+ये सबसे important table है — **कौन सा subject → कौन सी form:**
+
+=== Be — कौन सी form कब?
+
+[cols="2,2,2"]
+|===
+| Subject | Present | Past
+
+| I
+| **am**
+| **was**
+
+| He / She / It / Singular Noun
+| **is**
+| **was**
+
+| You / We / They / Plural Noun
+| **are**
+| **were**
+|===
+
+* **been** → has/have/had के बाद: _I have **been** waiting._
+* **being** → is/am/are/was/were के बाद (passive continuous): _The work is **being** done._
+
+=== Have — कौन सी form कब?
+
+[cols="2,2,2"]
+|===
+| Subject | Present | Past
+
+| I / You / We / They / Plural
+| **have**
+| **had**
+
+| He / She / It / Singular
+| **has**
+| **had**
+|===
+
+=== Do — कौन सी form कब?
+
+[cols="2,2,2"]
+|===
+| Subject | Present | Past
+
+| I / You / We / They / Plural
+| **do**
+| **did**
+
+| He / She / It / Singular
+| **does**
+| **did**
+|===
+
+WARNING: Past (did/had/was/were) में सभी subjects के लिए एक ही form है — except **be** जहाँ was (singular) और were (plural)!
+
+---
+
+== Confusing Pairs — ये सबसे ज़्यादा Confuse करते हैं 🔀
+
+=== 1. Can vs Could 💪
+
+[cols="1,1"]
+|===
+| **Can** | **Could**
+
+| Present ability
+| Past ability
+
+| _I **can** speak Hindi._
+| _I **could** speak French when I was a child._
+
+| Informal permission
+| Polite request
+
+| _**Can** I sit here?_ (casual)
+| _**Could** you please help me?_ (polite)
+
+| Strong possibility
+| Weak possibility / suggestion
+
+| _It **can** be dangerous._ (हो सकता है)
+| _It **could** be true._ (शायद सच हो)
+|===
+
+TIP: **Could = Can का polite version + past version** — दोनों context देखो!
+
+=== 2. May vs Might 🤔
+
+[cols="1,1"]
+|===
+| **May** | **Might**
+
+| Formal permission
+| ❌ Permission में rarely use होता है
+
+| _**May** I come in?_ (formal)
+| _(not typically used for permission)_
+
+| Possibility (50-50 chance)
+| Possibility (कम chance)
+
+| _It **may** rain today._ (शायद — 50%)
+| _It **might** rain today._ (हो सकता है — 30%)
+
+| Present/Future
+| Present/Future (+ Past reported speech)
+
+| _She **may** come._ (आ सकती है)
+| _She **might** come._ (शायद आए)
+|===
+
+IMPORTANT: Permission माँगने के लिए — **May** formal है, **Can** informal है। _May I...?_ = ज़्यादा respectful।
+
+=== 3. Can vs May — Permission का फ़र्क 🙋
+
+[cols="1,1"]
+|===
+| **Can I...?** | **May I...?**
+
+| Informal / Casual
+| Formal / Respectful
+
+| Friends, family के साथ
+| Teacher, boss, elders के साथ
+
+| _**Can** I use your phone?_ (दोस्त से)
+| _**May** I use the washroom?_ (teacher से)
+
+| Ability भी बता सकता है
+| सिर्फ permission
+
+| _I **can** run fast._ (ability)
+| _You **may** leave now._ (permission ✅)
+|===
+
+TIP: School/office में **May I...?** use करो — ज़्यादा polite और professional!
+
+=== 4. Should vs Must 📏
+
+[cols="1,1"]
+|===
+| **Should** | **Must**
+
+| Advice / Suggestion (soft)
+| Obligation / Compulsion (strong)
+
+| _You **should** exercise daily._ (अच्छा होगा अगर करो)
+| _You **must** wear a seatbelt._ (ज़रूरी है — कानून है!)
+
+| ना करो तो कोई बात नहीं
+| ना करो तो problem होगी
+
+| _You **should** eat healthy._ (सलाह)
+| _You **must** pay your taxes._ (obligation)
+
+| Expectation
+| Logical deduction (ज़रूर ऐसा ही है)
+
+| _He **should** be home by now._ (होना चाहिए)
+| _He **must** be tired after 12 hours._ (ज़रूर थका होगा)
+|===
+
+WARNING: **Must not** = मना है! (prohibition) — _You **must not** cheat._ vs **Should not** = नहीं करना चाहिए (advice) — _You **should not** eat junk food._
+
+=== 5. Will vs Would 🔮
+
+[cols="1,1"]
+|===
+| **Will** | **Would**
+
+| Future
+| Conditional / Polite
+
+| _I **will** come tomorrow._
+| _I **would** come if I had time._
+
+| Promise / Decision
+| Polite request / Offer
+
+| _I **will** help you._ (पक्का)
+| _**Would** you like some tea?_ (polite offer)
+
+| Prediction
+| Past habit (repeated)
+
+| _It **will** rain._ (होगा)
+| _We **would** go for walks in the evening._ (जाया करते थे)
+
+| Direct
+| Softer / More polite
+|===
+
+=== 6. Shall vs Will ⚖️
+
+[cols="1,1"]
+|===
+| **Shall** | **Will**
+
+| Formal / Suggestion (I/We)
+| Normal future (सब subjects)
+
+| _**Shall** we dance?_ (चलें नाचें?)
+| _I **will** dance._ (मैं नाचूँगा)
+
+| Offering help
+| Stating intention
+
+| _**Shall** I open the window?_ (खोलूँ?)
+| _I **will** open the window._ (खोलूँगा)
+
+| British English ज़्यादा
+| Universal — हर जगह use होता है
+
+| सिर्फ I / We के साथ
+| सब subjects के साथ
+|===
+
+TIP: Modern English में **will** ज़्यादा use होता है। **Shall** सिर्फ suggestions/offers के लिए: _Shall I...? Shall we...?_
+
+=== 7. Have to vs Must — दोनों obligation हैं, पर... 🤷
+
+[cols="1,1"]
+|===
+| **Must** | **Have to**
+
+| Internal obligation (खुद feel करो)
+| External obligation (बाहर से rule है)
+
+| _I **must** study harder._ (मुझे लगता है)
+| _I **have to** wear uniform._ (school का rule है)
+
+| Speaker's opinion / decision
+| Rule / Law / Someone else's decision
+
+| _You **must** try this food!_ (मेरा suggestion)
+| _We **have to** submit by Friday._ (deadline है)
+
+| कोई past form नहीं → had to use करो
+| Past: **had to**
+
+| _(no past form)_
+| _I **had to** wait for 2 hours._ (wait करना पड़ा)
+|===
+
+IMPORTANT: **Must not** (मना है) ≠ **Don't have to** (ज़रूरी नहीं)! +
+_You **must not** smoke here._ (Smoking allowed नहीं!) +
+_You **don't have to** come._ (आने की ज़रूरत नहीं — लेकिन आ सकते हो)
+
+=== 8. Used to vs Would — Past Habits 🔄
+
+[cols="1,1"]
+|===
+| **Used to** | **Would**
+
+| Past habits + Past states दोनों
+| सिर्फ past habits (repeated actions)
+
+| _I **used to** live in Delhi._ ✅ (state)
+| _I **would** live in Delhi._ ❌ (state के लिए would नहीं!)
+
+| _I **used to** play cricket._ ✅ (action)
+| _I **would** play cricket every Sunday._ ✅ (repeated action)
+
+| अब ऐसा नहीं करता — clear contrast
+| Past repeated action — nostalgic feel
+
+| Negative: didn't use to
+| Negative: would not / wouldn't
+|===
+
+WARNING: **Would** सिर्फ repeated **actions** के लिए काम करता है — **states** (live, know, be, have) के लिए हमेशा **used to** use करो!
+
+=== 9. Need to vs Must 🎯
+
+[cols="1,1"]
+|===
+| **Need to** | **Must**
+
+| Necessity (ज़रूरत है)
+| Strong obligation (ज़रूर करो)
+
+| _I **need to** buy groceries._ (ज़रूरत है)
+| _I **must** finish this today._ (ज़रूर करना है)
+
+| Softer / Normal
+| Stronger / Urgent
+
+| Negative: don't need to (ज़रूरत नहीं)
+| Negative: must not (मना है!)
+
+| _You **don't need to** come._ (आने की ज़रूरत नहीं)
+| _You **must not** come._ (आने मत! मना है!)
+|===
+
+---
+
+== Auxiliary Verbs in Tenses — कहाँ कौन सा? 📊
+
+[cols="2,2,2"]
+|===
+| Tense | Auxiliary Used | Example
+
+| Simple Present (Neg/Q)
+| do / does
+| *Do* you eat? I *don't* eat.
+
+| Present Continuous
+| am / is / are
+| I *am* eating.
+
+| Present Perfect
+| have / has
+| I *have* eaten.
+
+| Present Perfect Continuous
+| have/has + been
+| I *have been* eating.
+
+| Simple Past (Neg/Q)
+| did
+| *Did* you eat? I *didn't* eat.
+
+| Past Continuous
+| was / were
+| I *was* eating.
+
+| Past Perfect
+| had
+| I *had* eaten.
+
+| Past Perfect Continuous
+| had + been
+| I *had been* eating.
+
+| Simple Future
+| will / shall
+| I *will* eat.
+
+| Future Continuous
+| will + be
+| I *will be* eating.
+
+| Future Perfect
+| will + have
+| I *will have* eaten.
+
+| Future Perfect Continuous
+| will + have + been
+| I *will have been* eating.
+|===
+
+TIP: ऊपर table को ध्यान से देखो — हर tense में exactly कौन से auxiliaries लगते हैं ये clear हो जाएगा!
+
+---
+
+== Detailed Files 📚
+
+हर auxiliary verb की पूरी detail — forms, patterns, examples, mistakes, tips — इन files में मिलेगी:
+
+
+* link:PrimaryAuxiliaryVerbs.adoc[Primary Auxiliaries — Be, Have, Do]
+
+* link:ModalAuxiliaryVerbs.adoc[Modal Auxiliaries — Can, Could, May, Might, Should, Must, etc.]
+
+---
+
+== Golden Rules — याद रखो! 💡
+
+[NOTE]
+====
+1. **Primary Auxiliaries** (be, have, do) → Tenses बनाने, Negative बनाने, Questions बनाने में काम आते हैं।
+2. **Modal Auxiliaries** → Mood बताते हैं (ability, permission, obligation, possibility, advice)।
+3. **Modals के बाद हमेशा V1** (base form) आता है — कोई -s, -ed, -ing नहीं!
+** ❌ He can goes. → ✅ He can **go**.
+4. **दो Modals एक साथ नहीं** आ सकते!
+** ❌ He will can come. → ✅ He **will be able to** come.
+5. **Must not = मना है** ≠ **Don't have to = ज़रूरी नहीं** — ये गलती बहुत होती है!
+6. जब doubt हो, **polite version use करो** (could > can, would > will, may > can) — कभी गलत नहीं जाएगा!
+====
