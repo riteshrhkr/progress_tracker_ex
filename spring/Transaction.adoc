@@ -1,9 +1,17 @@
+
+:toc:
+:toc-placement: left
+:toclevels: 1
+:icons: font
+:sectanchors:
+:sectnumlevels: 3
+
 = Transaction in SQL and Spring
 
 Transaction is group of related sql statements that works as single unit and inherits ADIC property. It is used to maintain data accuracy and integrity.
 
 
-== What are ACID Properties?
+== *_What are ACID Properties?_*
 
 ACID properties are a set of rules that ensure reliable and safe processing of database transactions.  
 ACID stands for:
@@ -114,9 +122,50 @@ This is achieved using *logs, backups, and disk storage*.
 | Payment record saved even after crash
 |===
 
----
+=== Isolation Levels
 
-== Spring Boot Transactions & Propagation Types
+Isolation levels define how strictly transactions are separated from each other. They prevent three common read problems:
+
+1. **Dirty Read**: Reading uncommitted data from another transaction.
+2. **Non-Repeatable Read**: Reading the same row twice but getting different results because another transaction updated it.
+3. **Phantom Read**: Reading a set of rows twice but getting different results because another transaction inserted/deleted rows.
+
+Here are the 4 standard isolation levels from least strict to most strict:
+
+==== 1. READ_UNCOMMITTED
+* **Meaning**: A transaction can read data that is not yet committed by other transactions.
+* **Problem**: Can lead to **Dirty Reads**.
+* **Example**: Transaction A updates an account balance from ₹1000 to ₹500 but hasn't committed. Transaction B reads the balance as ₹500. Transaction A rolls back. Transaction B now has wrong data.
+
+==== 2. READ_COMMITTED (Default in PostgreSQL)
+* **Meaning**: A transaction can only read data that has been committed.
+* **Problem**: Prevents Dirty Reads, but can lead to **Non-Repeatable Reads**.
+* **Example**: Transaction A reads account balance as ₹1000. Transaction B updates it to ₹500 and commits. Transaction A reads it again and gets ₹500. The read changed during the same transaction.
+
+==== 3. REPEATABLE_READ (Default in MySQL InnoDB)
+* **Meaning**: If a transaction reads a row, it will see the exact same data if it reads it again, even if another transaction updates and commits it.
+* **Problem**: Prevents Dirty and Non-Repeatable reads, but can lead to **Phantom Reads**.
+* **Example**: Transaction A reads all "active" users and finds 5. Transaction B inserts a new active user and commits. If Transaction A reads again, it still sees 5. But if it tries to update all active users, 6 rows might be updated (the 6th is the "phantom").
+
+==== 4. SERIALIZABLE
+* **Meaning**: The strictest level. Transactions run as if they are executed one after the other (sequentially).
+* **Problem**: Prevents all read problems, but is the slowest and can cause performance bottlenecks or deadlocks.
+* **Example**: Two users trying to book tickets at the exact same time. The database forces User B to wait completely until User A's transaction finishes.
+
+[cols="2,1,1,1", options="header"]
+|===
+| Isolation Level | Dirty Read | Non-Repeatable Read | Phantom Read
+
+| READ_UNCOMMITTED | Yes | Yes | Yes
+| READ_COMMITTED   | No  | Yes | Yes
+| REPEATABLE_READ  | No  | No  | Yes
+| SERIALIZABLE     | No  | No  | No
+|===
+
+
+// ---
+
+== *_Spring Boot Transactions & Propagation Types_*
 
 *Transaction* is group of related sql statements that works as single unit and inherits ADIC property. It is used to maintain data accuracy and integrity. It make sure that eather:
 
@@ -157,7 +206,7 @@ Common attributes:
 
 ---
 
-== Transaction Propagation
+== *_Transaction Propagation_*
 
 Propagation defines **how a method behaves when it is called inside another transaction**.
 
@@ -372,7 +421,85 @@ NOTE: Works only with databases that support *savepoints* (e.g., MySQL InnoDB).
 | Partial rollback
 |===
 
----
+// ---
+
+== How @Transactional Works Internally (The Magic Explained)
+
+Spring's `@Transactional` seems like magic, but it's powered by a design pattern called **AOP (Aspect-Oriented Programming)** and **proxies**. Understanding this is key to avoiding common pitfalls.
+
+=== The Core Idea: AOP and Proxies
+
+1.  **Scanning**: When your Spring application starts, it scans for beans with `@Transactional` methods.
+2.  **Proxy Creation**: Instead of giving you the actual bean object, Spring creates a **proxy** object that wraps your bean. This proxy has the same methods as your bean.
+3.  **Interception**: When you call a method on that bean, you're actually calling the proxy. The proxy intercepts this call.
+
+This proxy is where the transaction magic happens. It's like having a security guard (the proxy) who checks your clearance (transaction rules) before letting you into a room (the actual method).
+
+[source,text]
+----
+Your Code  ───calls───►  Proxy Bean  ───manages transaction───►  Original Bean
+                                       (starts, commits, or          (your actual code)
+                                        rolls back)
+----
+
+=== Step-by-Step Workflow
+
+Here’s what happens when you call a `@Transactional` method:
+
+1.  **Method Call Intercepted**: The proxy intercepts the call to your method (e.g., `placeOrder()`).
+2.  **Transaction Logic Begins**: The proxy's transactional "advice" (code) runs *before* your method.
+3.  **Check Propagation**: It checks the `propagation` setting. Does an existing transaction exist? Should it create a new one? (e.g., `REQUIRED` will join an existing one or create a new one).
+4.  **Start Transaction**: The proxy asks the `TransactionManager` to begin a transaction. This typically involves getting a database connection and setting `auto-commit` to `false`.
+5.  **Execute Your Method**: The proxy calls the *original* method on your actual bean. Your business logic runs, performing database operations.
+6.  **Handle the Outcome**:
+    *   **Success**: If your method finishes without throwing an exception, the proxy's transactional advice runs again. It tells the `TransactionManager` to `commit()` the transaction.
+    *   **Failure**: If your method throws a `RuntimeException` (or an exception specified in `rollbackFor`), the proxy catches it. It tells the `TransactionManager` to `rollback()` the transaction, undoing all changes. The exception is then re-thrown.
+7.  **Return Control**: The proxy returns the result (or exception) to the original caller.
+
+=== Why @Transactional Can Fail: Common Pitfalls
+
+Because `@Transactional` relies on proxies, it has some limitations that can be confusing.
+
+==== 1. Self-Invocation (Internal Method Calls)
+
+This is the most common pitfall. If you call a `@Transactional` method from another method *within the same class*, the transaction will **NOT** be applied.
+
+[source,java]
+----
+@Service
+public class MyService {
+
+    public void externalMethod() {
+        // This call bypasses the proxy!
+        this.internalTransactionalMethod(); // BAD
+    }
+
+    @Transactional
+    public void internalTransactionalMethod() {
+        // This code will NOT run in a transaction when called from externalMethod()
+    }
+}
+----
+
+*Why it fails*: When `externalMethod()` calls `internalTransactionalMethod()`, it uses the `this` reference, which points to the original object, not the proxy. The proxy is completely bypassed, so no transaction is started.
+
+*Solution*: Call the method from a different bean, or inject the service into itself to call the method on the proxy.
+
+==== 2. Non-Public Methods
+
+`@Transactional` only works on `public` methods by default. Spring will silently ignore the annotation on `private`, `protected`, or package-private methods.
+
+*Why it fails*: The proxy-based AOP is configured to only intercept public method calls for security and design reasons.
+
+==== 3. Exception Rollback Rules
+
+By default, Spring only rolls back transactions for **unchecked exceptions** (`RuntimeException` and `Error`). It does **NOT** roll back for **checked exceptions** (like `IOException`, `SQLException`).
+
+*Why*: This is an old design choice from the EJB era, where checked exceptions were seen as recoverable business exceptions, not system failures.
+
+*Solution*: Use the `rollbackFor` attribute to tell Spring to roll back on checked exceptions.
+
+// ---
 
 == Important Notes (Very Common Interview Points)
 
@@ -405,4 +532,3 @@ If you want next:
 * Real project use-case (Order + Payment + Inventory)
 
 Just tell me 👍
-

@@ -1,0 +1,139 @@
+// Generate 100 questions For 2 years of experience. Question level is modarate 
+
+Act as an expert Java Backend interviewer hiring for a candidate with 2 years of experience.
+
+Generate 100 REAL interview questions only, categorized by interview round and topic. The questions must feel like actual interview questions asked in companies, not textbook definitions.
+
+Requirements:
+1. Cover all major interview rounds:
+   - Resume / project discussion
+   - Core Java
+   - Collections
+   - Multithreading / concurrency
+   - Java 8 features
+   - Spring / Spring Boot
+   - REST API / Microservices basics
+   - JPA / Hibernate
+   - SQL / Database
+   - Coding / DSA
+   - Debugging / production scenarios
+   - System design basics
+   - Testing / logging / build tools
+   - Behavioral / HR
+2. Mix question types:
+   - Conceptual questions
+   - Coding questions
+   - Scenario-based questions
+   - Debugging questions
+   - API design questions
+   - Database query questions
+   - Production issue questions
+   - Behavioral questions
+3. Keep the difficulty suitable for a 2-year experienced Java backend developer:
+   - Mostly foundational to intermediate
+   - A few moderate questions
+   - Avoid senior/architect-level depth
+4. Make the questions practical and project-oriented.
+5. Do not provide answers.
+6. Do not repeat similar questions.
+7. Use clear category headings.
+8. Under each category, include 8–15 questions.
+9. Format the output as:
+   - Category name
+   - Numbered questions
+10. Ensure the questions reflect real backend interview patterns used in companies.
+
+Before generating, think like an interviewer and focus on what a strong 2-year Java backend candidate should realistically be able to explain, code, debug, and design.
+
+
+
+
+
+
+
+// For advance product base company questions
+
+Act as a strict senior Java Backend interviewer for a product company or startup hiring a candidate with 2 years of experience.
+
+Your job is to generate hard, realistic, company-level interview questions that test whether the candidate can actually work on production backend systems, not just memorize definitions.
+
+Generate 100 interview questions with strong difficulty and practical depth.
+
+Rules:
+1. Questions must feel like real questions asked in product companies and startups.
+2. Focus on depth, trade-offs, edge cases, and real-world backend thinking.
+3. Avoid basic textbook questions unless they are asked in a tricky or application-based way.
+4. Mix the following question types:
+   - Conceptual questions
+   - Coding questions
+   - Debugging questions
+   - Scenario-based questions
+   - API design questions
+   - Database/SQL questions
+   - Concurrency questions
+   - Production incident questions
+   - Performance and scalability questions
+   - Behavioral questions
+5. Target the level expected from a strong 2-year Java backend engineer:
+   - core fundamentals must be strong
+   - practical Spring Boot usage
+   - REST API design
+   - JPA/Hibernate understanding
+   - SQL query writing
+   - concurrency awareness
+   - debugging production issues
+   - basic system design thinking
+6. Make the questions more challenging than average:
+   - ask “why”, “how”, and “what happens internally”
+   - include edge cases
+   - include failure scenarios
+   - include trade-off comparisons
+   - include performance implications
+7. Cover these categories:
+   - Resume / project deep dive
+   - Core Java
+   - Collections
+   - Multithreading and concurrency
+   - Java 8 and functional programming
+   - Exception handling and code quality
+   - Spring Core
+   - Spring Boot
+   - REST API design
+   - Security basics
+   - JPA / Hibernate
+   - SQL / Database
+   - Caching
+   - Testing
+   - Logging and monitoring
+   - Microservices basics
+   - Debugging and production issues
+   - System design basics
+   - Behavioral / HR
+8. Under each category, ask 5 to 12 questions.
+9. Keep the output only as questions. Do not provide answers, explanations, or hints.
+10. Do not repeat similar questions.
+11. Make the questions increasingly difficult within each category.
+12. Include some questions that require the candidate to write code, optimize code, or identify bugs in code.
+13. Include some questions that are based on real backend situations such as:
+   - slow API
+   - deadlock
+   - memory leak
+   - duplicate records
+   - transaction rollback
+   - connection pool exhaustion
+   - inconsistent data
+   - null pointer issues
+   - deployment failures
+   - production logs analysis
+14. Use a professional interview tone.
+
+Format:
+Category Name
+1. Question
+2. Question
+3. Question
+
+Generate only the final categorized question list.
+
+
+

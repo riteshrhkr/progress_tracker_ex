@@ -1,0 +1,221 @@
+= Zuul API Gateway vs Spring Cloud Gateway
+:toc: left
+:toclevels: 2
+:sectlinks:
+:sectnums:
+:icons: font
+
+== Introduction
+
+This document provides a comprehensive comparison between Netflix Zuul API Gateway and Spring Cloud Gateway, two popular API Gateway solutions in the Java ecosystem. The table below highlights key differences.
+
+[[comparison-table]]
+== Comparison Table
+
+[cols="1,2,2,1", options="header"]
+|===
+|Feature |Zuul API Gateway |Spring Cloud Gateway |Details
+
+|Architecture
+|Based on Servlet API with blocking I/O model
+|Built on Spring WebFlux with non-blocking reactive streams
+|<<architecture,Learn More>>
+
+|Performance
+|Lower throughput due to blocking architecture
+|Higher throughput with non-blocking architecture
+|<<performance,Learn More>>
+
+|Request Processing Model
+|Thread per request model
+|Event-loop model
+|<<processing-model,Learn More>>
+
+|Filter Mechanism
+|Pre, Route, Post filters
+|Pre, Route, Post filters with predicates and GatewayFilter factories
+|<<filters,Learn More>>
+
+|Configuration
+|XML or Java configuration with limited DSL
+|Java configuration with powerful DSL and YAML support
+|<<configuration,Learn More>>
+
+|Integration
+|Spring Cloud Netflix ecosystem
+|Spring Cloud ecosystem with broader integration
+|<<integration,Learn More>>
+
+|Development Status
+|In maintenance mode (Zuul 1.x); Zuul 2.x never officially released
+|Active development with regular updates
+|<<status,Learn More>>
+
+|Java Version
+|Java 8+
+|Java 8+ (Java 17+ recommended for newer versions)
+|<<java-version,Learn More>>
+
+|Spring Boot Compatibility
+|Spring Boot 1.x, 2.x
+|Spring Boot 2.x, 3.x
+|<<boot-compatibility,Learn More>>
+
+|Circuit Breaking
+|Requires Hystrix integration
+|Built-in Circuit Breaker via Spring Cloud Circuit Breaker
+|<<circuit-breaking,Learn More>>
+
+|Rate Limiting
+|Custom implementation required
+|Built-in support with Redis
+|<<rate-limiting,Learn More>>
+|===
+
+== Detailed Explanations
+
+[[architecture]]
+=== Architecture
+<<comparison-table, Comparison Table>>
+
+==== Zuul API Gateway
+Zuul 1.x is built on top of the Servlet API using a blocking I/O model. This means that for each request, a thread is allocated and blocked until the response is ready, which can lead to thread exhaustion under high load.
+
+==== Spring Cloud Gateway
+Spring Cloud Gateway is built on top of Spring WebFlux and Project Reactor, using a non-blocking reactive architecture. This allows it to handle many concurrent connections with a small number of threads, resulting in better resource utilization.
+
+[[performance]]
+=== Performance
+<<comparison-table, Comparison Table>>
+
+==== Zuul API Gateway
+Due to its blocking nature, Zuul typically has lower throughput and higher latency, especially under heavy load. Each request ties up a thread for the duration of the upstream service call.
+
+==== Spring Cloud Gateway
+The non-blocking architecture allows Spring Cloud Gateway to achieve higher throughput with the same hardware resources. Benchmarks typically show 2-4x better performance compared to Zuul, especially for I/O-bound operations.
+
+[[processing-model]]
+=== Request Processing Model
+<<comparison-table, Comparison Table>>
+
+==== Zuul API Gateway
+Zuul uses a synchronous processing model where each request is handled by a dedicated thread. This can lead to inefficient resource utilization when dealing with slow upstream services.
+
+==== Spring Cloud Gateway
+Spring Cloud Gateway uses an asynchronous event-loop model powered by Project Reactor. This allows it to efficiently handle many concurrent requests with a small thread pool, as threads don't need to wait for I/O operations.
+
+[[filters]]
+=== Filter Mechanism
+<<comparison-table, Comparison Table>>
+
+==== Zuul API Gateway
+Zuul provides a filter chain mechanism with pre, route, and post filters:
+
+* Pre filters: Execute before routing to the origin
+* Route filters: Handle routing the request to the origin
+* Post filters: Execute after the response is received from the origin
+
+Filters are implemented by extending abstract classes.
+
+==== Spring Cloud Gateway
+Spring Cloud Gateway offers a more flexible filtering approach:
+
+* Predicates: Determine if a request should be processed by a route
+* Filters: Modify requests and responses before or after sending the downstream request
+* Global Filters: Apply to all routes
+* GatewayFilter Factories: Create reusable filters
+
+This provides a more powerful and compositional approach to request processing.
+
+[[configuration]]
+=== Configuration
+<<comparison-table, Comparison Table>>
+
+==== Zuul API Gateway
+Zuul configuration is typically done via properties files or Java configuration. The DSL capabilities are limited, making complex routing rules more verbose.
+
+[source,properties]
+----
+zuul.routes.service-a.path=/service-a/**
+zuul.routes.service-a.serviceId=SERVICE-A
+zuul.routes.service-b.path=/service-b/**
+zuul.routes.service-b.url=https://example.com/api
+----
+
+==== Spring Cloud Gateway
+Spring Cloud Gateway offers a powerful fluent Java DSL and YAML-based configuration with extensive customization options.
+
+[source,yaml]
+----
+spring:
+  cloud:
+    gateway:
+      routes:
+        - id: service-a
+          uri: lb://SERVICE-A
+          predicates:
+            - Path=/service-a/**
+          filters:
+            - StripPrefix=1
+            - AddRequestHeader=X-Request-Source, gateway
+----
+
+[[integration]]
+=== Integration
+<<comparison-table, Comparison Table>>
+
+==== Zuul API Gateway
+Zuul integrates well with the Netflix OSS stack (Eureka, Ribbon, Hystrix) but has more limited integration with other systems.
+
+==== Spring Cloud Gateway
+Spring Cloud Gateway offers broader integration with various Spring Cloud components including Spring Cloud Discovery, Spring Cloud Config, Spring Cloud Circuit Breaker, and more. It also provides better integration with modern observability tools.
+
+[[status]]
+=== Development Status
+<<comparison-table, Comparison Table>>
+
+==== Zuul API Gateway
+Zuul 1.x is in maintenance mode with limited updates. Zuul 2.x was developed but never officially released as part of Spring Cloud.
+
+==== Spring Cloud Gateway
+Spring Cloud Gateway is under active development with regular feature updates and improvements. It's the recommended gateway solution for new Spring Cloud applications.
+
+[[java-version]]
+=== Java Version
+<<comparison-table, Comparison Table>>
+
+==== Zuul API Gateway
+Zuul 1.x works with Java 8 and above but has not been optimized for newer Java versions.
+
+==== Spring Cloud Gateway
+Spring Cloud Gateway supports Java 8 and above, with newer versions taking advantage of modern Java features. Spring Cloud Gateway 4.x and above are optimized for Java 17 and newer.
+
+[[boot-compatibility]]
+=== Spring Boot Compatibility
+<<comparison-table, Comparison Table>>
+
+==== Zuul API Gateway
+Zuul works with Spring Boot 1.x and 2.x but has limited support for Spring Boot 3.x.
+
+==== Spring Cloud Gateway
+Spring Cloud Gateway is designed for Spring Boot 2.x and 3.x with full support for the latest Spring Boot features.
+
+[[circuit-breaking]]
+=== Circuit Breaking
+<<comparison-table, Comparison Table>>
+
+==== Zuul API Gateway
+Zuul relies on Netflix Hystrix for circuit breaking capabilities, which requires additional configuration.
+
+==== Spring Cloud Gateway
+Spring Cloud Gateway provides built-in circuit breaking through Spring Cloud Circuit Breaker, which offers a choice of implementations including Resilience4J, Sentinel, and others.
+
+[[rate-limiting]]
+=== Rate Limiting
+<<comparison-table, Comparison Table>>
+
+==== Zuul API Gateway
+Zuul does not provide built-in rate limiting. Custom implementation using Zuul filters is required or integration with external solutions.
+
+==== Spring Cloud Gateway
+Spring Cloud Gateway offers built-in rate limiting filters with support for Redis-based rate limiting, which makes it easier to implement rate limiting across a cluster of gateway instances.

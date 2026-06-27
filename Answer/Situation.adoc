@@ -1,0 +1,109 @@
+= Questions
+
+== Situations
+
+=== Production Outage Due to OutOfMemoryError
+
+One production incident I handled was caused by an `OutOfMemoryError` in a Spring Boot application.
+
+The issue started when a user applied a very large custom date range filter on a reporting API. The API was originally designed with a default range of one month, but users were allowed to manually select custom start and end dates. A request was made for multiple years of data, which caused the service to become extremely slow and eventually crash due to excessive memory consumption.
+
+As soon as the alert came, I started investigation using JavaMelody dashboards to analyze:
+
+* API response time
+* memory usage
+* CPU utilization
+* SQL query count
+* thread activity
+
+I noticed that:
+
+* memory usage was continuously increasing
+* CPU usage was very high
+* the API was firing an unusually large number of SQL queries
+
+From the SQL traces, I identified a classic N+1 query problem.
+
+The API was loading more than 10,000 JPA entities, and for each entity Hibernate was lazily fetching related mappings separately. This resulted in thousands of additional database queries and a very large persistence context in memory.
+
+To stabilize production quickly, I first fixed the query fetching strategy using:
+
+* `JOIN FETCH`
+* `@EntityGraph`
+
+This significantly reduced the number of SQL queries.
+
+At the same time, we deployed a temporary production patch to restrict the maximum allowed date range to six months so that users could not accidentally trigger the same issue again.
+
+After production became stable, I continued performance analysis to understand how much data the API could realistically handle.
+
+I tested the API again with a 3-year date range. The API completed successfully, but the response time was still around 45 seconds, which was too high.
+
+I then profiled the application further and identified additional bottlenecks.
+
+. Hibernate dirty checking overhead
++
+Even though this API was read-only, Hibernate was still managing thousands of entities inside the persistence context and performing dirty checking during transaction completion.
++
+To reduce this overhead, I added:
++
+[source,java]
+----
+@Transactional(readOnly = true)
+----
++
+This reduced unnecessary entity tracking and improved performance.
+
+. In-memory sorting overhead
++
+The API was also performing additional sorting using Java Streams after data retrieval.
++
+For large datasets, this was increasing CPU usage and creating extra temporary collections in memory.
++
+After reviewing the logic, I found that the sorting was unnecessary because the required ordering could already be handled at the database level.
++
+I removed the in-memory sorting logic completely.
+
+. Collection resizing overhead
++
+While preparing the response, a large `HashMap` was being populated without an initial capacity.
++
+During high-volume processing, repeated resizing and rehashing added avoidable CPU overhead.
++
+I optimized this by initializing the map with an estimated capacity based on expected dataset size.
+
+. Parallel processing optimization
++
+Some independent computations in the response preparation phase were executing sequentially.
++
+I introduced `ExecutorService` to process those tasks in parallel.
+
+. Concurrent collection handling
++
+Since multiple threads were updating shared data structures after introducing parallel execution, I replaced the existing map implementation with:
++
+[source,java]
+----
+ConcurrentSkipListMap
+----
++
+This provided thread safety while also maintaining sorted ordering required by the response.
+
+After these optimizations:
+
+* 3-year date range response time dropped from around 45 seconds to approximately 2.7 seconds
+* 5-year date range requests completed in around 4 seconds
+
+Most importantly:
+
+* memory usage became stable
+* CPU spikes were reduced significantly
+* the API no longer caused service instability under large workloads
+
+This incident taught me the importance of:
+
+* protecting APIs with proper validation limits
+* avoiding uncontrolled entity loading
+* monitoring Hibernate query behavior carefully
+* optimizing persistence context usage for large read-only operations
+* validating application scalability even after production is stabilized
