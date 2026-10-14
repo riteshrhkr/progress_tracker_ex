@@ -1,0 +1,305 @@
+= Sets
+:toc: macro
+:toc-title: Table of Contents
+:toclevels: 2
+:sectnums:
+:icons: font
+:source-highlighter: rouge
+
+What a Set is, how uniqueness is decided, why HashSet and TreeSet can disagree about the same two objects, and when EnumSet exists.
+
+toc::[]
+
+Previous: link:lists.adoc[lists.adoc]. Next: link:maps.adoc[maps.adoc]. Index: link:README.adoc[README.adoc].
+
+[[what-a-set-is]]
+== What a Set is
+
+A Set is a Collection that refuses duplicates. `add` returns `true` if the element was new, `false` if it was already there. `size` does not grow on the second add.
+
+What "already there" means is the whole topic.
+
+The shallow version: "a Set is a List that cannot have duplicates."
+
+The real version: a Set makes a uniqueness *contract*. A contract is a promise callers can rely on; here, adding the same logical element twice must not increase the size. `HashSet` defines uniqueness with `equals` and uses `hashCode` to find candidates. `TreeSet` defines uniqueness with its comparator. Those definitions can disagree about the same pair of objects. Iteration order is not part of the Set contract unless the chosen type says so.
+
+You should already know `equals` and `hashCode` as object methods. That is link:../oops/object-class-contracts.adoc[object-class-contracts.adoc]. The demo that shows `equals` without `hashCode` leaving two "equal" users in a `HashSet` is `EqualsHashCodeDemo` in that topic. This document shows what Sets add on top: insertion order, sorted uniqueness, and enums.
+
+=== Key takeaways
+
+* A Set promises uniqueness, not a particular order.
+* Each implementation must define how it recognizes an existing element.
+* `add` reports whether the Set actually changed.
+
+Self-check:
+
+. What does the second successful-looking `add` return for a duplicate?
+. Does every Set use `equals` in the same way?
+. Which property requires LinkedHashSet or TreeSet instead of HashSet?
+
+[[hashset]]
+== HashSet
+
+=== Uniqueness is equals
+
+`HashSet.add` computes `hashCode`, finds a bucket, then calls `equals` on the occupants. If one occupant is equal, the new object is discarded and `add` returns `false`. The object that stays is the one that was already in the set.
+
+Full example: `examples.sets.SetContractDemo` — link:examples/sets/SetContractDemo.java[SetContractDemo.java]
+
+Output:
+
+----
+[1] HashSet uniqueness is equals
+    add first  (20) -> true
+    add second (40) -> false   false because equals
+    set = [a@x.com/20], size = 1
+----
+
+`User` equals on email only. Age 20 and age 40 are the same set element. The stored object is still age 20. If you needed the later age, a Set is the wrong type — you wanted a `Map<email, User>` and `put` to replace.
+
+=== HashSet is a HashMap
+
+OpenJDK's `HashSet` reuses `HashMap<E, Object>` instead of maintaining a second hash-table implementation. Each Set element becomes a map key, and a shared dummy object fills the unused value position. That is why bucket arrays, load factor, resize, and treeification from link:maps.adoc#hashmap-internals[HashMap internals] apply here unchanged.
+
+The dummy value is a private static `Object`. You never see it. You cannot put a value of your own through the Set API.
+
+=== Iteration order is not a promise
+
+Walking a `HashSet` follows the table: bucket 0, bucket 1, … and within a bucket, the chain or tree. After a resize the table is different, so the order can change. Printing a set and asserting `"[a, b]"` is a flaky test.
+
+If you need "unique, and in the order I added them", that is `LinkedHashSet`. If you need "unique and sorted", that is `TreeSet`.
+
+=== Key takeaways
+
+* HashSet uses hashCode to find candidates and equals to decide uniqueness.
+* The existing object stays when an equal object is added.
+* HashSet iteration order can change and must not be asserted.
+
+Self-check:
+
+. Why can a broken hashCode leave equal objects in different buckets?
+. Which object remains after an equal duplicate is added?
+. What should replace HashSet when insertion order matters?
+
+[[linkedhashset]]
+== LinkedHashSet
+
+`LinkedHashSet` is a `HashSet` plus a doubly-linked list of entries in insertion order. Re-adding an element that is already present does not move it.
+
+Output:
+
+----
+[2] LinkedHashSet keeps insertion order
+    LinkedHashSet iterated = [c, a, b]
+----
+
+`"a"` was added twice. It stayed where it was first inserted. Cost: one extra pair of pointers per element on top of the hash table. Use it when uniqueness *and* stable iteration both matter — for example a unique list of ids in request order.
+
+=== Key takeaways
+
+* LinkedHashSet combines hash-based uniqueness with insertion-order iteration.
+* Re-adding an existing element does not move it.
+* Stable order costs additional links per entry.
+
+Self-check:
+
+. What order does LinkedHashSet promise?
+. Does a duplicate add move an element to the end?
+. When is its extra memory worth paying?
+
+[[treeset]]
+== TreeSet
+
+=== Uniqueness is the comparator
+
+A `TreeSet` is a red-black tree of elements. It does not call `hashCode`. It compares.
+
+If you pass a `Comparator`, that comparator decides both order *and* uniqueness: compare-result `0` means "already in, do not add". If you pass nothing, the elements must implement `Comparable`, and `compareTo` does the same job.
+
+Output:
+
+----
+[3] TreeSet uniqueness is the comparator
+    TreeSet by email size = 1  [a@x.com/20]
+    TreeSet by age   size = 2  [a@x.com/20, a@x.com/40]
+    equals(first, second) = true   comparator-by-age disagrees with equals
+----
+
+Same two `User` objects. Sorted by email, they collide, size 1. Sorted by age, they are different, size 2. `equals` still says they are the same user.
+
+The Set contract says the comparator should be *consistent with equals*: `compare(a,b) == 0` if and only if `a.equals(b)`. When that fails, the `TreeSet` still "works" as a tree, but it breaks the Set promise. `contains` may disagree with `equals`. `set.equals(otherSet)` can surprise you. `HashSet` and `TreeSet` of the same elements can compare as not equal.
+
+Pattern A (inconsistent — uniqueness by age, equality by email):
+
+[source,java]
+----
+new TreeSet<User>(Comparator.comparingInt(u -> u.age));
+----
+
+Pattern B (consistent — the same field both ways):
+
+[source,java]
+----
+new TreeSet<User>(Comparator.comparing(u -> u.email));
+// and User.equals / hashCode also built from email
+----
+
+If you need "sorted by age" *and* "unique by email", that is not one Set. It is a `Map<email, User>` plus a sort at read time, or a `TreeSet` whose comparator uses email first, then other fields, matching `equals`.
+
+=== SortedSet and NavigableSet
+
+`TreeSet` implements `NavigableSet` (which extends `SortedSet`):
+
+* `first()` / `last()` — ends
+* `headSet` / `tailSet` / `subSet` — live range views. Changes in range are visible both ways. Adding an out-of-range element through the view throws `IllegalArgumentException`; unlike `subList`, changing the parent Set does not invalidate the view itself. An iterator over the view is still fail-fast.
+* `ceiling` / `floor` / `higher` / `lower` — nearest matches
+* `descendingSet()` — a reverse view
+
+`null` is not allowed as an element when the set uses natural order: `compareTo(null)` does not work. A comparator that defines a position for null can allow it; `Comparator.nullsFirst` is the usual way, taught in link:utilities.adoc[utilities.adoc].
+
+A `TreeSet` of a type that is not `Comparable`, with no comparator, throws `ClassCastException` on the first `add`. TreeSet checks that the first element can be compared even though the tree is still empty. Maps show the same behavior with TreeMap.
+
+=== Key takeaways
+
+* `HashSet.add` returns `false` for an `equals` duplicate. The first object stays.
+* Iteration order is not a HashSet promise. `LinkedHashSet` makes insertion order a promise.
+* `TreeSet` uniqueness is compare-to-zero. Keep that consistent with `equals`.
+
+Self-check:
+
+. Two Users equal by email, different age. What is `HashSet` size after adding both?
+. Why can a `TreeSet` hold two elements that `equals` says are the same?
+. What does "consistent with equals" mean for a comparator?
+
+== EnumSet
+
+`EnumSet` is a bit vector over one enum type. Each constant is a bit. `add` is a bit flip. Iteration is the enum's declaration order, not insertion order.
+
+Output:
+
+----
+[4] EnumSet
+    EnumSet.of(SUN, SAT) iterated = [SAT, SUN]
+    contains SAT = true
+    runtime class = RegularEnumSet
+----
+
+`SAT` then `SUN` is the declaration order of `Day`, not the order in `EnumSet.of(Day.SUN, Day.SAT)`.
+
+There is no hash, no dummy map, no `null`. For "a set of flags of this enum", `EnumSet` is smaller and faster than `HashSet<Day>`. `RegularEnumSet` is used when the enum has 64 constants or fewer (one `long`). More than 64 uses `JumboEnumSet` (an array of `long`).
+
+Create with `EnumSet.noneOf(Day.class)`, `EnumSet.allOf`, `EnumSet.of`, `EnumSet.range`. There is no public constructor.
+
+=== Key takeaways
+
+* EnumSet stores enum membership as bits instead of hash-table entries.
+* Its iteration follows enum declaration order.
+* It rejects null and supports only one enum type.
+
+Self-check:
+
+. Why is EnumSet compact?
+. Does `EnumSet.of` preserve argument order?
+. How do you create an initially empty EnumSet?
+
+== Choosing a Set
+
+[cols="1,3"]
+|===
+|Choose |When
+
+|`HashSet`
+|Default. Uniqueness, no order, `equals` / `hashCode` are correct.
+
+|`LinkedHashSet`
+|Uniqueness plus insertion-order iteration.
+
+|`TreeSet`
+|Uniqueness plus sorted iteration, range queries, nearest-match. Comparator consistent with equals.
+
+|`EnumSet`
+|The element type is an enum.
+
+|`CopyOnWriteArraySet`
+|Tiny set, many reads, rare writes, across threads. link:concurrent-collections.adoc[concurrent-collections.adoc].
+
+|`ConcurrentSkipListSet`
+|Concurrent and sorted.
+|===
+
+`Set.of(...)` is an unmodifiable set, not a `HashSet`. Duplicate arguments throw at construction. Details in link:utilities.adoc[utilities.adoc].
+
+=== Key takeaways
+
+* HashSet is the default for unordered membership.
+* LinkedHashSet adds insertion order; TreeSet adds sorted ranges.
+* EnumSet is the specialized choice for enum values.
+
+Self-check:
+
+. Which Set supports nearest-value queries?
+. Which Set keeps request input order?
+. What happens when `Set.of` receives duplicates?
+
+== Real-world engineering view
+
+A per-request "already processed id" set is a `HashSet`. Pre-size it if you know the batch size: `new HashSet<>(expected)` uses the same capacity math as HashMap (`capacity = expected / 0.75 + 1`, or `HashSet.newHashSet(expected)` from Java 19).
+
+A set stored on a long-lived object is a uniqueness constraint. If the elements are mutable and you mutate a field that `equals` uses, you get the same lost-entry behaviour as a mutated map key. The OOP demo already showed that.
+
+Do not use a `List` and `contains` for uniqueness on a hot path. `List.contains` is a scan. `HashSet.contains` is a hash lookup.
+
+=== Key takeaways
+
+* Scope and ownership decide whether an ordinary Set is safe.
+* Mutating equality fields can make an element impossible to find.
+* HashSet turns repeated membership scans into usual O(1) lookups.
+
+Self-check:
+
+. When should a batch Set be pre-sized?
+. Why can a mutated Set element become lost?
+. Why is List membership costly on a hot path?
+
+== Common mistakes
+
+**`HashSet` as an ordered collection.** Symptom: tests that assert iteration order, or a UI that shuffles. Fix: `LinkedHashSet` or sort a copy when you need to display.
+
+**`TreeSet` with a comparator on a field that `equals` ignores.** Symptom: size 2, `contains` using a third object that `equals` one of them returns `false`. Fix: make compare-to-zero match `equals`, or stop using a Set.
+
+**`new HashSet<>(list)` expecting to keep list order.** Symptom: order dropped. Fix: `new LinkedHashSet<>(list)`.
+
+**`EnumSet` via `new HashSet<MyEnum>()`.** Symptom: nothing broken, just extra memory and hashing. Fix: `EnumSet`.
+
+=== Key takeaways
+
+* Do not ask HashSet for order it does not promise.
+* TreeSet's comparator must express the intended uniqueness rule.
+* Choose LinkedHashSet explicitly when converting an ordered list.
+
+Self-check:
+
+. What makes a HashSet order assertion flaky?
+. How can TreeSet disagree with equals?
+. Which constructor preserves list order while removing duplicates?
+
+== Senior-level lens
+
+Returning `Set<User>` from an API promises uniqueness by `User.equals`. If `User.equals` is identity (never overridden), the set is "unique instances", not "unique emails". Callers will assume emails. Either override `equals` or return `Map<String, User>`.
+
+`TreeSet` as a "sorted unique list" is fine for in-memory indexes. It is not a database: there is no persistence, no concurrent writer without wrapping, and `subSet` is a view.
+
+A `Set` is the right type when membership is the operation. The moment you need "the user *and* the timestamp we first saw them", you wanted a `Map`.
+
+=== Key takeaways
+
+* HashSet: uniqueness by equals, order not promised, implemented as a HashMap of dummy values.
+* LinkedHashSet: the same plus insertion order.
+* TreeSet: uniqueness by comparator. Keep it consistent with equals.
+* EnumSet: bit vector, declaration-order iteration.
+
+Self-check:
+
+. Why does `HashSet` documentation talk about `hashCode` if uniqueness is `equals`?
+. What is the iteration order of `EnumSet.of(SUN, SAT)` if `SAT` is declared first?
+. How do you keep insertion order and uniqueness together?

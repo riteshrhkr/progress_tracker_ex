@@ -1,0 +1,494 @@
+= Design with Objects: Composition, SOLID, Nested Classes
+:toc: macro
+:toc-title: Table of Contents
+:toclevels: 2
+:sectnums:
+:icons: font
+:source-highlighter: rouge
+
+How to decide between inheritance and composition, the design principles that make large codebases survivable, and the nested class forms you will meet in real code.
+
+toc::[]
+
+Previous: link:object-class-contracts.adoc[object-class-contracts.adoc]. Next: link:quick-review.adoc[quick-review.adoc] when you are revisiting, or link:interview-questions.adoc[interview-questions.adoc]. Index: link:README.adoc[README.adoc].
+
+== Two words you need first
+
+*Coupling* is how much one piece of code depends on the internals of another. High coupling means changing A forces you to change B.
+
+*Cohesion* is how closely the things inside one class belong together. A class that parses dates, sends email and computes tax has low cohesion.
+
+The whole of this document is about lowering coupling and raising cohesion. Every principle below is a specific tactic for one of those two.
+
+== Composition over inheritance
+
+=== Shallow version versus real version
+
+****
+*Shallow understanding:* prefer composition over inheritance because inheritance is overused.
+
+*Real understanding:* extending a class makes you depend on its internal calling patterns, which are not part of its published contract and can change in any release. Holding an instance instead means you depend only on its public methods, which is a promise it actually made.
+****
+
+=== Problem 1: inheriting the whole API
+
+A stack has one rule: last in, first out, and only the top element is reachable. Building it by extending `ArrayList` hands every caller the tools to break that rule.
+
+[source,java]
+----
+static class InheritedStack<E> extends ArrayList<E> {
+    void push(E item) { add(item); }
+    E pop()           { return remove(size() - 1); }
+}
+----
+
+Full example: `examples.design.CompositionDemo` — link:examples/design/CompositionDemo.java[CompositionDemo.java]
+
+Output:
+
+----
+[1] Inheriting ArrayList leaks operations a stack must not allow
+    after two pushes : [a, b]
+    after add(0,..), remove(1), set(0,..) : [rewritten, b]
+    pop() : b   the caller edited the stack without ever calling push or pop
+----
+
+Nothing failed, which is the problem. The type says "stack" and behaves like a list.
+
+The composed version has no such surface:
+
+[source,java]
+----
+static final class ComposedStack<E> {
+    private final List<E> items = new ArrayList<>();
+
+    void push(E item) { items.add(item); }
+    E pop() {
+        if (items.isEmpty()) throw new IllegalStateException("stack is empty");
+        return items.remove(items.size() - 1);
+    }
+}
+----
+
+----
+[2] The composed stack has no way to be corrupted
+    pop() : b, size now 1
+    pop() on empty threw: stack is empty
+----
+
+The `List` is an implementation detail. Swapping it for an `ArrayDeque` changes nothing for callers.
+
+=== Problem 2: depending on how the parent calls itself
+
+This is the more dangerous one, because the code looks correct.
+
+[source,java]
+----
+static class CountingHashSet<E> extends HashSet<E> {
+    private int added;
+
+    @Override public boolean add(E e) { added++; return super.add(e); }
+    @Override public boolean addAll(Collection<? extends E> c) {
+        added += c.size();
+        return super.addAll(c);
+    }
+}
+----
+
+Output:
+
+----
+[3] Counting by extending HashSet counts twice
+    added 3 elements, counter says 6
+----
+
+`AbstractCollection.addAll` is implemented by calling `add` in a loop. Your override counted three, then the inherited `addAll` called your overridden `add` three more times.
+
+The term for one method of a class calling another overridable method of the same class is *self-use*. Self-use is almost never documented, and it can change between versions — meaning a JDK upgrade can silently change your subclass's behaviour.
+
+The wrapper has no such exposure, because the delegate never calls back into it:
+
+[source,java]
+----
+static final class CountingSet<E> {
+    private final Set<E> delegate = new HashSet<>();
+    private int added;
+
+    boolean add(E e) { added++; return delegate.add(e); }
+    boolean addAll(Collection<? extends E> c) {
+        boolean changed = false;
+        for (E e : c) changed |= add(e);
+        return changed;
+    }
+}
+----
+
+----
+[4] Counting by wrapping counts once
+    added 3 elements, counter says 3, set size 3
+----
+
+=== When inheritance is right
+
+Inheritance is not banned. It is right when all of these hold:
+
+* The relationship is genuinely "is a substitutable kind of", not "has one" or "is implemented using".
+* The parent was designed and documented for extension, with its self-use spelled out, or you own both classes.
+* The subclass does not need to weaken any promise the parent made.
+
+Concretely: template methods (`final` skeleton, `protected abstract` steps), implementing an interface, and extending an abstract base you wrote in the same module. `HttpServlet`, `AbstractList` and JUnit base classes exist for exactly this.
+
+[cols="1,2,2"]
+|===
+| |Inheritance (`extends`) |Composition (a field)
+
+|Coupling
+|Tight: fields, implementations, self-use
+|Loose: only the public API
+
+|Fixed when
+|Compile time, permanently
+|Can be swapped at runtime
+
+|API you expose
+|Everything the parent exposes
+|Exactly what you choose
+
+|Multiple sources
+|One class only
+|As many as you like
+
+|Effect of a parent change
+|Can break you silently
+|Breaks you only if the public API changes
+
+|Best for
+|Substitutable specialisation, template methods
+|Reuse, decoration, adaptation, testability
+|===
+
+*When do I choose which:* if you cannot say "every place that accepts the parent will behave correctly given my subclass", use composition.
+
+=== Key takeaways
+
+* Extending a class couples you to its internals, including calls it makes to itself.
+* Self-use is undocumented and can change between JDK versions.
+* A wrapper exposes only the methods you choose and can swap its delegate.
+* Inheritance is correct for substitutable specialisation and template methods, and for interfaces.
+
+Self-check:
+
+. Why did counting by extending `HashSet` produce 6 instead of 3?
+. What is self-use, and why does it make subclassing fragile?
+. Name two situations where inheritance is the right call.
+. What does a wrapper let you change that a subclass does not?
+
+== SOLID
+
+Five principles. They are guidelines with real trade-offs, not laws — applied without judgement they produce a maze of one-method interfaces.
+
+Full example: `examples.design.SolidDemo` — link:examples/design/SolidDemo.java[SolidDemo.java]
+
+=== S — Single responsibility
+
+A class should have one reason to change. "Reason to change" means a person or concern that could ask for a change: the tax rules, the report format, the storage layer.
+
+[source,java]
+----
+// three reasons to change in one class
+class Invoice {
+    BigDecimal computeTax() { ... }   // finance changes this
+    String toPdf()          { ... }   // design changes this
+    void save()             { ... }   // the DBA changes this
+}
+----
+
+Split into `Invoice` (the data and its rules), `InvoiceRenderer`, `InvoiceRepository`. The signal that you got it wrong in the other direction is a "class" with one method and no state that only ever gets called from one place.
+
+=== O — Open for extension, closed for modification
+
+Adding a case should mean adding code, not editing a method that already works.
+
+[source,java]
+----
+// closed for extension: every new shape edits this method
+static double areaByType(Object shape) {
+    if (shape instanceof double[] circle) return Math.PI * circle[0] * circle[0];
+    if (shape instanceof int[] rect)      return rect[0] * (double) rect[1];
+    throw new IllegalArgumentException("unknown shape: " + shape.getClass());
+}
+
+// open: a new shape is a new class, this never changes again
+static double totalArea(List<Shape> shapes) {
+    return shapes.stream().mapToDouble(Shape::area).sum();
+}
+----
+
+Output:
+
+----
+[1] Open/closed
+    type switch, circle r=1 : 3.1416
+    a new shape breaks it: unknown shape: class java.lang.String
+    polymorphic total       : 9.1416
+----
+
+The counter-case matters: when the set of types is *closed and you own it*, a `sealed` hierarchy with an exhaustive switch is better than polymorphism, because adding a type then produces a compile error at every place that must handle it. See link:four-pillars.adoc[four-pillars.adoc]. Polymorphism when implementations are open-ended; sealed plus switch when the list is fixed and the operations keep growing.
+
+=== L — Liskov substitution
+
+Anywhere the parent type works, a subtype must work too. This is about behaviour, not just compilation.
+
+[source,java]
+----
+class Square extends Rectangle {
+    @Override void setWidth(int w)  { this.width = w; this.height = w; }
+    @Override void setHeight(int h) { this.width = h; this.height = h; }
+}
+
+static String resizeAndCheck(Rectangle r) {
+    r.setWidth(5);
+    r.setHeight(4);
+    return "expected area 20, got " + r.area();
+}
+----
+
+Output:
+
+----
+[2] Liskov substitution
+    Rectangle: expected area 20, got 20
+    Square: expected area 20, got 16
+----
+
+`resizeAndCheck` compiles and is perfectly reasonable. It gives the wrong answer for `Square` because a square cannot keep the promise "setting width leaves height alone".
+
+Note what the real problem is: not geometry, but *mutability*. Immutable `Rectangle` and `Square` value types with no setters substitute fine. The violation appeared the moment there was a setter whose promise a subtype could not keep.
+
+The practical checklist for a subtype: do not strengthen what the caller must provide, do not weaken what you promise to return, do not throw new exception types callers cannot expect, and keep the parent's invariants true.
+
+=== I — Interface segregation
+
+Do not force a class to implement methods it cannot support.
+
+----
+[3] Interface segregation
+    read("a") = 1
+    write on a read-only store throws at runtime: read-only
+    split interfaces: the compiler no longer offers write(), read("a") = 1
+----
+
+`UnsupportedOperationException` in an implementation is the symptom. Splitting `Store` into `ReadableStore` and `WritableStore` moves the failure from runtime to compile time — the read-only type simply does not have a `write` method to call.
+
+The JDK itself shows both sides of this trade-off. `List.of(...)` returns something with an `add` method that throws, because `List` was not split. It kept the type system simple at the cost of a runtime failure. Splitting has a cost too: more types to name and understand.
+
+=== D — Dependency inversion
+
+Depend on an abstraction you control, not on a concrete class you cannot replace.
+
+[source,java]
+----
+class OrderService {
+    private final Clock clock;      // interfaces, not System and not a concrete logger
+    private final AuditLog log;
+
+    OrderService(Clock clock, AuditLog log) { this.clock = clock; this.log = log; }
+
+    void place(String order) { log.record("t=" + clock.millis() + " placed " + order); }
+}
+----
+
+Output:
+
+----
+[4] Dependency inversion
+    captured log line: [t=1700000000000 placed order-1]
+----
+
+The test pinned time to a fixed value and captured the log line, with no mocking framework and no static state. If `place()` had called `System.currentTimeMillis()` directly, that assertion would be impossible to write.
+
+Constructor injection also makes the dependency list visible. A constructor with eight parameters is telling you the class does too much — that is single responsibility reporting in.
+
+Do not invert everything. An interface with exactly one implementation that will never have another is indirection you pay for and do not use. Invert at boundaries you actually cross: time, randomness, I/O, network, database, and anything you need to fake in a test.
+
+=== Key takeaways
+
+* Single responsibility: one reason to change; the failure mode of over-applying it is a maze of tiny classes.
+* Open/closed: prefer adding a class over editing a working method — unless the type list is closed, where `sealed` plus an exhaustive switch is stronger.
+* Liskov: a subtype must keep the parent's behavioural promises. Mutability is what usually breaks it.
+* Interface segregation: `UnsupportedOperationException` is the smell; splitting moves the error to compile time.
+* Dependency inversion: inject at the boundaries you need to fake, not everywhere.
+
+Self-check:
+
+. Why does `Square extends Rectangle` violate Liskov, and what would fix it?
+. When is a `sealed` hierarchy better than open polymorphism?
+. What runtime symptom tells you an interface should be split?
+. Which dependencies are worth inverting, and which are not?
+
+== Nested classes
+
+=== The four forms
+
+[cols="1,2,2"]
+|===
+|Form |Holds a reference to the outer instance? |Typical use
+
+|`static` nested
+|No
+|A helper type that belongs to the outer class by name only: `Map.Entry`, a builder
+
+|Inner (non-static)
+|Yes, always
+|Something that only makes sense per-outer-instance: an iterator over the outer's data
+
+|Local (declared in a method)
+|Yes, if the method is an instance method
+|A one-off type needed by a single method
+
+|Anonymous
+|Yes, if created in an instance context
+|A single-use implementation, mostly replaced by lambdas
+|===
+
+Full example: `examples.design.NestedClassDemo` — link:examples/design/NestedClassDemo.java[NestedClassDemo.java]
+
+=== The difference that matters in production
+
+An inner class instance holds an invisible reference to the outer instance. You can see it directly:
+
+[source,java]
+----
+class Inner {
+    Outer outerInstance() { return Outer.this; }   // the hidden field, made visible
+}
+----
+
+Output:
+
+----
+[2] Inner needs one, and keeps it
+    Inner can read outer state: label=outer-1
+    inner.outerInstance() == outer : true
+----
+
+The consequences:
+
+* *Memory*: if a long-lived collection or a cache holds one small inner-class object, the entire outer object stays reachable and cannot be collected. This is a common source of slow heap growth.
+* *Serialization*: serializing the inner object drags the outer object along, and fails if the outer is not serializable.
+* *Construction*: you need an outer instance to make one — `outer.new Inner()`.
+
+The rule that follows is short: make every nested class `static` unless it genuinely needs the outer instance.
+
+=== `this` in an anonymous class versus a lambda
+
+----
+[4] 'this' inside an anonymous class vs inside a lambda
+    anonymous class this =  (empty name means anonymous), outer via Outer.this = outer-1
+    lambda this = Outer, label=outer-1
+----
+
+An anonymous class creates a new object, so `this` is that object and you need `Outer.this` to reach the enclosing one. A lambda does not create a new scope for `this` — inside a lambda, `this` is the enclosing instance. Getting this wrong is how `this` unexpectedly becomes the listener rather than the component.
+
+=== What the compiler generates
+
+----
+[5] Generated class names show the relationship
+    static nested : examples.design.NestedClassDemo$Outer$StaticNested
+    inner         : examples.design.NestedClassDemo$Outer$Inner
+    local         : examples.design.NestedClassDemo$Outer$1Counter
+    anonymous     : examples.design.NestedClassDemo$Outer$1
+    lambda        : examples.design.NestedClassDemo$Outer$$Lambda/<varies per run>
+----
+
+Nested classes are a source-level convenience: each becomes its own class file named with `$`. Those `$1` names are what you will see in a stack trace, and knowing the pattern makes them readable.
+
+The lambda is different in kind — it has no class file, because the JVM spins its class at first use through `invokedynamic`. That is why the name carries a per-run address.
+
+NOTE: A local or anonymous class can only capture local variables that are *effectively final* — assigned once and never changed. The captured value is copied at creation, so allowing reassignment would let the two copies drift apart. Fields have no such restriction, because they are reached through a reference.
+
+Two version notes: inner classes could not declare `static` members before Java 16, and records nested inside a class are implicitly `static`.
+
+=== Key takeaways
+
+* An inner class always holds its outer instance; a static nested class does not.
+* That hidden reference is a real memory-retention and serialization hazard.
+* Default to `static` for nested classes.
+* `this` means the anonymous object inside an anonymous class, and the enclosing instance inside a lambda.
+* Captured locals must be effectively final because the value is copied.
+
+Self-check:
+
+. What does an inner class hold that a static nested class does not, and why does it matter?
+. In a lambda, what does `this` refer to?
+. Why must a captured local variable be effectively final?
+. You see `Outer$1` in a stack trace. What is it?
+
+== Putting it together: a senior-level lens
+
+=== Designing a type: the questions worth asking
+
+. *What must always be true about this object?* That is the invariant list, and it decides the constructor and which methods can exist.
+. *Is this a value or an entity?* A value is defined by its contents (`Money`, `EmailAddress`) — make it immutable, give it `equals`/`hashCode`, consider a `record`. An entity has an identity that outlives its field values (a `User` row) — identity is the id, not the contents.
+. *Who is allowed to extend this?* If the answer is "nobody in particular", make it `final`. Reopening a `final` class later is easy; closing an open one is a breaking change.
+. *What will I need to fake in a test?* Those are the constructor parameters.
+. *What is genuinely public?* Every public method is a promise you have to keep across versions.
+
+=== Trade-offs that show up under load
+
+[cols="1,2,2"]
+|===
+|Decision |You gain |You pay
+
+|Immutable value objects
+|No locks, safe sharing and caching, safe map keys
+|Allocation per change; needs a builder on hot paths
+
+|Defensive copying
+|Callers cannot corrupt your state
+|A copy per call; visible in profiles for large collections
+
+|Deep interface hierarchies
+|Flexibility, easy fakes
+|Harder navigation; megamorphic call sites the JIT cannot inline
+
+|Inheritance for reuse
+|Less code today
+|Breaks on parent changes; hard to test in isolation
+
+|`sealed` domain types
+|Compiler-checked exhaustiveness
+|External code cannot extend, so it is wrong for plugin points
+|===
+
+The JIT point is worth expanding. A call site that only ever sees one implementation gets inlined and costs nothing. One that sees many cannot be, and turns into a table lookup that blocks further optimisation. This is a real effect in hot loops and a non-issue everywhere else — measure before you let it change a design.
+
+=== Testing as a design signal
+
+Difficulty writing a test is usually the design telling you something specific:
+
+* Cannot construct the object without a database → it depends on infrastructure it should have been given.
+* Have to use reflection to check the result → the class hides something it should expose, or you are testing the wrong thing.
+* Need a mocking framework to intercept a static call → replace the static with an injected interface.
+* The test breaks whenever you refactor internals → the test is coupled to the implementation, not the contract.
+
+=== Key takeaways
+
+* Separate value types from entity types; they want different equality and different mutability.
+* `final` by default is a reversible decision. Open by default is not.
+* Every public method is a versioned promise.
+* Awkward tests are a design report, not a testing problem.
+
+Self-check:
+
+. What is the difference between a value type and an entity, and how does it change `equals`?
+. Why is making a class `final` a safer default than leaving it open?
+. Name a cost of defensive copying and one way to avoid paying it.
+. What does "I need a mocking framework for this static call" tell you about the design?
+
+== Where to go next
+
+* Refreshing what you already learned: link:quick-review.adoc[quick-review.adoc]
+* Preparing for interviews: link:interview-questions.adoc[interview-questions.adoc]
+
+Index: link:README.adoc[README.adoc].

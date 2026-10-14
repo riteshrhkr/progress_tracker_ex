@@ -1,0 +1,210 @@
+= Threads and Runnables
+:toc: macro
+:toc-title: Table of Contents
+:toclevels: 2
+:sectnums:
+:icons: font
+:source-highlighter: rouge
+
+This document explains what a Java thread is, how code starts on another thread, and the small lifecycle rules you need before sharing data.
+
+toc::[]
+
+Previous: none. Next: link:shared-state-and-memory.adoc[shared-state-and-memory.adoc]. Index: link:README.adoc[README.adoc].
+
+[[why-threads-exist]]
+== Why threads exist
+
+Start with a plain program. It runs one instruction after another on the `main` thread.
+
+[source,java]
+----
+System.out.println(Thread.currentThread().getName()); // main
+----
+
+That is enough until the program has work that waits. A backend request may call a database. A batch job may read files. A server may handle one request while another request is blocked on a network call.
+
+----
+main thread:
+read request -> call database ........ waiting ........ build response
+
+another thread can do useful work while this one waits
+----
+
+A **process** is a running program that has its own resources, such as JVM memory (heap), loaded classes, and file handles. A **thread** is an independent path of execution within a process. Threads running in the same JVM share the process's memory and resources.
+
+
+Many developer think Multithreading makes code faster but in real, Multithreading allows a program to execute multiple tasks concurrently using multiple threads. It can improve throughput by handling tasks while others wait for resources or by dividing CPU-intensive work across threads. However, it can also reduce performance or cause incorrect results when multiple threads access and modify shared data without proper synchronization
+
+=== Key takeaways
+
+* A Java program starts on the `main` thread.
+* More threads let one JVM have more than one path of execution.
+* Shared memory is useful, but it creates the need for coordination.
+
+Self-check:
+
+. What is the difference between a process and a thread?
+. Why does I/O-heavy backend code often benefit from many threads?
+. Why can more threads make a program worse?
+
+[[thread-start-run]]
+== Starting a thread
+
+The smallest useful split is: keep one path on `main`, and start another path for a task.
+
+[source,java]
+----
+Thread worker = new Thread(() -> doWork(), "worker-1");
+worker.start();
+worker.join();
+----
+
+`Runnable` is the piece of code to run. `Thread` is the object that asks the JVM and operating system to run that code on a separate thread. `join()` makes the current thread wait until the other thread finishes.
+
+Full example: `examples.basics.ThreadBasicsDemo` — link:examples/basics/ThreadBasicsDemo.java[ThreadBasicsDemo.java]
+
+Output:
+
+----
+[1] main thread
+    current thread = main
+
+[2] start() creates another path of execution
+    worker body ran on = worker-1
+    worker finished before this line
+
+[3] run() does not start a new thread
+    run() body ran on = main
+
+[4] start() can be called only once
+    second start() -> IllegalThreadStateException
+----
+
+Notice the third section. `run()` looks tempting because it is the method that contains the task. But calling `run()` directly is just a normal method call. The code stays on the current thread.
+
+Bad pattern:
+
+[source,java]
+----
+Thread worker = new Thread(task);
+worker.run();       // no new thread
+----
+
+Good pattern:
+
+[source,java]
+----
+Thread worker = new Thread(task);
+worker.start();     // schedules task on another thread
+worker.join();      // wait only if this thread needs the result/order
+----
+
+=== Key takeaways
+
+* `start()` creates another path of execution.
+* `run()` is just a normal method call.
+* `join()` waits for another thread to finish.
+
+Self-check:
+
+. Which line actually creates concurrent execution: `start()` or `run()`?
+. Why does the example print `main` for the direct `run()` call?
+. What does `join()` protect: data access, or ordering?
+
+[[thread-lifecycle]]
+== Thread lifecycle you need day to day
+
+A thread is not reusable. Once it finishes, that `Thread` object is done.
+
+[source,java]
+----
+Thread t = new Thread(task);
+t.start();
+t.join();
+t.start(); // IllegalThreadStateException
+----
+
+That is why production code usually does not keep starting raw `Thread` objects. It submits tasks to an executor, which owns reusable worker threads or creates virtual threads for tasks. Executors are covered in link:executors-and-thread-pools.adoc#executor-service[executors-and-thread-pools.adoc].
+
+[cols="1,3"]
+|===
+|State |Plain meaning
+
+|`NEW`
+|The `Thread` object exists, but `start()` was not called.
+
+|`RUNNABLE`
+|The thread can run. It may be actually running on a CPU, or waiting for CPU time.
+
+|`BLOCKED`
+|The thread is waiting to enter a `synchronized` block or method.
+
+|`WAITING` / `TIMED_WAITING`
+|The thread is waiting because code asked it to wait, join, sleep, or park.
+
+|`TERMINATED`
+|The `run()` method finished or failed.
+|===
+
+Do not over-memorize the names. The practical question is usually: "Is this thread doing work, waiting for I/O, waiting for a lock, or finished?"
+
+=== Key takeaways
+
+* A `Thread` object can be started once.
+* Thread state names are diagnostic labels, not a design API.
+* Executors are the usual way to run many tasks.
+
+Self-check:
+
+. Why can't you restart a finished thread?
+. What does `BLOCKED` usually point to?
+. Why does a thread pool exist?
+
+[[sleep-and-interrupt]]
+== Sleep and interruption
+
+`Thread.sleep(...)` pauses the current thread for at least roughly that long. It is not a scheduling promise. The operating system may wake it later.
+
+[source,java]
+----
+Thread.sleep(100); // current thread pauses; no lock is released just because of sleep
+----
+
+An interrupt is a polite request to stop waiting or stop doing work. It is not `kill -9` for a thread. Java does not safely stop arbitrary code from the outside because the thread might be holding a lock or halfway through updating an object.
+
+Bad pattern:
+
+[source,java]
+----
+try {
+    Thread.sleep(1000);
+} catch (InterruptedException ignored) {
+}
+----
+
+Good pattern:
+
+[source,java]
+----
+try {
+    Thread.sleep(1000);
+} catch (InterruptedException e) {
+    Thread.currentThread().interrupt();
+    return;
+}
+----
+
+The good version restores the interrupted flag. That lets caller code, executors, and framework code see that this thread was asked to stop.
+
+=== Key takeaways
+
+* `sleep` pauses the current thread and does not release locks by itself.
+* Interruption is cooperative cancellation.
+* If you catch `InterruptedException` and cannot finish cancellation there, restore the interrupt flag.
+
+Self-check:
+
+. Does `sleep` start another thread?
+. Why is swallowing `InterruptedException` harmful?
+. Is interrupting a thread the same as killing it?

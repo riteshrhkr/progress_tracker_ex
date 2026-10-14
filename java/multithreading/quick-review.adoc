@@ -1,0 +1,223 @@
+= Multithreading Quick Review
+:toc: macro
+:toc-title: Table of Contents
+:toclevels: 2
+:sectnums:
+:icons: font
+:source-highlighter: rouge
+
+This is the 10 to 15 minute refresher for Java multithreading after you have already studied the main documents.
+
+toc::[]
+
+Index: link:README.adoc[README.adoc].
+
+== The topic in four sentences
+
+Multithreading means one JVM has more than one path of execution: link:threads-and-runnables.adoc#why-threads-exist[why threads exist].
+
+It helps backend code keep working while other work waits on I/O, but shared mutable state can break when two threads touch it: link:shared-state-and-memory.adoc#shared-mutable-state[shared mutable state].
+
+Correct code needs atomicity, visibility, and ordering where they matter: link:shared-state-and-memory.adoc#atomicity-visibility-ordering[atomicity, visibility, and ordering].
+
+Prefer clear ownership and higher-level tools before writing low-level lock-heavy code: link:production-and-testing.adoc#senior-lens[senior lens].
+
+== If you remember only 10 things
+
+. `start()` creates concurrent execution; `run()` is a normal method call: link:threads-and-runnables.adoc#thread-start-run[start versus run].
+. A `Thread` object can be started only once: link:threads-and-runnables.adoc#thread-lifecycle[thread lifecycle].
+. `count++` is read, add, write; it is not atomic: link:shared-state-and-memory.adoc#shared-mutable-state[lost update].
+. `volatile` fixes visibility for simple reads/writes, not compound updates: link:shared-state-and-memory.adoc#atomicity-visibility-ordering[volatile].
+. Happens-before is Java's guarantee that one action's effects are visible to another: link:shared-state-and-memory.adoc#happens-before[happens-before].
+. Put the check and the update under the same lock: link:locks-and-coordination.adoc#synchronized-monitor[synchronized monitor].
+. Always wait in a `while` loop, not an `if`: link:locks-and-coordination.adoc#wait-notify[wait notify].
+. Use executors for task ownership, limits, failures, and shutdown: link:executors-and-thread-pools.adoc#executor-service[executors].
+. Virtual threads help blocking I/O-style code scale; they do not fix data races: link:completablefuture-and-virtual-threads.adoc#virtual-threads[virtual threads].
+. In Spring singletons, mutable fields are shared by request threads: link:production-and-testing.adoc#spring-boot-requests[Spring request threads].
+
+== Core terms
+
+[cols="1,3"]
+|===
+|Term |One-line meaning
+
+|Thread
+|One path of execution inside a running JVM.
+
+|Process
+|The running program and its resources; the JVM process contains many threads.
+
+|Runnable
+|Code with no return value that a thread or executor can run.
+
+|Callable
+|Code that returns a value or throws a checked exception.
+
+|Race condition
+|A bug where the result depends on thread timing.
+
+|Atomicity
+|An operation appears indivisible to other threads.
+
+|Visibility
+|One thread's write is actually seen by another thread.
+
+|Ordering
+|Threads agree that one action happened before another.
+
+|Happens-before
+|A Java Memory Model rule that guarantees visibility and ordering.
+
+|Monitor
+|The lock associated with a Java object.
+
+|Deadlock
+|Threads wait forever because each holds something another needs.
+
+|Back pressure
+|Slowing or rejecting work instead of accepting unlimited work.
+
+|Virtual thread
+|A Java thread managed cheaply by the JVM, finalized in Java 21.
+
+|Carrier thread
+|A platform thread that runs mounted virtual threads.
+|===
+
+== Decision table
+
+[cols="1,2,2"]
+|===
+|Decision |Choose this |When
+
+|Raw `Thread` vs executor
+|Executor
+|You have more than a tiny demo or one-off experiment.
+
+|`volatile` vs `AtomicInteger`
+|`volatile`
+|One thread writes a simple flag or value, others read it.
+
+|`volatile` vs `AtomicInteger`
+|`AtomicInteger`
+|Multiple threads update the value.
+
+|`synchronized` vs `ReentrantLock`
+|`synchronized`
+|Simple mutual exclusion is enough.
+
+|`synchronized` vs `ReentrantLock`
+|`ReentrantLock`
+|You need `tryLock`, timeout, interruptible lock acquisition, or separate conditions.
+
+|Platform threads vs virtual threads
+|Virtual threads
+|Many tasks block on I/O and code can stay blocking-style.
+
+|Platform threads vs virtual threads
+|Bounded platform pool
+|CPU-heavy work is the limit.
+
+|Shared mutable object vs immutable data
+|Immutable data
+|The value can be created once and passed around read-only.
+
+|One pool vs separate pools
+|Separate pools
+|One slow dependency should not starve unrelated work.
+|===
+
+== Rules and numbers worth memorizing
+
+* Java starts application code on the `main` thread.
+* `start()` can be called once per `Thread` object.
+* `join()` creates a happens-before edge from finished thread to joining thread.
+* Unlocking a monitor happens-before another thread later locks the same monitor.
+* Writing a volatile variable happens-before a later read of that same volatile value.
+* Java 21 finalized virtual threads.
+* `ExecutorService` is `AutoCloseable` in Java 21.
+* `wait()`, `notify()`, and `notifyAll()` must be called while owning the same object's monitor.
+* `sleep()` does not release a monitor just because the thread sleeps.
+* `Future.get()` wraps task failure in `ExecutionException`.
+* `CompletableFuture.join()` wraps failure in `CompletionException`.
+
+== Traps
+
+* `run()` prints `main` -> it was called like an ordinary method.
+* Second `start()` throws -> a `Thread` object is single-use.
+* Counter ends below expected -> `count++` lost updates.
+* `volatile int count; count++` is wrong -> visibility is not atomicity.
+* Waiter wakes but queue is empty -> waited with `if` instead of `while`.
+* Application does not exit -> executor was created and not shut down.
+* Latency rises before errors -> executor queue is absorbing overload.
+* Request data leaks between users -> mutable field on singleton Spring bean.
+* Many virtual threads but database is still slow -> database connections are the bottleneck.
+* Deadlock in transfer code -> two locks acquired in different orders.
+
+== Code I should be able to write from memory
+
+Start and join:
+
+[source,java]
+----
+Thread worker = new Thread(task, "worker-1");
+worker.start();
+worker.join();
+----
+
+Restore interrupt:
+
+[source,java]
+----
+try {
+    Thread.sleep(1000);
+} catch (InterruptedException e) {
+    Thread.currentThread().interrupt();
+    return;
+}
+----
+
+Protect check and update:
+
+[source,java]
+----
+synchronized (lock) {
+    if (balance >= amount) {
+        balance -= amount;
+    }
+}
+----
+
+Wait in a loop:
+
+[source,java]
+----
+synchronized (queue) {
+    while (queue.isEmpty()) {
+        queue.wait();
+    }
+}
+----
+
+Use a Java 21 virtual-thread executor:
+
+[source,java]
+----
+try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
+    Future<String> result = executor.submit(() -> callRemoteService());
+    return result.get();
+}
+----
+
+== Two-minute self-test
+
+. Why does `Thread.run()` not create concurrent execution? link:threads-and-runnables.adoc#thread-start-run[start versus run]
+. What are the three steps inside `count++`? link:shared-state-and-memory.adoc#shared-mutable-state[lost update]
+. Which problem does `volatile` solve, and which does it not solve? link:shared-state-and-memory.adoc#atomicity-visibility-ordering[volatile]
+. Name three happens-before edges. link:shared-state-and-memory.adoc#happens-before[happens-before]
+. Why must check and update be inside the same lock? link:locks-and-coordination.adoc#synchronized-monitor[synchronized monitor]
+. Why is `wait()` inside a `while` loop? link:locks-and-coordination.adoc#wait-notify[wait notify]
+. What does `Future.get()` do when the task throws? link:executors-and-thread-pools.adoc#future[future]
+. What happens when a thread pool queue grows under load? link:executors-and-thread-pools.adoc#pool-sizing[pool sizing]
+. What kind of work fits virtual threads best? link:completablefuture-and-virtual-threads.adoc#virtual-threads[virtual threads]
+. Why are mutable fields in singleton Spring services risky? link:production-and-testing.adoc#spring-boot-requests[Spring request threads]

@@ -1,0 +1,208 @@
+= Multithreading Interview Questions
+:toc: macro
+:toc-title: Table of Contents
+:toclevels: 2
+:sectnums:
+:icons: font
+:source-highlighter: rouge
+
+This document keeps interview-style Java multithreading practice separate from the teaching notes.
+
+toc::[]
+
+Index: link:README.adoc[README.adoc].
+
+== Warm-up questions
+
+[cols="1,3"]
+|===
+|Question |Short answer
+
+|What is a thread?
+|One path of execution inside a running process.
+
+|What is the difference between `start()` and `run()`?
+|`start()` creates another execution path. `run()` is a normal method call on the current thread.
+
+|What does `join()` do?
+|It waits for another thread to finish and gives a happens-before edge from that thread's work to the joining thread.
+
+|Can a Java `Thread` be restarted?
+|No. Calling `start()` a second time throws `IllegalThreadStateException`.
+
+|What is a race condition?
+|A bug where the result depends on thread timing.
+
+|What does `volatile` do?
+|It gives visibility and ordering guarantees for reads/writes of that variable. It does not make compound actions atomic.
+
+|What is deadlock?
+|A cycle where threads wait forever because each holds a resource another needs.
+|===
+
+== Practical questions
+
+=== Why is `count++` unsafe with two threads?
+
+Line of thinking: split the expression into real actions.
+
+Good answer: `count++` reads the old value, adds one, and writes the new value. Two threads can read the same old value and both write the same next value, so one increment is lost. Use `synchronized`, `AtomicInteger`, `LongAdder`, or a design where one thread owns the counter.
+
+Matching demo: link:examples/sharedstate/RaceConditionDemo.java[RaceConditionDemo.java].
+
+=== When would you use `AtomicInteger` instead of `synchronized`?
+
+Line of thinking: ask whether the operation is one independent value update.
+
+Good answer: Use `AtomicInteger` for simple atomic updates such as increment, compare-and-set, or setting one shared numeric value. Use `synchronized` when the rule spans multiple fields or multiple operations that must stay together.
+
+Likely follow-up: For high-contention counters, `LongAdder` can scale better, but it is not a drop-in replacement when you need an exact value after every update.
+
+=== Why should `wait()` be in a loop?
+
+Line of thinking: waking up does not prove the condition is true.
+
+Good answer: A thread can wake up even though the condition is still false, or another thread may consume the data first. The waiting thread must re-check the condition before continuing.
+
+Matching demo: link:examples/coordination/LockCoordinationDemo.java[LockCoordinationDemo.java].
+
+=== Why is swallowing `InterruptedException` a problem?
+
+Line of thinking: interruption is how cancellation is requested.
+
+Good answer: If code catches `InterruptedException` and ignores it, outer code cannot tell that cancellation was requested. If the method cannot complete cancellation itself, it should restore the flag with `Thread.currentThread().interrupt()` and return or propagate failure.
+
+== Senior questions
+
+=== How would you size a thread pool?
+
+Line of thinking: identify the workload and the bottleneck.
+
+Good answer: For CPU-heavy work, start near the number of available cores because extra runnable threads mostly compete for CPU. For blocking I/O, more threads may help, but the downstream limits still matter: database connections, HTTP limits, queue size, timeouts. I would use bounded queues, metrics, and separate pools for unrelated workloads.
+
+Likely follow-up: With Java 21 virtual threads, I would consider a virtual-thread-per-task executor for blocking I/O, while still limiting downstream capacity.
+
+=== How do virtual threads change backend design?
+
+Line of thinking: separate thread cost from resource cost.
+
+Good answer: Virtual threads make blocking-style code cheaper to run at high concurrency, especially I/O-heavy code. They reduce the need to rewrite everything as callback chains. They do not remove the need for timeouts, connection pools, cancellation, or thread-safe state. CPU-heavy work still needs bounded parallelism.
+
+Likely follow-up: Watch for slow work inside locks and libraries that pin or block carrier threads poorly.
+
+=== A Spring singleton service has a mutable field. What can go wrong?
+
+Line of thinking: singleton means many request threads share one object.
+
+Good answer: If the field changes per request, request A and request B can overwrite or observe each other's data. Move request-specific values to local variables, method parameters, immutable request objects, or a proper scoped component.
+
+Likely follow-up: A local variable's slot is per invocation, but the object it points to may still be shared if it came from shared state.
+
+=== How would you debug a service with rising latency and no immediate errors?
+
+Line of thinking: queues and blocked threads often hide the first symptom.
+
+Good answer: Check request latency, executor active count, queue size, rejection count, downstream latency, connection pool metrics, and thread dumps. A growing queue means the system is accepting work faster than it finishes it. I would add timeouts, bound the queue, separate pools if needed, and decide whether to reject early.
+
+Likely follow-up: Retrying without limits can multiply the work during an incident.
+
+== Trick questions
+
+[cols="1,3"]
+|===
+|Question |Answer
+
+|Does `volatile int count` make `count++` safe?
+|No. The read and write are visible, but the increment is still not one atomic action.
+
+|Does `Thread.sleep()` release a lock?
+|No. `wait()` releases the monitor; `sleep()` does not.
+
+|Can `notify()` be called without synchronized?
+|No. The current thread must own that object's monitor.
+
+|Do virtual threads make `HashMap` safe to share?
+|No. Thread cost changed; shared mutable state rules did not.
+
+|Does `Future.cancel(true)` kill the running code?
+|No. It requests interruption. The task must cooperate.
+
+|Is `ConcurrentHashMap<K, ArrayList<V>>` automatically safe?
+|No. The map is concurrent, but the `ArrayList` values are still mutable non-thread-safe objects.
+|===
+
+== Predict the output
+
+=== start versus run
+
+[source,java]
+----
+Thread t = new Thread(() ->
+        System.out.println(Thread.currentThread().getName()), "worker");
+t.run();
+----
+
+Answer: it prints the current thread's name, usually `main`, because `run()` did not start `worker`.
+
+=== second start
+
+[source,java]
+----
+Thread t = new Thread(() -> {});
+t.start();
+t.join();
+t.start();
+----
+
+Answer: the second `start()` throws `IllegalThreadStateException`.
+
+=== lost update
+
+[source,java]
+----
+int count = 0;
+// two threads repeatedly do count++
+----
+
+Answer: the final value may be lower than expected because both threads can read the same old value and write the same new value.
+
+== Rapid fire
+
+[cols="1,2"]
+|===
+|Prompt |Answer
+
+|Best tool for a stop flag
+|`volatile boolean` or an existing cancellation API.
+
+|Best tool for a shared counter
+|`AtomicInteger`, `AtomicLong`, or `LongAdder` depending on exact-read needs.
+
+|Best tool for many blocking I/O tasks on Java 21
+|Virtual threads, with downstream limits still enforced.
+
+|Best way to avoid many concurrency bugs
+|Do not share mutable state; use immutable values or clear ownership.
+
+|Best first artifact for a hang
+|Thread dump.
+
+|Executor bug that keeps JVM alive
+|Created pool was never shut down.
+
+|Pool symptom before outage
+|Queue growth and latency growth.
+|===
+
+== A mock round
+
+. Explain process versus thread using a JVM example.
+. Walk through `start()`, `run()`, and `join()` using link:examples/basics/ThreadBasicsDemo.java[ThreadBasicsDemo.java].
+. Explain why `count++` loses updates and fix it two ways.
+. Define atomicity, visibility, and ordering without mixing them up.
+. Explain happens-before using `start()`, `join()`, `volatile`, and `synchronized`.
+. Write a producer/consumer `take()` method using `wait()` correctly.
+. Compare `synchronized` and `ReentrantLock`.
+. Design a thread-pool strategy for CPU work and blocking I/O work in one service.
+. Explain where virtual threads help and where they do not.
+. Debug a Spring Boot service where request data appears to leak between users.

@@ -1,0 +1,126 @@
+= Object-Oriented Programming in Java
+:toc: macro
+:toc-title: Table of Contents
+:toclevels: 2
+:icons: font
+:source-highlighter: rouge
+
+The index for this topic. Four teaching documents that build on each other, a refresher, an interview file, and eleven runnable demos whose real output is quoted throughout the notes.
+
+toc::[]
+
+== What to read, in what order
+
+[cols="1,3,1"]
+|===
+|# |Document |Read it when
+
+|1
+|link:oop-fundamentals.adoc[oop-fundamentals.adoc] +
+Classes, objects, references, default values, constructors and the exact initialization order, access control, and what the JVM does underneath.
+|First, always. Everything else assumes it.
+
+|2
+|link:four-pillars.adoc[four-pillars.adoc] +
+Encapsulation, inheritance, polymorphism, abstraction — taken past the definitions into leaky getters, field hiding, dispatch rules, and interface versus abstract class.
+|Second.
+
+|3
+|link:object-class-contracts.adoc[object-class-contracts.adoc] +
+The methods every object inherits, the `equals`/`hashCode` contract and what silently breaks without it, and how to build a class that cannot be corrupted.
+|Third. Needs the pillars.
+
+|4
+|link:design-principles.adoc[design-principles.adoc] +
+Composition versus inheritance, SOLID with a failure and a fix for each, nested classes, and the trade-offs that show up under load.
+|Fourth. This is where the pieces become design.
+|===
+
+Then, separately:
+
+* link:quick-review.adoc[quick-review.adoc] — the 15-minute refresher. *This is for revisiting the topic later, not for learning it the first time.* It introduces nothing new and links every item back to the document that explains it. Open it before touching this part of a codebase after six months.
+* link:interview-questions.adoc[interview-questions.adoc] — every interview-framed question and answer for this topic, kept out of the teaching documents on purpose.
+
+== Files
+
+----
+oops/
+├── README.adoc                    (this index)
+├── oop-fundamentals.adoc          (1) classes, objects, references, constructors
+├── four-pillars.adoc              (2) encapsulation, inheritance, polymorphism, abstraction
+├── object-class-contracts.adoc    (3) equals/hashCode, toString, immutability, records
+├── design-principles.adoc         (4) composition vs inheritance, SOLID, nested classes
+├── quick-review.adoc                  the 15-minute refresher
+├── interview-questions.adoc           all interview material
+└── examples/
+    ├── basics/
+    │   ├── ClassObjectDemo.java        references, identity, defaults, argument passing
+    │   └── ConstructorOrderDemo.java   initialization order, the constructor-calls-override trap
+    ├── pillars/
+    │   ├── EncapsulationDemo.java      invariants, the leaky getter, defensive copies
+    │   ├── InheritanceDemo.java        field hiding vs overriding, static hiding, constructor chaining
+    │   ├── PolymorphismDemo.java       dynamic dispatch, overload resolution, covariant return
+    │   └── AbstractionDemo.java        defaults, the diamond, template method, sealed + switch
+    ├── contracts/
+    │   ├── EqualsHashCodeDemo.java     lost set entries, unreachable map keys, asymmetry
+    │   └── ImmutabilityDemo.java       leak in, leak out, shallow records, final vs immutable
+    └── design/
+        ├── CompositionDemo.java        two ways inheritance breaks, and the wrapper fix
+        ├── SolidDemo.java              open/closed, Liskov, segregation, inversion
+        └── NestedClassDemo.java        static vs inner, the retained outer instance, lambda `this`
+----
+
+== Running the examples
+
+Java 21 or newer. Compile everything once, then run whichever demo you want.
+
+[source,bash]
+----
+cd java/oops
+javac --release 21 -g -d out $(find examples -name '*.java')
+
+java -cp out examples.basics.ClassObjectDemo
+java -cp out examples.basics.ConstructorOrderDemo
+java -cp out examples.pillars.EncapsulationDemo
+java -cp out examples.pillars.InheritanceDemo
+java -cp out examples.pillars.PolymorphismDemo
+java -cp out examples.pillars.AbstractionDemo
+java -cp out examples.contracts.EqualsHashCodeDemo
+java -cp out examples.contracts.ImmutabilityDemo
+java -cp out examples.design.CompositionDemo
+java -cp out examples.design.SolidDemo
+java -cp out examples.design.NestedClassDemo
+----
+
+Each demo has a `main`, prints numbered sections, and needs no arguments or dependencies.
+
+`-g` keeps local variable names in the class files, which is what makes `NullPointerException` messages say `because "missing" is null` instead of `because "<local6>" is null`.
+
+One of the warnings javac can emit is itself part of the lesson. Turn linting on to see it:
+
+[source,bash]
+----
+javac --release 21 -Xlint:all -d out $(find examples -name '*.java')
+----
+
+----
+warning: [overrides] Class BadUser overrides equals, but neither it nor any
+superclass overrides hashCode method
+----
+
+That is javac catching the broken class in `EqualsHashCodeDemo` before it ever runs, which is a good argument for keeping `-Xlint:all` on in real builds. The other two warnings are incidental: `CompositionDemo` extends `ArrayList` and `HashSet` without declaring a `serialVersionUID`, which is exactly the kind of inherited obligation that document is arguing against.
+
+All output quoted in the documents was produced by running these files on OpenJDK 26 with `--release 21`.
+
+== The shortest possible summary
+
+Data and the rules about that data belong in the same place, and everything else in this topic is machinery for keeping that true as the codebase grows.
+
+A variable holds an address, never an object. Methods are chosen at runtime from the real object, while fields, static methods and overloads are chosen at compile time from the declared type — most of the surprises in Java OOP come from mixing those two rules up.
+
+Beyond that, three habits prevent most of the damage: copy mutable objects at the class boundary, override `equals` and `hashCode` as one decision, and hold an object rather than extending its class unless substitution genuinely holds.
+
+== Related topics in this repo
+
+* link:../jmm/README.adoc[JVM and Java Memory Model] — what the JVM does with these objects, and the rules for sharing them between threads.
+* link:../Java_updates/README.adoc[Java version updates] — records, sealed types and pattern matching in the context of the releases that introduced them.

@@ -1,0 +1,228 @@
+= Locks and Coordination
+:toc: macro
+:toc-title: Table of Contents
+:toclevels: 2
+:sectnums:
+:icons: font
+:source-highlighter: rouge
+
+This document explains `synchronized`, monitors, waiting for a condition, `ReentrantLock`, and the deadlock patterns that appear when threads coordinate badly.
+
+toc::[]
+
+Previous: link:shared-state-and-memory.adoc[shared-state-and-memory.adoc]. Next: link:executors-and-thread-pools.adoc[executors-and-thread-pools.adoc]. Index: link:README.adoc[README.adoc].
+
+[[synchronized-monitor]]
+== The synchronized monitor
+
+Suppose two threads update the same account balance. The rule is not "one line at a time". The rule is "only one thread may run the whole balance-changing operation at a time."
+
+[source,java]
+----
+synchronized void withdraw(int amount) {
+    if (balance < amount) {
+        throw new IllegalStateException("not enough money");
+    }
+    balance -= amount;
+}
+----
+
+Every Java object can be used as a monitor. A monitor is the lock attached to an object. Entering a `synchronized` instance method locks `this`. Leaving the method unlocks `this`, even when an exception is thrown.
+
+Bad pattern:
+
+[source,java]
+----
+if (balance >= amount) {   // check outside lock
+    synchronized (this) {
+        balance -= amount;
+    }
+}
+----
+
+Good pattern:
+
+[source,java]
+----
+synchronized (this) {
+    if (balance >= amount) {
+        balance -= amount;
+    }
+}
+----
+
+The important part is the boundary. Protect the whole operation that must stay correct, not only the final write.
+
+=== Key takeaways
+
+* `synchronized` protects code by locking a monitor.
+* Instance synchronized methods lock `this`.
+* Put the check and the update under the same lock.
+
+Self-check:
+
+. Which object is locked by a synchronized instance method?
+. Why is check-then-update unsafe if only the update is locked?
+. Does an exception leave the monitor locked forever?
+
+[[wait-notify]]
+== Waiting for a condition
+
+Sometimes a thread should not continue until a condition is true. A condition is just a fact the code needs, such as "the queue is not empty".
+
+[source,java]
+----
+synchronized String take() throws InterruptedException {
+    while (queue.isEmpty()) {
+        wait();
+    }
+    return queue.remove();
+}
+----
+
+`wait()` can be called only when the current thread owns that object's monitor. It releases the monitor and pauses the thread. Later, another thread calls `notifyAll()` on the same object after changing the condition.
+
+Full example: `examples.coordination.LockCoordinationDemo` — link:examples/coordination/LockCoordinationDemo.java[LockCoordinationDemo.java]
+
+Output:
+
+----
+[1] wait() releases the monitor until data is ready
+    consumed = message
+
+[2] notifyAll() wakes waiters, while loop re-checks the condition
+    box is empty after take = true
+
+[3] ReentrantLock can try instead of waiting forever
+    contender acquired lock = false
+----
+
+The loop matters. A waiting thread can wake up even if the condition is still false, or another thread may consume the item first. Re-check the condition every time.
+
+Bad pattern:
+
+[source,java]
+----
+if (queue.isEmpty()) {
+    wait();
+}
+return queue.remove();
+----
+
+Good pattern:
+
+[source,java]
+----
+while (queue.isEmpty()) {
+    wait();
+}
+return queue.remove();
+----
+
+=== Key takeaways
+
+* `wait()` releases the monitor and pauses until notified or interrupted.
+* Call `notifyAll()` after changing the state waiters care about.
+* Always wait in a loop that re-checks the condition.
+
+Self-check:
+
+. Why must `wait()` be called inside synchronized code?
+. Why is `while` safer than `if` around `wait()`?
+. What condition did the demo wait for?
+
+[[reentrant-lock]]
+== ReentrantLock
+
+`ReentrantLock` is an explicit lock object. Reentrant means the same thread can acquire the same lock more than once, and must unlock the same number of times.
+
+[source,java]
+----
+lock.lock();
+try {
+    updateState();
+} finally {
+    lock.unlock();
+}
+----
+
+The `finally` block is not decoration. Without it, an exception can leave the lock held and other threads stuck.
+
+Choose `synchronized` when simple mutual exclusion is enough. Choose `ReentrantLock` when you need features such as `tryLock()`, timed waiting, interruptible lock acquisition, or multiple conditions.
+
+[cols="1,2,2"]
+|===
+|Choice |Use it when |Cost
+
+|`synchronized`
+|You need simple locking around a block or method.
+|Fewer features, tied to an object's monitor.
+
+|`ReentrantLock`
+|You need `tryLock`, timeout, fairness option, or separate `Condition` objects.
+|More code, and forgetting `unlock()` is your bug.
+|===
+
+=== Key takeaways
+
+* `ReentrantLock` gives explicit locking features.
+* Always unlock in `finally`.
+* Prefer the simpler lock until the extra features matter.
+
+Self-check:
+
+. What does reentrant mean?
+. Why does `tryLock()` change failure behavior?
+. What is the bug if `unlock()` is not in `finally`?
+
+[[deadlock]]
+== Deadlock
+
+Deadlock means threads are stuck forever because each one waits for something another stuck thread holds.
+
+----
+Thread A holds account-1 and waits for account-2
+Thread B holds account-2 and waits for account-1
+----
+
+The code often looks harmless because each small block is synchronized. The bug is the combination.
+
+Bad pattern:
+
+[source,java]
+----
+synchronized (from) {
+    synchronized (to) {
+        transfer(from, to, amount);
+    }
+}
+----
+
+If another thread locks the same two accounts in the opposite order, both can freeze.
+
+Good pattern:
+
+[source,java]
+----
+Account first = from.id() < to.id() ? from : to;
+Account second = from.id() < to.id() ? to : from;
+synchronized (first) {
+    synchronized (second) {
+        transfer(from, to, amount);
+    }
+}
+----
+
+The fix is not "never lock two things". The fix is "when you must lock two things, all threads acquire them in the same order."
+
+=== Key takeaways
+
+* Deadlock is a cycle of waiting.
+* Multiple locks need a consistent order.
+* Timeouts and `tryLock()` can turn a freeze into a failed operation you can report.
+
+Self-check:
+
+. What four-word picture explains deadlock?
+. Why does consistent lock order help?
+. Why can `tryLock()` be useful in production?

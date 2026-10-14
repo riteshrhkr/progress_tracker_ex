@@ -1,0 +1,386 @@
+= Object Contracts and Immutability
+:toc: macro
+:toc-title: Table of Contents
+:toclevels: 2
+:sectnums:
+:icons: font
+:source-highlighter: rouge
+
+The methods every Java object inherits, the rules they must obey, what breaks when they do not, and how to build a class that genuinely cannot be corrupted.
+
+toc::[]
+
+Previous: link:four-pillars.adoc[four-pillars.adoc]. Next: link:design-principles.adoc[design-principles.adoc]. Index: link:README.adoc[README.adoc].
+
+== What every object inherits
+
+Every class extends `Object`, so every object already has these:
+
+[cols="1,3"]
+|===
+|Method |Default behaviour and what you owe it
+
+|`equals(Object)`
+|Identity (`this == other`). Override when two distinct objects should count as the same value.
+
+|`hashCode()`
+|A number derived from the object's memory identity. Must be overridden together with `equals`.
+
+|`toString()`
+|`ClassName@1f2a3b4c`. Override it; the default is useless in a log line.
+
+|`getClass()`
+|`final`, returns the runtime class. This is how `instanceof` and reflection see the real type.
+
+|`clone()`
+|`protected`, shallow, and needs `Cloneable`. Prefer a copy constructor or a static factory.
+
+|`finalize()`
+|Deprecated in Java 9, deprecated for removal in Java 18 (JEP 421). Never use it. Use `AutoCloseable` with try-with-resources.
+
+|`wait` / `notify` / `notifyAll`
+|`final`, the low-level thread coordination primitives. Prefer `java.util.concurrent`.
+|===
+
+The three you will write by hand are `equals`, `hashCode` and `toString`. The first two come as a pair, and that pairing is where most of the damage happens.
+
+== equals and hashCode
+
+=== Shallow version versus real version
+
+****
+*Shallow understanding:* if you override `equals`, also override `hashCode`.
+
+*Real understanding:* hash-based collections find an object by bucket first and only then compare. An object whose `hashCode` disagrees with its `equals` gets filed in one bucket and looked for in another, so the collection silently misplaces it. Nothing throws — you just get wrong answers.
+****
+
+=== The contract
+
+`equals` must be:
+
+* *reflexive* — `x.equals(x)` is true
+* *symmetric* — `x.equals(y)` implies `y.equals(x)`
+* *transitive* — if `x.equals(y)` and `y.equals(z)` then `x.equals(z)`
+* *consistent* — repeated calls give the same answer while nothing relevant changes
+* *null-safe* — `x.equals(null)` is false, never an exception
+
+`hashCode` must be:
+
+* consistent with itself while the object does not change
+* *equal objects must return equal hash codes*
+* unequal objects may share a hash code, but spreading them out helps performance
+
+The second `hashCode` rule is the load-bearing one.
+
+=== What breaks without hashCode
+
+Full example: `examples.contracts.EqualsHashCodeDemo` — link:examples/contracts/EqualsHashCodeDemo.java[EqualsHashCodeDemo.java]
+
+[source,java]
+----
+static class BadUser {
+    final String email;
+    @Override public boolean equals(Object o) {
+        return o instanceof BadUser other && email.equals(other.email);
+    }
+    // no hashCode
+}
+----
+
+Output:
+
+----
+[1] equals without hashCode
+    two equal BadUser objects -> HashSet size = 2
+    contains(new BadUser("a@x.com")) = false
+    two equal GoodUser objects -> HashSet size = 1
+----
+
+A `Set` holding two elements it considers equal. `contains` returning `false` for an object that `equals` says is present. No exception, no warning at runtime.
+
+There is a warning at compile time, though, if you ask for it:
+
+----
+$ javac -Xlint:all ...
+warning: [overrides] Class BadUser overrides equals, but neither it nor
+any superclass overrides hashCode method
+----
+
+Turn `-Xlint:all` on in your build. This particular bug is free to catch.
+
+=== Mutating a key after it is stored
+
+Even a correct `equals`/`hashCode` pair breaks if the fields they read can change while the object sits in a hash container.
+
+----
+[2] Mutating a key after it is in the map
+    before mutation: get(key) = value
+    after key.id = "k2": get(key) = null
+    get(new MutableKey("k2")) = null
+    map still reports size = 1 and contents {MutableKey[k2]=value}
+----
+
+The entry is visibly in the map when you print it, and unreachable by any lookup. The old hash points to a bucket holding an object that no longer matches; the new hash points to an empty bucket.
+
+WARNING: Build `equals` and `hashCode` only from fields that never change after construction. If a class is used as a map key or set element, the safest design is to make it immutable.
+
+=== Asymmetric equals
+
+Accepting a second type in `equals` feels generous and breaks the contract.
+
+[source,java]
+----
+public boolean equals(Object o) {
+    if (o instanceof CaseInsensitiveWord other) return value.equalsIgnoreCase(other.value);
+    if (o instanceof String s)                  return value.equalsIgnoreCase(s);   // the mistake
+    return false;
+}
+----
+
+Output:
+
+----
+[3] Asymmetric equals
+    word.equals(plain) = true
+    plain.equals(word) = false
+    set built from the word contains the String? false
+----
+
+`String.equals` will never return `true` for your type, so the relation only works one way. Collections then behave differently depending on which side the query happens to be on — `HashMap` compares query-against-stored, so the lookup fails.
+
+=== Subclass with an extra field
+
+The same asymmetry appears whenever a subclass adds a field to the comparison.
+
+----
+[4] Subclass with an extra field, instanceof-style equals
+    p.equals(cp) = true
+    cp.equals(p) = false
+    HashSet<Point> holding both = size 2
+----
+
+`Point.equals` uses `instanceof`, so it accepts the `ColourPoint`. `ColourPoint.equals` demands a `ColourPoint`, so it rejects the `Point`.
+
+There is no fully satisfying fix, and that is a real limitation rather than a puzzle with a hidden answer:
+
+[cols="1,2,2"]
+|===
+|Approach |Gains |Loses
+
+|`getClass() != o.getClass()` → false
+|Symmetry and transitivity always hold
+|A subclass that adds no fields is never equal to its parent, which breaks substitutability
+
+|`instanceof`, subclass adds fields to `equals`
+|Feels natural
+|Symmetry is broken, as above
+
+|`instanceof`, and make the class `final`
+|Both properties hold, no subclass can break it
+|No subclassing
+
+|Composition instead of inheritance
+|Both properties hold, still extensible
+|More typing
+|===
+
+*When do I choose which:* make value classes `final` (or a `record`) and use `instanceof`. If you truly need an extendable value type, hold the parent as a field instead of extending it.
+
+=== Writing the pair
+
+[source,java]
+----
+@Override
+public boolean equals(Object o) {
+    if (this == o) return true;                       // cheap fast path
+    if (!(o instanceof GoodUser other)) return false; // also handles null
+    return email.equals(other.email);
+}
+
+@Override
+public int hashCode() {
+    return Objects.hash(email);
+}
+----
+
+`instanceof` with a pattern variable (Java 16) covers the `null` check and the cast in one line. `Objects.hash(...)` allocates a varargs array; for a hot path use `Objects.hashCode(email)` for one field or the classic `31 * result + ...` accumulation.
+
+Also override `toString()` whenever the object appears in logs. The default is a class name and a hash — the least useful thing to find in an incident.
+
+=== Records do it for you
+
+[source,java]
+----
+record RecordUser(String email) {}
+----
+
+Output:
+
+----
+[5] A record writes both methods for you
+    HashSet<RecordUser> size = 1
+    toString = RecordUser[email=a@x.com]
+    equal records share a hashCode: true
+----
+
+Records (Java 16) generate `equals`, `hashCode` and `toString` from all components, plus accessors and a canonical constructor. Use one whenever the class is genuinely "these values and nothing more".
+
+Records are not a universal answer: the fields are always `public` through accessors, the class is `final`, and it cannot extend anything. If you need to hide part of the representation or evolve it separately from the API, write the class.
+
+=== Key takeaways
+
+* `equals` and `hashCode` are one decision, never two.
+* Broken `hashCode` produces no exception, only a collection that quietly loses things.
+* `-Xlint:all` catches the missing-`hashCode` case at compile time.
+* Never build `equals`/`hashCode` from mutable fields on something used as a key.
+* `instanceof`-based `equals` plus a subclass that adds fields breaks symmetry; `final` or `record` sidesteps it.
+
+Self-check:
+
+. `equals` overridden, `hashCode` not. What does a `HashSet` do, and does anything throw?
+. Why does mutating a key after `put` make the entry unreachable but still visible in `toString`?
+. Name the trade-off between `getClass()` and `instanceof` in `equals`.
+. What exactly does a `record` generate, and when is one the wrong choice?
+
+== Immutability
+
+=== Why it earns its place
+
+An immutable object is one whose observable state cannot change after construction. That single property buys a lot:
+
+* It is thread-safe with no locks, because there is nothing to race on.
+* It is a safe map key and set element, because its hash cannot drift.
+* It cannot be corrupted by a caller you handed it to.
+* Its `toString` in a log is the value it had when the bug happened.
+
+The cost is allocation: every change produces a new object. That is usually the right trade, and where it is not (large buffers, tight loops), the answer is a mutable builder that produces an immutable result — the way `StringBuilder` produces a `String`.
+
+=== `final` is not immutability
+
+[source,java]
+----
+final List<String> fixed = new ArrayList<>(List.of("a"));
+fixed.add("b");     // completely legal
+----
+
+Output:
+
+----
+[5] final stops reassignment, not mutation
+    final List after add: [a, b]
+----
+
+`final` freezes the variable, not the object. This is the single most common misunderstanding of the keyword.
+
+=== Two ways immutability breaks
+
+A class is immutable only if no mutable object crosses its boundary in either direction.
+
+Full example: `examples.contracts.ImmutabilityDemo` — link:examples/contracts/ImmutabilityDemo.java[ImmutabilityDemo.java]
+
+*Leak in:* the constructor stores the caller's object.
+
+----
+[1] The caller still holds the list you stored
+    before: weekend [Pune, Mumbai]
+    after caller.add("Goa"): weekend [Pune, Mumbai, Goa]
+----
+
+*Leak out:* the getter hands the internal object back.
+
+----
+[2] The getter hands out the same list
+    after leaky.stops().clear(): weekend []
+----
+
+Both fields were `private final`. Both leaks happened anyway.
+
+The fix is to copy at the boundary:
+
+[source,java]
+----
+SafeTrip(String name, List<String> stops) {
+    this.name = name;
+    this.stops = List.copyOf(stops);   // copy in; the result is also unmodifiable
+}
+
+List<String> stops() { return stops; }               // nothing to copy on the way out
+
+SafeTrip withExtraStop(String stop) {                 // change means a new object
+    List<String> next = new ArrayList<>(stops);
+    next.add(stop);
+    return new SafeTrip(name, next);
+}
+----
+
+Output:
+
+----
+[3] Copying on the way in blocks both routes
+    after caller2.add("Goa"): weekend [Pune, Mumbai]
+    safe.stops().add(...) threw UnsupportedOperationException
+    withExtraStop returns a new object: weekend [Pune, Mumbai, Goa], original still weekend [Pune, Mumbai]
+----
+
+The `withX` naming is the common convention for "give me a copy with this one thing changed".
+
+=== Records are shallowly immutable
+
+A record's *component references* cannot be reassigned. The objects they point at can still be mutable.
+
+----
+[4] Records are shallowly immutable
+    both built from the same list:
+      LeakyRoute[name=r1, stops=[Pune]]
+      SafeRoute[name=r1, stops=[Pune]]
+    after caller3.add("Nashik"):
+      LeakyRoute[name=r1, stops=[Pune, Nashik]]   <- changed underneath the record
+      SafeRoute[name=r1, stops=[Pune]]   <- unaffected
+----
+
+The compact constructor is where you fix it:
+
+[source,java]
+----
+record SafeRoute(String name, List<String> stops) {
+    SafeRoute {
+        stops = List.copyOf(stops);   // assigning the parameter; the field is set from it afterwards
+    }
+}
+----
+
+A compact constructor has no parameter list and no explicit field assignments. You validate or reassign the parameters, and the compiler assigns the fields from them at the end.
+
+=== The recipe for an immutable class
+
+. Make the class `final`, or make all constructors private with a static factory. A subclass can otherwise add mutable state.
+. Make every field `private final`.
+. Provide no method that changes state — no setters, and no method that mutates a field's contents.
+. Copy every mutable object on the way in.
+. Copy every mutable object on the way out, or store it in an already-unmodifiable form.
+
+`String`, `Integer`, `LocalDate`, `BigDecimal` and `List.of(...)` all follow it.
+
+NOTE: `List.copyOf`, `Set.copyOf` and `Map.copyOf` (Java 10) reject `null` elements and skip copying if the argument is already an unmodifiable collection of the same kind. `Arrays.asList` is not a copy and not immutable — it is a fixed-size view over the array you passed.
+
+=== Key takeaways
+
+* Immutable means no observable state change after construction, which buys thread safety and hash-key safety for free.
+* `final` prevents reassignment of a variable and nothing more.
+* Copy at both boundaries, or the private field is private in name only.
+* Records are shallowly immutable; a compact constructor is where you deepen it.
+* Where allocation hurts, pair an immutable value with a mutable builder.
+
+Self-check:
+
+. Why is an immutable object automatically thread-safe?
+. Name both boundaries a mutable field can leak through.
+. Does `final` on a `List` field prevent `add`?
+. What does a compact constructor let you do that a normal constructor does not?
+. Why must an immutable class be `final` or have private constructors?
+
+== Where to go next
+
+Choosing between inheritance and composition, and the design principles that follow from these contracts: link:design-principles.adoc[design-principles.adoc].
+
+Index: link:README.adoc[README.adoc].

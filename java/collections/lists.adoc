@@ -1,0 +1,381 @@
+= Lists
+:toc: macro
+:toc-title: Table of Contents
+:toclevels: 2
+:sectnums:
+:icons: font
+:source-highlighter: rouge
+
+What a List is, how ArrayList stores elements in a backing array, why LinkedList almost never wins, and the traps in `remove`, `Arrays.asList` and `subList`.
+
+toc::[]
+
+Previous: link:overview.adoc[overview.adoc]. Next: link:sets.adoc[sets.adoc]. Index: link:README.adoc[README.adoc].
+
+[[what-a-list-is]]
+== What a List is
+
+A List is a Collection that has *positions*. Element 0 is the first, element `size()-1` is the last. Duplicates are allowed. `list.get(0)` and `list.get(1)` can be equal and both stay.
+
+The order is insertion order unless you sort or insert at an index. That order is part of List equals: `[a, b]` is not equal to `[b, a]`.
+
+The shallow version: "List is an array that can grow."
+
+The real version: List makes an *index contract*—a promise that callers can retrieve elements by stable numbered positions. ArrayList keeps that promise with a contiguous array, which makes `get(i)` a single access and `add(0, e)` a shift of every element. LinkedList keeps the same promise with a chain of nodes, which makes `get(i)` a walk and `addFirst` cheap. Same interface, opposite costs.
+
+----
+index:    0     1     2
+value:  [ a ] [ b ] [ a ]   duplicates and order both matter
+----
+
+=== Key takeaways
+
+* A List promises order, positions, and duplicates.
+* ArrayList and LinkedList provide the same API with different storage costs.
+* List equality compares elements in sequence.
+
+Self-check:
+
+. What is the last valid index of a non-empty list?
+. Is `[a, b]` equal to `[b, a]`?
+. Which List operation exposes the storage difference most clearly?
+
+[[arraylist]]
+== ArrayList
+
+[[arraylist-backing-array]]
+=== The backing array
+
+An `ArrayList` holds an `Object[]` named `elementData` and an `int size`. `size` is how many elements you have added. The array's length is *capacity*: how many you can add before the list must allocate a bigger array and copy.
+
+A brand-new `ArrayList<>()` does not allocate ten slots. The array is a shared empty constant. The first `add` allocates the default capacity of 10. After that, growth is `newCapacity = oldCapacity + (oldCapacity >> 1)` — about 1.5 times.
+
+Full example: `examples.lists.ArrayListDemo` — link:examples/lists/ArrayListDemo.java[ArrayListDemo.java]
+
+This demo uses reflection to read `elementData`. Run it with `--add-opens java.base/java.util=ALL-UNNAMED` (the topic README has the command).
+
+Output:
+
+----
+[1] Capacity growth
+    new ArrayList<>() capacity = 0
+    after first add            = 10
+    size 11 grew capacity 10 -> 15
+    size 16 grew capacity 15 -> 22
+
+[2] Sized constructor
+    new ArrayList<>(20) capacity = 20
+----
+
+The copy on growth is why a list that will hold a million rows should be created as `new ArrayList<>(1_000_000)`, or filled with `ensureCapacity`. You still get a correct list without that. You pay for several copies and leftover unused slots.
+
+`trimToSize()` copies down to `size` so you are not holding a 1.5× array after a bulk load. Use it when the list will live a long time and you are done adding. Do not call it on a hot path that keeps growing.
+
+=== get is cheap, insert in the middle is not
+
+`get(i)` and `set(i, e)` are array accesses. They do not shift anything.
+
+`add(e)` at the end writes into `elementData[size]` and increments `size`, plus a growth check. That is why "append" is the fast ArrayList operation.
+
+`add(index, e)` and `remove(index)` must slide the tail: every element from that index to the end moves by one. Inserting at 0 on a list of a million elements copies a million references.
+
+Output:
+
+----
+[3] Index add and remove shift the tail
+    add(0, "a")  = [a, b, c, d]
+    remove(1)    = [a, c, d]   (removed "b", c and d shifted left)
+----
+
+=== RandomAccess
+
+`RandomAccess` is a marker interface: no methods. It means `get(i)` is cheap enough that an algorithm should use indexes rather than an iterator.
+
+`ArrayList` implements it. `LinkedList` does not. `Collections.binarySearch` and some sort helpers check `instanceof RandomAccess` and pick the index path or the iterator path.
+
+Output:
+
+----
+[4] RandomAccess and get(i)
+    ArrayList  instanceof RandomAccess = true
+    LinkedList instanceof RandomAccess = false
+    get(25000) ArrayList  = 25000 in 333 ns
+    get(25000) LinkedList = 25000 in 38208 ns
+    LinkedList/ArrayList ratio  = 114x
+----
+
+Those nanoseconds are one run on one machine after a short warmup. They are not a benchmark. The lesson is the *ratio*: LinkedList `get(i)` walks `i` nodes (from the nearer end). ArrayList `get(i)` does not walk.
+
+=== Boxing
+
+There is no `ArrayList<int>` in the JDK. `List<Integer>` stores references to `Integer` objects. Each `add(3)` boxes. On a large numeric list that is memory and GC. If a profile points at that, a primitive array or a specialised library is the next step — not `LinkedList`.
+
+=== Key takeaways
+
+* Capacity is the array length. Size is how many elements are in use. Growth copies.
+* `get` / `set` / append are the cheap operations. Insert and remove in the middle shift the tail.
+* Size the constructor when you know the length. `trimToSize` when the list will sit still.
+
+Self-check:
+
+. What is the capacity of `new ArrayList<>()` before the first add?
+. Why is `add(0, e)` on a large ArrayList expensive?
+. What does `RandomAccess` tell an algorithm to do?
+
+[[linkedlist]]
+== LinkedList
+
+=== Nodes, not an array
+
+A `LinkedList` is a doubly-linked chain: each node holds the element, a pointer to the previous node, and a pointer to the next. The list holds the head and the tail.
+
+`addFirst` / `addLast` / `removeFirst` / `removeLast` update a couple of pointers. That is O(1): the amount of pointer work does not grow with the list.
+
+`get(i)` starts at the nearer end and walks. That is O(n), where `n` is the number of elements; reaching a position may require walking through much of the list.
+
+Each node is a separate object: header plus three references. An ArrayList of the same size is one array of references. LinkedList loses on memory, on cache locality (the next node is rarely the next cache line), and on `get(i)`.
+
+=== When LinkedList could win, and when it does not
+
+The textbook case is "many inserts in the middle, and you already hold the iterator at that position". `ListIterator.add` on a LinkedList is O(1). In real services you almost never have that iterator sitting there. You have an index, which means you walk first, then insert.
+
+Measuring "add at 0, a hundred thousand times":
+
+* ArrayList copies a growing tail each time. That is painful.
+* LinkedList updates the head each time. That is cheap.
+
+If your actual workload is "build a list by appending, then read by index", ArrayList wins by a lot. That is most workloads.
+
+If your actual workload is "a queue: add last, remove first", do not use LinkedList. Use `ArrayDeque`. It is a circular array, no node objects, and it does not pretend to be a List. That is link:queues.adoc[queues.adoc].
+
+=== LinkedList is both List and Deque
+
+This is why people reach for it. One object offers `get(i)` *and* `addFirst`. The cost is that every queue-shaped use still carries List methods, and every List-shaped use still carries node allocation.
+
+Full example: `examples.lists.ListTrapsDemo` — link:examples/lists/ListTrapsDemo.java[ListTrapsDemo.java]
+
+Output:
+
+----
+[4] LinkedList is List and Deque
+    after addFirst(z), addLast(a), addLast(b) = [z, a, b]
+    get(2) = b   (walked from the head)
+    instanceof List  = true
+    instanceof java.util.Deque = true
+----
+
+Default: `ArrayList` for a list. `ArrayDeque` for a queue or stack. `LinkedList` when you have a measured reason, which is rare.
+
+=== Key takeaways
+
+* LinkedList `get(i)` walks. ArrayList `get(i)` does not.
+* O(1) add at the ends does not make LinkedList the default list.
+* It implements List and Deque. That convenience is the usual reason it appears, not speed.
+
+Self-check:
+
+. Why is LinkedList worse for `get(i)` than ArrayList?
+. What type should you use for add-last / remove-first instead of LinkedList?
+. When is `ListIterator.add` on a LinkedList actually O(1)?
+
+[[choosing-a-list]]
+== Choosing: ArrayList vs LinkedList vs array
+
+[cols="1,3"]
+|===
+|Choose |When
+
+|`ArrayList`
+|The default list. Index access, append, unknown final size, passing `List` around.
+
+|`T[]`
+|Fixed length, primitives (`int[]` avoids boxing), or an API that requires an array (`toArray`).
+
+|`LinkedList`
+|Almost never as a `List`. Consider it only if you already iterate to the insert point with a `ListIterator` and a profile says the ArrayList shifts dominate.
+
+|`ArrayDeque`
+|Queue or stack. Not a List: no `get(i)`.
+|===
+
+`CopyOnWriteArrayList` is a concurrent list. It copies the whole array on every write. That belongs in link:concurrent-collections.adoc[concurrent-collections.adoc].
+
+=== Key takeaways
+
+* ArrayList is the normal choice for a List.
+* Arrays fit fixed-size or primitive-heavy data.
+* ArrayDeque, not LinkedList, is the normal queue and stack.
+
+Self-check:
+
+. Which type avoids boxing for many integers?
+. What evidence would justify choosing LinkedList?
+. Why is ArrayDeque absent from APIs that require `get(i)`?
+
+== Legacy: Vector and Stack
+
+`Vector` is an ArrayList with `synchronized` on every method. Iteration still needs extra locking, the same as `Collections.synchronizedList`. New code uses `ArrayList` or a concurrent type.
+
+`Stack` extends `Vector`. It is a stack built by inheriting a list, so every List method is still public: you can `insertElementAt` in the middle of your "stack". `ArrayDeque` (`push` / `pop`) is the replacement.
+
+You will still see both in old code and in APIs that froze before `ArrayDeque` existed. Do not add them.
+
+=== Key takeaways
+
+* Vector's synchronized methods do not make multi-step logic atomic.
+* Stack exposes List operations that do not belong in a stack abstraction.
+* Use modern types in new code, while recognizing these classes in old code.
+
+Self-check:
+
+. Does Vector make check-then-add atomic?
+. Which type replaces Stack?
+. Why is exposing insertion in the middle a poor stack API?
+
+[[list-api-pitfalls]]
+== List API pitfalls
+
+[[remove-overloads]]
+=== remove(int) versus remove(Object)
+
+`List` has two `remove` methods. Overload resolution picks `remove(int)` when you pass an `int`. For `List<Integer>`, `remove(1)` deletes *index* 1, not the value `1`.
+
+Output:
+
+----
+[1] remove(int) versus remove(Object)
+    start                  = [10, 20, 1, 30]
+    after remove(1)        = [10, 1, 30]   index 1 was 20, not the value 1
+    after remove(Integer 1)= [10, 30]
+----
+
+Pattern A (wrong if you meant the value):
+
+[source,java]
+----
+numbers.remove(1);                    // index
+----
+
+Pattern B (the value):
+
+[source,java]
+----
+numbers.remove(Integer.valueOf(1));   // equals-based
+----
+
+`removeIf(n -> n == 1)` also deletes by value and avoids the overload.
+
+=== Arrays.asList
+
+`Arrays.asList(array)` does not copy. It wraps the array in a List whose size is the array's length. `set` writes through to the array. `add` and `remove` throw `UnsupportedOperationException` because the array cannot change length.
+
+Output:
+
+----
+[2] Arrays.asList is a fixed-size view
+    after view.set(1, "B"), array = [a, B, c]
+    view.add("d") -> UnsupportedOperationException
+----
+
+`List.of` is unmodifiable: `set` throws too. `new ArrayList<>(List.of(...))` is a real, growable list. The three-way comparison is in link:utilities.adoc[utilities.adoc].
+
+=== subList is a view
+
+`list.subList(from, to)` is a window onto the same storage. `from` is inclusive, `to` is exclusive — the same as `String.substring`.
+
+Mutating the window mutates the original. Clearing the window removes those elements from the original.
+
+A *structural* change on the original (add/remove that the window did not make) invalidates the window. The next access throws `ConcurrentModificationException`.
+
+Output:
+
+----
+[3] subList is a view
+    letters = [a, b, c, d, e]
+    middle  = [b, c, d]
+    after middle.set(0, "B"), letters = [a, B, c, d, e]
+    after middle.clear(),      letters = [a, e]
+    parent add then subList.get -> ConcurrentModificationException
+----
+
+If you need a piece that survives later edits to the parent, copy: `new ArrayList<>(list.subList(from, to))`.
+
+=== List.sort and replaceAll
+
+Java 8 added `list.sort(comparator)` (delegates to the same TimSort as `Collections.sort`) and `list.replaceAll(operator)` (an in-place transformation). ArrayList updates its change counter for both operations, so an iterator created before either call can throw `ConcurrentModificationException` on its next checked operation. Do not mix bulk list mutation with a live iterator.
+
+=== Key takeaways
+
+* `remove(int)` removes by position; force the Object overload to remove an Integer value.
+* `Arrays.asList` and `subList` share storage with something else.
+* Bulk operations can invalidate an iterator even when the list size stays unchanged.
+
+Self-check:
+
+. How do you remove the value `1` from `List<Integer>`?
+. Which `Arrays.asList` operation writes into the original array?
+. When should you copy a subList?
+
+== Real-world engineering view
+
+Most service code wants `ArrayList`. Size it when the length is known: JDBC row count, JSON array size, `new ArrayList<>(map.values())` already knows `map.size()`.
+
+A list field on a long-lived object that grows without bound is a memory leak, not a collections puzzle. Bound it, persist it, or stream it.
+
+Returning `list.subList(...)` from a public method hands out a view of your storage. Returning `List.copyOf` or `new ArrayList<>(...)` does not.
+
+Under load, the cost that shows up is usually: boxing on `List<Integer>`, repeated growth copies on an unsized list, or `get(i)` on a LinkedList that someone used as a default.
+
+=== Key takeaways
+
+* Size an ArrayList when the final count is already known.
+* Bound long-lived lists and copy views at public boundaries.
+* Measure boxing, growth, and pointer walking before changing data structures.
+
+Self-check:
+
+. What does pre-sizing avoid?
+. Why is returning a subList risky?
+. Which costs commonly matter for large numeric lists?
+
+== Common mistakes
+
+**`new LinkedList<>()` as the default List.** Symptom: random index access is slow, GC sees many `Node` objects. Fix: `ArrayList`.
+
+**`Arrays.asList` then `add`.** Symptom: `UnsupportedOperationException`. Fix: `new ArrayList<>(Arrays.asList(...))` if you need to grow, or `List.of` if you do not.
+
+**`subList` stored, parent mutated.** Symptom: `ConcurrentModificationException` later, far from the `add`. Fix: copy the window, or do not mutate the parent.
+
+**`list.remove(i)` on `List<Integer>` meaning "remove the number i".** Symptom: the wrong element disappears, or `IndexOutOfBoundsException`. Fix: `Integer.valueOf` or `removeIf`.
+
+=== Key takeaways
+
+* ArrayList is the safe default until a measured workload says otherwise.
+* Fixed-size and view-based lists are not growable copies.
+* Overload resolution can turn an intended value removal into index removal.
+
+Self-check:
+
+. What exception suggests you tried to resize a fixed-size list?
+. What causes a stored subList to fail later?
+. Why does `remove(1)` have two possible meanings?
+
+== Senior-level lens
+
+The List you put in an API is a compatibility promise. If you return `ArrayList` today, callers will call `ensureCapacity`. If you later need a copy-on-write list, you have to break them. Return `List`.
+
+`subList` is one of the few JDK views that is *writable* back into the original. That is useful for `list.subList(from, to).clear()` as a range delete. It is dangerous as a return type.
+
+`Vector`'s method-level `synchronized` gives a false sense of safety: two-step sequences (`if (!list.contains(x)) list.add(x)`) are still races. Method-level locks are not a design.
+
+=== Key takeaways
+
+* ArrayList is the default List. Size it when you know the length.
+* LinkedList is a Deque that also implements List. That is not a reason to use it as a List.
+* `remove(int)` is index. `Arrays.asList` is fixed-size. `subList` is a live window.
+
+Self-check:
+
+. What happens to the original array after `Arrays.asList(array).set(0, x)`?
+. Why does `parent.add` then `subList.get` throw?
+. How do you remove the *value* `1` from a `List<Integer>`?

@@ -1,0 +1,503 @@
+= Collection Framework Overview
+:toc: macro
+:toc-title: Table of Contents
+:toclevels: 2
+:sectnums:
+:icons: font
+:source-highlighter: rouge
+
+What the Java Collection Framework is, the problem it solves, how the types fit together, and the rules that every List, Set and Queue share: iteration, fail-fast behaviour, and equals.
+
+toc::[]
+
+Previous: none, start here. Next: link:lists.adoc[lists.adoc]. Index: link:README.adoc[README.adoc].
+
+[[big-picture]]
+== The big picture
+
+=== What problem this solves
+
+A program spends much of its life holding groups of objects: users, request ids, cache entries, rows from a query. You can store those in an array, but an array has a fixed length, no `contains`, no `remove`, and no way to say "these must be unique" or "these are key to value".
+
+The Collection Framework is the set of interfaces and classes in `java.util` (and `java.util.concurrent`) that give you those groups, with a shared vocabulary for adding, removing, asking "is it in there?", and walking through the contents.
+
+Without it you would write a new list class for every project, and every library would disagree on method names. With it, a method that accepts `List<String>` can be handed an `ArrayList`, a `LinkedList`, or the list returned by `List.of`, and the caller still compiles.
+
+=== The mental model to carry
+
+Pick the *interface* for what you need the group to *do*. Pick the *implementation* for how it should *behave* under that need: fast index, uniqueness, sorted keys, two threads writing at once.
+
+[cols="1,3"]
+|===
+|You need |You declare
+
+|A sequence, duplicates allowed, I will ask for item 0, 1, 2
+|`List`
+
+|Uniqueness, "is this already in the group?"
+|`Set`
+
+|A waiting line: put on one end, take from the other
+|`Queue` (or `Deque` if both ends)
+
+|A lookup: this key maps to that value
+|`Map` — and a Map is *not* a Collection
+|===
+
+The shallow version: "Collections are List, Set and Map."
+
+The real version: the framework is a set of *contracts* — promises a type makes that callers rely on — plus implementations that keep those promises with different trade-offs. `HashSet` and `TreeSet` both promise uniqueness. They do not promise it the same way, and they do not promise an order.
+
+=== What you should already know
+
+Java syntax, classes, and references. The `equals` / `hashCode` pair is used constantly from the next document onward; it is taught in link:../oops/object-class-contracts.adoc[object-class-contracts.adoc]. Generics appear as `List<String>`; wildcards are explained where a collection method forces them. Streams are a different topic.
+
+=== Key takeaways
+
+* Interfaces describe the behavior callers need; implementations decide how that behavior is delivered.
+* List, Set, Queue, and Map represent different jobs rather than interchangeable containers.
+* Map belongs beside Collection, not below it.
+
+Self-check:
+
+. Which interface expresses uniqueness?
+. Which interface expresses a next item to process?
+. Why can two Set implementations disagree about uniqueness?
+
+[[collection-hierarchy]]
+== The hierarchy
+
+=== Interfaces define the API
+
+----
+                    Iterable
+                        |
+                   Collection
+                  /     |     \
+              List     Set    Queue
+               |        |       |
+          ArrayList  HashSet   Deque ---- ArrayDeque
+          LinkedList LinkedHashSet        LinkedList (also a List)
+          Vector     TreeSet              PriorityQueue (Queue, not Deque)
+                     EnumSet
+
+          Map   (does not extend Collection)
+           |
+      HashMap, LinkedHashMap, TreeMap, EnumMap,
+      IdentityHashMap, WeakHashMap, Hashtable,
+      ConcurrentHashMap
+----
+
+`Iterable` is the small interface that means "you can write `for (T x : this)`". `Collection` adds size, add, remove, contains. `List`, `Set` and `Queue` each tighten that further. `Map` sits beside `Collection`, not under it.
+
+Java 21 adds `SequencedCollection` / `SequencedSet` / `SequencedMap` for types that have a first and a last element. That layer is taught in link:utilities.adoc[utilities.adoc]. The diagram above is still the one to keep in your head.
+
+Full example: `examples.overview.HierarchyDemo` — link:examples/overview/HierarchyDemo.java[HierarchyDemo.java]
+
+Output:
+
+----
+[1] Collection versus Map
+    List assigned to Collection: [a, b]
+    Map is a Map, size = 1, keySet is a Collection: [a]
+    map instanceof Collection = false
+----
+
+A `Map` has a `keySet()`, a `values()` collection, and an `entrySet()`. Those *are* Collections. The map itself is not, because a map is not "a group of elements" — it is a group of pairs, and `add(e)` would not make sense.
+
+[[why-collection-has-no-index]]
+=== Why Collection has no get(index)
+
+Indexing is a List promise. A `HashSet` has no position 0. A `PriorityQueue` has a head, not an index. If `Collection` had `get(int)`, every set and queue would have to fake an order they do not own.
+
+When you need "the third thing", the declared type should be `List`. When you need "the next thing to process", it should be `Queue`.
+
+=== Program to the interface
+
+The variable's type is the contract you are willing to depend on. The constructor is where you pick the implementation.
+
+[source,java]
+----
+Collection<String> names = new ArrayList<>();   // callers cannot call get(0)
+List<String> names     = new ArrayList<>();     // callers can
+ArrayList<String> names = new ArrayList<>();    // callers can call ensureCapacity
+----
+
+Use the last form inside a method that is about to grow the list a known amount. Use the first two on fields and parameters, so you can switch `ArrayList` for something else without touching callers.
+
+Output from the same demo:
+
+----
+[4] Program to the interface
+    runtime class = ArrayList, contents = [rita]
+----
+
+The method returned `Collection<String>` and constructed an `ArrayList`. The caller never names `ArrayList`.
+
+=== Key takeaways
+
+* Declare `List` / `Set` / `Map` / `Queue`. Construct the concrete class.
+* `Map` is not a `Collection`. Its `keySet` / `values` / `entrySet` are.
+* `get(int)` belongs on `List` because only a list has positions.
+
+Self-check:
+
+. Why can you not pass a `HashMap` to a method that takes `Collection<?>`?
+. When would you type a field as `ArrayList` instead of `List`?
+. Why is `get(int)` missing from `Collection`?
+
+[[collection-contract]]
+== What Collection actually promises
+
+=== The shared methods
+
+`Collection` promises, roughly:
+
+[cols="1,3"]
+|===
+|Method |Promise
+
+|`size()` / `isEmpty()`
+|How many elements are in it right now.
+
+|`contains(o)` / `containsAll`
+|Membership, using `equals` (unless the implementation says otherwise).
+
+|`add(e)` / `addAll`
+|Put it in. Returns whether the collection changed. A `Set` returns `false` for a duplicate; a `List` almost always returns `true`.
+
+|`remove(o)` / `removeAll` / `retainAll`
+|Take it out, again by `equals`.
+
+|`clear()`
+|Empty it.
+
+|`iterator()`
+|A cursor you can walk. This is also what for-each uses.
+
+|`toArray()` / `toArray(T[])` / `toArray(IntFunction)`
+|A snapshot as an array.
+
+|`removeIf(predicate)`
+|Remove every element the predicate accepts, using the iterator internally.
+|===
+
+It does *not* promise order. It does *not* promise uniqueness. It does *not* promise a speed. Those come from `List`, `Set`, and the concrete class.
+
+=== equals and hashCode of the collection itself
+
+Two lists are equal if they are both lists, the same size, and `equals` holds pairwise in order. Two sets are equal if they are both sets and contain the same elements, order ignored. A list is never equal to a set, even with the same elements.
+
+Output:
+
+----
+[2] Collection equals
+    two ArrayLists with [a, b] equal? true
+    List.equals(Set) with the same elements? false
+    Set.equals(List) with the same elements? false
+----
+
+That is why you can swap `ArrayList` for another `List` in tests and assertions still pass, and why `assertEquals(list, set)` fails even when a human would say "same stuff".
+
+=== toArray
+
+`toArray()` returns `Object[]`. You cannot assign that to `String[]` without a cast that can blow up. The typed form allocates an array of the right runtime type.
+
+[source,java]
+----
+String[] strings = list.toArray(new String[0]);   // usual form
+String[] also    = list.toArray(String[]::new);   // Java 11+, same idea
+----
+
+Output:
+
+----
+[3] toArray
+    toArray() component type     = Object
+    toArray(new String[0]) type  = String
+    contents                     = [a, b]
+----
+
+Passing `new String[0]` looks wasteful. The JDK uses it as a type token and allocates a correctly sized array. Passing a correctly sized array yourself is an old optimisation that is no longer worth the extra line.
+
+=== Null policy
+
+"Does it accept null?" is not a Collection-wide rule. It is per implementation.
+
+[cols="2,1,1"]
+|===
+|Type |Null elements / keys |Null values
+
+|`ArrayList`, `LinkedList`, `HashMap`, `HashSet`
+|Yes (HashMap: one null key)
+|Yes
+
+|`LinkedHashMap`, `LinkedHashSet`
+|Yes
+|Yes
+
+|`TreeMap` / `TreeSet` (natural order)
+|No (cannot compare null)
+|TreeMap values: yes
+
+|`EnumMap` / `EnumSet`
+|No
+|EnumMap values: yes
+
+|`ConcurrentHashMap`, `ConcurrentSkipListMap`
+|No
+|No
+
+|`Hashtable`
+|No
+|No
+
+|`ArrayDeque`, `PriorityQueue`
+|No
+|—
+
+|`List.of` / `Set.of` / `Map.of`
+|No
+|No
+|===
+
+If you need a null-as-missing convention, prefer `Optional` or `getOrDefault`, not a null key.
+
+=== Generics as collections use them
+
+`List<String>` means "this list holds String". The compiler stops `list.add(1)`. At runtime the list is still a list of objects — type parameters are erased. That is why you can smash the check with a raw type, and why `List<String>` and `List<Integer>` look the same to the JVM.
+
+When a method should *read* from a list of some Animal subtype, the type is `List<? extends Animal>`: you can `get` an `Animal`, you cannot `add` a `Cat`, because the list might actually be `List<Dog>`.
+
+When a method should *put* animals in, the type is `List<? super Cat>`: you can add a `Cat`, and `get` only gives `Object`.
+
+The mnemonic is PECS: producer-extends, consumer-super. A producer is a collection you read from. A consumer is a collection you write to.
+
+[source,java]
+----
+void copy(List<? extends String> from, List<? super String> to) {
+    for (String s : from) to.add(s);
+}
+----
+
+Raw types (`List` with no `<>`) turn all of that off. Do not use them. The compiler warning is the point.
+
+=== Key takeaways
+
+* `Collection` is membership, size, and iteration. Order, uniqueness and speed are subtype promises.
+* `List.equals` compares elements in sequence. `Set.equals` compares membership without using iteration order.
+* `toArray(new T[0])` is the typed snapshot. `toArray()` is `Object[]`.
+* Null is a per-implementation rule, not a framework rule.
+
+Self-check:
+
+. Why is `List.of("a","b").equals(Set.of("a","b"))` false?
+. What does `toArray()` return, and why do you usually not want that?
+. What does `List<? extends T>` allow you to do, and forbid?
+
+[[iteration]]
+== Iteration
+
+=== for-each is an iterator you cannot see
+
+[source,java]
+----
+for (String s : list) {
+    System.out.println(s);
+}
+----
+
+The compiler turns that into `iterator()`, `hasNext()`, `next()`. You do not get a variable for the iterator, so you cannot call `remove` on it.
+
+[[fail-fast]]
+=== Fail-fast
+
+Most `java.util` collections keep a counter of structural changes — adds and removes that change the size or the layout, not `set` on a list slot. The iterator copies that counter when it is created. Every `next()` checks that the copy still matches.
+
+If they differ, the iterator throws `ConcurrentModificationException`. The name is misleading: it is not about threads. One thread, a for-each, and a `list.remove` inside the loop is enough.
+
+*Fail-fast* means: detect that the structure changed and stop, rather than walk a half-broken chain of nodes and hope.
+
+Full example: `examples.overview.IteratorDemo` — link:examples/overview/IteratorDemo.java[IteratorDemo.java]
+
+Output:
+
+----
+[1] for-each cannot remove safely
+    letters.remove inside for-each -> ConcurrentModificationException
+    list after the failed attempt = [a, c, d]
+----
+
+Read that output twice. `remove` *did* delete `"b"`. Then the hidden iterator's next `next()` saw the counter change and threw. The list is already mutated. Fail-fast is a detection, not a rollback.
+
+=== iterator.remove is the supported path
+
+`Iterator.remove()` deletes the last element `next()` returned, and updates the iterator's copy of the counter so the walk can continue.
+
+Output:
+
+----
+[2] iterator.remove is the supported path
+    after iterator.remove("b") = [a, c, d]
+
+[3] removeIf
+    after removeIf(c) = [a, b, d]
+----
+
+`removeIf` is the same idea without you writing the loop. It is still fail-fast against *other* mutations. It is not a concurrent collection.
+
+=== ListIterator
+
+`List` adds `ListIterator`: walk backwards, `set` the current element, `add` at the cursor. Plain `Iterator` cannot do those.
+
+Output:
+
+----
+[4] ListIterator
+    after add("b") at cursor = [a, b, c]
+    after set("B")           = [a, B, c]
+----
+
+[[weakly-consistent-iterators]]
+=== Weakly consistent iterators
+
+Concurrent collections generally do *not* fail-fast. Their iterators may show some updates and miss others, but they do not throw just because a writer ran. That is called *weakly consistent*. The details belong in link:concurrent-collections.adoc[concurrent-collections.adoc]. CopyOnWrite types go further: the iterator is a snapshot of the array at creation time.
+
+=== Key takeaways
+
+* for-each is `iterator()`. There is no `remove` on that hidden cursor.
+* `ConcurrentModificationException` is about structure changing during a walk, often on one thread.
+* Fail-fast does not undo the change that triggered it.
+* `iterator.remove` / `removeIf` are the supported in-walk deletes.
+
+Self-check:
+
+. Why does `list.remove(s)` inside for-each throw, and is the element gone?
+. What does `Iterator.remove` update that for-each cannot?
+. What is the difference between fail-fast and weakly consistent?
+
+[[collection-complexity]]
+== Time cost, in one table
+
+Big-O is a way of saying how the work grows as the collection grows. Here, `n` is the number of stored elements. O(1) means "a handful of steps, does not grow with size". O(n) means "work grows with the number of elements, often because it walks them". O(log n) means "each step discards a large part of what remains" — the usual cost of walking a balanced search tree.
+
+These are the usual cases for the implementations you will actually pick. Worst-case hash lookup is O(n) if every key lands in one bucket; after Java 8 that colliding bucket is a tree, so it degrades to O(log n) rather than a long chain.
+
+[cols="1,1,1,1,1"]
+|===
+|Type |get / contains |add |remove |notes
+
+|`ArrayList`
+|O(1) by index
+|O(1) at end, O(n) in the middle
+|O(n) except the last element
+|contiguous array
+
+|`LinkedList`
+|O(n) by index
+|O(1) at the ends
+|O(1) at the ends, O(n) in the middle
+|node per element
+
+|`ArrayDeque`
+|—
+|O(1) at either end
+|O(1) at either end
+|no index, no null
+
+|`HashSet` / `HashMap`
+|O(1) usual
+|O(1) usual
+|O(1) usual
+|depends on `hashCode`
+
+|`TreeSet` / `TreeMap`
+|O(log n)
+|O(log n)
+|O(log n)
+|always sorted
+
+|`PriorityQueue`
+|O(1) peek
+|O(log n) offer
+|O(n) remove(object), O(log n) poll
+|heap, not a sorted list
+|===
+
+Do not pick `LinkedList` because "add is O(1)". Add at the *end of an ArrayList* is O(1) amortised as well, and `get(i)` is not a walk. That comparison is the next document.
+
+=== Key takeaways
+
+* Big-O describes how work grows; here `n` means the number of elements.
+* ArrayList is fast by index, hash collections are usually fast by key, and sorted trees trade speed for order.
+* The operation matters: PriorityQueue has O(1) peek but O(n) removal by object.
+
+Self-check:
+
+. What does O(n) mean as a collection doubles in size?
+. Why is ArrayList append called amortised O(1)?
+. Why is `PriorityQueue.remove(object)` slower than `poll()`?
+
+== Real-world engineering view
+
+In a service, a `List` is often request-scoped: parse the body, pass it down, throw it away. An `ArrayList` sized to the JSON array length is enough.
+
+A `Map` is often longer lived: an id to an entity, a cache, a group-by. That is where `equals` / `hashCode`, mutable keys, and load factor start to matter, and where a missing `computeIfAbsent` becomes a race later.
+
+A `Set` is often a uniqueness filter or a membership check: "have we already seen this request id?". If the set is per request, `HashSet` is fine. If it is shared across threads, it is not.
+
+Returning `List` / `Set` / `Map` from an API hides the implementation, which is good, until the implementation is a live view of internal storage. Then hiding the type hid a mutation path. Defensive copies belong at that boundary — link:../oops/four-pillars.adoc[four-pillars.adoc] already showed `List.copyOf`. This topic's link:utilities.adoc[utilities.adoc] is the full view-versus-copy story.
+
+=== Key takeaways
+
+* Local ownership often makes ordinary collections sufficient.
+* Shared mutable collections require an explicit concurrency choice.
+* API return types must account for live views and mutation, not only interface names.
+
+Self-check:
+
+. When is a request-scoped HashSet safe?
+. Why can returning a view expose internal mutation?
+. What changes when a collection becomes a singleton-service field?
+
+== Common mistakes
+
+**for-each plus `list.remove`.** Symptom: `ConcurrentModificationException`, and the element may already be gone. Fix: `iterator.remove` or `removeIf`.
+
+**Declaring `ArrayList` on every parameter.** Symptom: you cannot pass `List.of(...)` without wrapping it. Fix: take `List`.
+
+**Assuming iteration order of a `HashSet`.** Symptom: a test that compares `set.toString()` to `"[a, b]"` fails on another JDK. Fix: if order matters, use `LinkedHashSet` or `TreeSet` or sort before asserting.
+
+**Using a raw `List`.** Symptom: `add` accepts anything, `get` returns `Object`, heap pollution. Fix: `List<String>`.
+
+=== Key takeaways
+
+* Modify through the iterator or use `removeIf` while iterating.
+* Depend on the narrowest truthful interface, not a concrete implementation.
+* Never assume order or element type when the declared contract does not promise it.
+
+Self-check:
+
+. What should replace collection removal inside for-each?
+. Why can `ArrayList` parameters reject otherwise valid List values?
+. Which Set implementations should you choose when order matters?
+
+== Senior-level lens
+
+The interface you put on a field is an API decision. `List<User> getUsers()` promises index, duplicates, and a stable iteration order. If what you actually have is "unique users, no order", that signature is a lie, and callers will write `get(0)`.
+
+`Collection` as a return type is honest when you truly mean "a bag I can iterate". It is annoying when every caller immediately copies it into a `List`. Prefer the most specific interface that is still true: `List` if order and index are real, `Set` if uniqueness is real, `Collection` if neither is.
+
+Fail-fast is a debugging tool, not a safety tool. It is best-effort. The iterator is allowed to miss a change (the check is not on every field write). It does not make a `HashMap` safe to share between threads. Sharing is link:concurrent-collections.adoc[concurrent-collections.adoc].
+
+=== Key takeaways
+
+* The hierarchy is the map of the library. Map is beside Collection, not under it.
+* Fail-fast iterators detect structural change. They do not undo it and they do not replace locks.
+* Pick the interface for the contract, the class for the cost.
+
+Self-check:
+
+. What does fail-fast actually guarantee, and what does it not?
+. When is returning `Collection` the honest choice?
+. Name one Collection method that is *not* a structural change on a List.

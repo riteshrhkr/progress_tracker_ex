@@ -1,0 +1,267 @@
+= Production and Testing
+:toc: macro
+:toc-title: Table of Contents
+:toclevels: 2
+:sectnums:
+:icons: font
+:source-highlighter: rouge
+
+This document connects Java multithreading to backend production behavior: Spring Boot requests, downstream systems, observability, debugging, and tests that expose concurrency mistakes.
+
+toc::[]
+
+Previous: link:completablefuture-and-virtual-threads.adoc[completablefuture-and-virtual-threads.adoc]. Next: none. Index: link:README.adoc[README.adoc].
+
+[[spring-boot-requests]]
+== Threads in a Spring Boot service
+
+In a typical servlet-based Spring Boot application, each incoming HTTP request is handled by a thread from the web server's request pool.
+
+----
+client request
+     |
+Tomcat/Jetty/Undertow request thread
+     |
+controller -> service -> repository -> database
+----
+
+That means singleton Spring beans are shared by many request threads. A singleton is one object reused by the application. If it has mutable fields that change per request, those fields are shared state.
+
+Bad pattern:
+
+[source,java]
+----
+@Service
+class InvoiceService {
+    private BigDecimal currentTotal;
+
+    BigDecimal calculate(Invoice invoice) {
+        currentTotal = invoice.total();
+        return currentTotal;
+    }
+}
+----
+
+Good pattern:
+
+[source,java]
+----
+@Service
+class InvoiceService {
+    BigDecimal calculate(Invoice invoice) {
+        BigDecimal currentTotal = invoice.total();
+        return currentTotal;
+    }
+}
+----
+
+The good version keeps request-specific data in a local variable. Local variables live on one thread's stack for that method call. The object the variable points to can still be shared, but the variable slot itself is not shared between request threads.
+
+=== Key takeaways
+
+* Request threads often share singleton Spring beans.
+* Do not put per-request mutable data in singleton fields.
+* Local variables are usually safer for request-specific data.
+
+Self-check:
+
+. Why are singleton bean fields dangerous when they change per request?
+. Does a local variable make the object it references immutable?
+. Where does request-specific state usually belong?
+
+[[backend-bottlenecks]]
+== Threads do not remove downstream limits
+
+Threads help the JVM wait on several things at once. They do not make the database, Redis, Kafka, or another HTTP service unlimited.
+
+[cols="1,2,2"]
+|===
+|Dependency |Limit that still exists |What to control
+
+|Database
+|Connection pool size, locks, query time
+|Pool size, query timeout, transaction length.
+
+|HTTP service
+|Latency, rate limit, failure rate
+|Timeouts, retries, circuit breaker, bulkhead.
+
+|Kafka consumer
+|Partition count and processing time
+|Consumer concurrency, max poll interval, idempotency.
+
+|Redis
+|Network and server capacity
+|Timeouts, command cost, key design.
+|===
+
+A bulkhead is a separation that stops one failing area from sinking the whole service. For example, payment calls and email calls can use different executors, so slow email does not consume every worker needed for payments.
+
+----
+request threads
+   |---- payment executor -> payment API
+   `---- email executor   -> email API
+----
+
+=== Key takeaways
+
+* More threads can create more pressure on a slow dependency.
+* Use timeouts and bounded resources around downstream calls.
+* Separate unrelated work when one area can fail independently.
+
+Self-check:
+
+. Why can more threads make a database incident worse?
+. What does a bulkhead protect?
+. Why should retries have limits?
+
+[[common-mistakes]]
+== Common mistakes
+
+The mistake is rarely "I forgot the definition of a thread." It is usually a small ownership mistake that worked in local testing.
+
+[cols="1,2,2"]
+|===
+|Symptom |Likely cause |Fix
+
+|Counter is sometimes low
+|`count++` from multiple threads
+|Use a lock, `AtomicInteger`, or `LongAdder`.
+
+|Request A sees request B's data
+|Mutable singleton field
+|Move data into method scope or a request-scoped object.
+
+|Application hangs on shutdown
+|Executor created and never stopped
+|Use managed executor or shutdown lifecycle.
+
+|Thread dump shows many `BLOCKED`
+|Lock contention or deadlock
+|Reduce lock scope, inspect lock order.
+
+|Latency rises before errors
+|Executor queue growing
+|Bound queue, reject early, add back pressure.
+|===
+
+Bad pattern:
+
+[source,java]
+----
+cache.computeIfAbsent(key, this::slowNetworkCall);
+----
+
+The trap is not only the cache. If this runs under a lock, every other thread needing that lock waits on the network too.
+
+Good pattern:
+
+[source,java]
+----
+Value loaded = slowNetworkCall();
+cache.putIfAbsent(key, loaded);
+----
+
+This version may do duplicate work during a race, so it is not always the right answer. But it keeps slow I/O outside the lock. That is often the better trade-off for request latency.
+
+=== Key takeaways
+
+* Most production concurrency bugs are ownership and boundary bugs.
+* Thread dumps, pool metrics, and queue sizes are first-class debugging tools.
+* Avoid doing slow I/O while holding locks.
+
+Self-check:
+
+. What symptom suggests a lost update?
+. Why can a growing queue hide overload?
+. What trade-off appears when moving I/O outside a lock?
+
+[[testing-concurrency]]
+== Testing concurrent code
+
+A test that passes once does not prove concurrent code is correct. Timing bugs hide because the bad ordering may not happen in that run.
+
+[source,java]
+----
+CountDownLatch start = new CountDownLatch(1);
+Thread a = new Thread(() -> { await(start); work(); });
+Thread b = new Thread(() -> { await(start); work(); });
+start.countDown();
+----
+
+`CountDownLatch` is a small gate. Threads wait at the gate, then the test opens it so they start at nearly the same time.
+
+Use these tools deliberately:
+
+[cols="1,2"]
+|===
+|Tool |Use
+
+|`CountDownLatch`
+|Start several threads together or wait until several finish.
+
+|`ExecutorService`
+|Run many copies of the same task and collect failures.
+
+|Timeouts
+|Fail tests that hang instead of waiting forever.
+
+|Thread dumps
+|Inspect where stuck threads are blocked or waiting.
+
+|Stress loops
+|Repeat a risky scenario many times to make timing bugs more likely.
+|===
+
+For very subtle Java Memory Model tests, ordinary unit tests are often not enough. Use established tools such as JCStress when the exact memory behavior matters.
+
+=== Key takeaways
+
+* Concurrent tests should force overlap instead of hoping for it.
+* Always put timeouts around tests that can hang.
+* Use specialized stress tools for memory-model edge cases.
+
+Self-check:
+
+. Why is a one-run passing test weak evidence?
+. What does `CountDownLatch` help coordinate?
+. When should you consider JCStress?
+
+[[senior-lens]]
+== Senior-level lens
+
+Senior concurrency work is less about knowing every class and more about drawing ownership boundaries clearly.
+
+[cols="1,3"]
+|===
+|Question |Senior habit
+
+|Who owns this state?
+|Make one component responsible, or make the data immutable.
+
+|What is the whole operation?
+|Protect the complete check-update sequence.
+
+|What happens under overload?
+|Bound queues, set timeouts, and choose rejection behavior.
+
+|What happens during shutdown?
+|Stop accepting work, drain or cancel safely, and release resources.
+
+|How will we debug it?
+|Name threads, expose pool metrics, keep useful logs, capture thread dumps.
+|===
+
+This is also where design beats clever locking. If each request owns its data, or each account update goes through one transactional database operation, you may not need a Java lock at all.
+
+=== Key takeaways
+
+* Ownership is the first concurrency design decision.
+* Bounded resources make overload visible earlier.
+* Observability is part of the design, not a cleanup step.
+
+Self-check:
+
+. What should you ask before adding a lock?
+. Why are bounded queues easier to operate than unbounded queues?
+. What would you want in logs or metrics before debugging a thread-pool issue?

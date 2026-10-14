@@ -1,0 +1,115 @@
+= Multithreading in Java
+:toc: macro
+:toc-title: Table of Contents
+:toclevels: 2
+:sectnums:
+:icons: font
+:source-highlighter: rouge
+
+The index for this topic. Six teaching documents build from the first thread to production choices, followed by a refresher, interview preparation, and runnable Java 21 demos.
+
+toc::[]
+
+== What to read, in what order
+
+[cols="1,3,1"]
+|===
+|# |Document |Read it when
+
+|1
+|link:threads-and-runnables.adoc[threads-and-runnables.adoc] +
+What a thread is, `start()` versus `run()`, `join()`, sleep, interruption, and the lifecycle you actually need day to day.
+|First, always.
+
+|2
+|link:shared-state-and-memory.adoc[shared-state-and-memory.adoc] +
+Why two threads lose updates, what visibility means, what happens-before means, and when to use `volatile`, `AtomicInteger`, or an immutable value.
+|Second. This is the foundation for every bug that follows.
+
+|3
+|link:locks-and-coordination.adoc[locks-and-coordination.adoc] +
+`synchronized`, monitors, `wait` / `notifyAll`, `ReentrantLock`, deadlock, and the habit of protecting the whole operation.
+|Third. Read after shared state.
+
+|4
+|link:executors-and-thread-pools.adoc[executors-and-thread-pools.adoc] +
+`ExecutorService`, pools, `Future`, shutdown, queueing, sizing, and why backend code rarely creates raw threads per request.
+|Fourth. This is the production baseline.
+
+|5
+|link:completablefuture-and-virtual-threads.adoc[completablefuture-and-virtual-threads.adoc] +
+Composing async work with `CompletableFuture`, Java 21 virtual threads, what they simplify, and what they do not fix.
+|Fifth. After executors.
+
+|6
+|link:production-and-testing.adoc[production-and-testing.adoc] +
+How multithreading shows up in Spring Boot, databases, Kafka, timeouts, observability, testing, and debugging.
+|Last. This ties Java mechanics to backend systems.
+|===
+
+Then, separately:
+
+* link:quick-review.adoc[quick-review.adoc] — the 15-minute refresher. *This is for revisiting the topic later, not for learning it the first time.* It introduces nothing new and links back to the documents that explain each idea.
+* link:interview-questions.adoc[interview-questions.adoc] — every interview-framed question and answer for this topic, kept out of the teaching documents on purpose.
+
+== Files
+
+----
+multithreading/
+├── README.adoc
+├── threads-and-runnables.adoc
+├── shared-state-and-memory.adoc
+├── locks-and-coordination.adoc
+├── executors-and-thread-pools.adoc
+├── completablefuture-and-virtual-threads.adoc
+├── production-and-testing.adoc
+├── quick-review.adoc
+├── interview-questions.adoc
+└── examples/
+    ├── basics/
+    │   └── ThreadBasicsDemo.java
+    ├── sharedstate/
+    │   └── RaceConditionDemo.java
+    ├── coordination/
+    │   └── LockCoordinationDemo.java
+    ├── executors/
+    │   └── ExecutorDemo.java
+    └── virtualthreads/
+        └── VirtualThreadDemo.java
+----
+
+== Running the examples
+
+Java 21 or newer. Compile everything once, then run whichever demo you want.
+
+[source,bash]
+----
+cd java/multithreading
+javac --release 21 -g -d out $(find examples -name '*.java')
+
+java -cp out examples.basics.ThreadBasicsDemo
+java -cp out examples.sharedstate.RaceConditionDemo
+java -cp out examples.coordination.LockCoordinationDemo
+java -cp out examples.executors.ExecutorDemo
+java -cp out examples.virtualthreads.VirtualThreadDemo
+----
+
+Each demo has a `main`, prints numbered sections, and needs no arguments or dependencies.
+
+The lost-update number in `RaceConditionDemo` is not fixed. The run quoted in these documents produced `104941`; another run can produce a different wrong number. That difference is part of the lesson.
+
+All output quoted in the documents was produced by compiling with `javac --release 21` and running on the JDK available in this workspace.
+
+== The shortest possible summary
+
+Multithreading means one Java process has more than one path of execution. That lets a backend service keep doing useful work while other work waits for I/O, but it also means shared mutable objects need coordination.
+
+The core rule is simple: if two threads can read and write the same mutable state, decide who is allowed to touch it, when other threads are allowed to see it, and how the whole operation is protected.
+
+Prefer higher-level tools first: immutable data, request-scoped objects, concurrent collections, executors, virtual threads for blocking I/O, and structured ownership. Reach for low-level locks only when those tools do not express the operation.
+
+== Related topics in this repo
+
+* link:../jmm/README.adoc[JVM and Java Memory Model] — deeper memory-model rules, JVM architecture, and happens-before.
+* link:../collections/concurrent-collections.adoc[Concurrent collections] — `ConcurrentHashMap`, `CopyOnWriteArrayList`, and blocking queues.
+* link:../Java_updates/java-21.adoc[Java 21 updates] — virtual threads and related platform changes.

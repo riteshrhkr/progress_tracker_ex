@@ -1,0 +1,336 @@
+= Queues and Deques
+:toc: macro
+:toc-title: Table of Contents
+:toclevels: 2
+:sectnums:
+:icons: font
+:source-highlighter: rouge
+
+What a queue is, the throw-versus-special-value methods, why ArrayDeque is the default queue and stack, and how PriorityQueue orders by a heap rather than by iteration.
+
+toc::[]
+
+Previous: link:maps.adoc[maps.adoc]. Next: link:utilities.adoc[utilities.adoc]. Index: link:README.adoc[README.adoc].
+
+[[what-a-queue-is]]
+== What a Queue is
+
+A Queue is a Collection that holds elements in line: you add at one end, you take from the other. The next element you take is the *head*.
+
+The usual line is FIFO — first in, first out. The first thing you offered is the first thing you poll. A *deque* (double-ended queue, pronounced "deck") lets you add and take at both ends. A stack is a deque you only use from one end: last in, first out.
+
+The shallow version: "Queue is a LinkedList."
+
+The real version: Queue is a *head* contract. `ArrayDeque` keeps it with a circular array. `PriorityQueue` keeps it with a heap, so the head is the smallest (or whatever the comparator says), not the oldest. `LinkedList` can play the role because it implements `Deque`, not because it is a good default.
+
+Blocking queues (`take` waits until an element exists) are concurrent types. They are named here and taught in link:concurrent-collections.adoc[concurrent-collections.adoc].
+
+=== Key takeaways
+
+* Queue describes which element comes out next.
+* Deque exposes both ends and can act as a queue or stack.
+* The implementation decides whether the head means oldest or highest priority.
+
+Self-check:
+
+. What does FIFO mean?
+. Which interface supports both ends?
+. Why can ArrayDeque and PriorityQueue both implement Queue?
+
+[[queue-method-families]]
+== Two method families
+
+Each operation exists twice: one form throws when it cannot be done, one form returns a special value.
+
+[cols="1,1,1"]
+|===
+|Job |Throws |Special value
+
+|Insert
+|`add(e)` — `IllegalStateException` if full
+|`offer(e)` — `false` if full
+
+|Take the head (remove it)
+|`remove()` — `NoSuchElementException` if empty
+|`poll()` — `null` if empty
+
+|Look at the head (keep it)
+|`element()` — `NoSuchElementException` if empty
+|`peek()` — `null` if empty
+|===
+
+For `ArrayDeque` the queue is not capacity-bounded in practice (it grows), so `add` versus `offer` rarely differs. `remove` versus `poll` on an empty deque always differs.
+
+Full example: `examples.queues.QueueDequeDemo` — link:examples/queues/QueueDequeDemo.java[QueueDequeDemo.java]
+
+Output:
+
+----
+[2] Throw versus special value
+    poll()  on empty = null
+    peek()  on empty = null
+    remove() on empty -> NoSuchElementException
+    element() on empty -> NoSuchElementException
+----
+
+Use `poll` / `offer` / `peek` when empty-or-full is a normal case (a worker draining a queue). Use `remove` / `add` / `element` when empty is a bug you want to see as an exception.
+
+`null` is not allowed in `ArrayDeque` or `PriorityQueue`. If it were, `poll` returning `null` would mean both "empty" and "the head was null".
+
+=== Key takeaways
+
+* One method family throws; the other reports empty or full with a special value.
+* Use the special-value family when empty or full is normal control flow.
+* Null is forbidden because it already represents an empty result.
+
+Self-check:
+
+. How do `poll` and `remove` differ on an empty queue?
+. How do `offer` and `add` differ on a full bounded queue?
+. Why can Queue methods use null as an empty signal?
+
+[[arraydeque-queue]]
+== ArrayDeque as a queue
+
+`ArrayDeque` is a resizable circular array. Head and tail are indexes that wrap around. No node object per element. No `get(i)`. No `null`.
+
+Output:
+
+----
+[1] ArrayDeque as a queue
+    after offer a,b,c = [a, b, c]
+    poll()            = a, remaining = [b, c]
+    peek()            = b, remaining = [b, c]
+----
+
+`poll` removed `"a"`. `peek` looked at `"b"` and left it. That is FIFO.
+
+This is the default `Queue` implementation. It is also the default `Deque`.
+
+=== Key takeaways
+
+* ArrayDeque stores elements in a resizable circular array.
+* Queue use is FIFO: offer at the tail and poll at the head.
+* It has no index access and accepts no null.
+
+Self-check:
+
+. What remains after offering `a`, `b` and polling once?
+. Why do head and tail indexes wrap?
+. Is ArrayDeque capacity-bounded?
+
+[[arraydeque-stack]]
+== ArrayDeque as a stack
+
+`Deque` adds `push` / `pop` / `peek` at the head (and `addFirst` / `addLast` / `removeFirst` / `removeLast` as the full spelling).
+
+Output:
+
+----
+[3] ArrayDeque as a stack
+    after three push  = [top, middle, bottom]
+    pop()             = top
+    pop()             = middle
+    remaining         = [bottom]
+----
+
+`java.util.Stack` extends `Vector`. Every List method is still public. `ArrayDeque` does not implement `List`, so you cannot `add(index, e)` in the middle of your stack. That is a feature.
+
+=== Key takeaways
+
+* `push` and `pop` use one end of a Deque for LIFO behavior.
+* ArrayDeque exposes a cleaner stack API than the legacy Stack class.
+* Preventing indexed insertion protects the stack shape.
+
+Self-check:
+
+. Which element does `pop` return after three pushes?
+. What does LIFO mean?
+. Why is Stack's List inheritance undesirable?
+
+== LinkedList as a queue
+
+`LinkedList` implements `List` and `Deque`. Using it as `Queue<String> q = new LinkedList<>()` works.
+
+Output:
+
+----
+[4] LinkedList as a queue
+    LinkedList queue poll = a, remaining = [b]
+    runtime class         = LinkedList
+----
+
+You pay a node per element, and the variable typed as `LinkedList` still has `get(i)`. Typed as `Queue`, those List methods are hidden, but you still allocated nodes. Prefer `ArrayDeque` unless you have a measured reason.
+
+=== Key takeaways
+
+* LinkedList can implement a queue correctly.
+* ArrayDeque usually uses less memory and is the better default.
+* Declaring Queue hides List methods but does not change LinkedList's storage.
+
+Self-check:
+
+. Does typing LinkedList as Queue remove its node allocations?
+. Which implementation is the default queue?
+. What evidence could justify LinkedList here?
+
+[[priorityqueue]]
+== PriorityQueue
+
+=== A heap, not a sorted list
+
+A *binary heap* is a tree stored in an array where each parent is ordered before its children (min-heap by default: parent ≤ children). Finding the smallest is looking at index 0. Insert and delete-min bubble elements up or down in O(log n), where `n` is the queue size; doubling the queue adds roughly one tree level. The rest of the array is *not* sorted.
+
+`PriorityQueue` is that heap. `offer` and `poll` are the heap operations. `iterator()` and `toString()` walk the array left to right.
+
+Full example: `examples.queues.PriorityQueueDemo` — link:examples/queues/PriorityQueueDemo.java[PriorityQueueDemo.java]
+
+Output:
+
+----
+[1] poll order versus iteration order
+    toString / iteration = [1, 3, 2, 4, 9, 5, 8, 10]
+    poll until empty     = 1, 2, 3, 4, 5, 8, 9, 10
+----
+
+Iteration printed `1, 3, 2, ...`. `poll` produced sorted order. If you need a sorted walk, drain with `poll` into a list, or use a `TreeSet` (unique) / sort a `List`.
+
+=== Comparator and null
+
+Default: natural order, smallest head. `new PriorityQueue<>(Comparator.reverseOrder())` makes the largest the head.
+
+Output:
+
+----
+[2] Comparator and null
+    reverseOrder poll = 5, 3, 1
+    offer(null) -> NullPointerException
+----
+
+Elements must be `Comparable` if you pass no comparator. Mixing incomparable types throws `ClassCastException` on offer, same idea as `TreeMap`.
+
+=== remove(Object) is not a heap operation
+
+`contains` and `remove(Object)` scan the array, O(n). Only `offer`, `poll`, and `peek` are the cheap ones. `remove(Object)` then restores the heap.
+
+Output:
+
+----
+[3] remove(Object) is a linear scan
+    before remove(9) = [1, 9, 3]
+    remove(9)        = true
+    poll remaining   = 1, 3
+----
+
+`before remove(9) = [1, 9, 3]` is heap layout, not sort order. After removing 9, `poll` still gives 1 then 3.
+
+PriorityQueue is not thread-safe. The bounded concurrent cousin is `PriorityBlockingQueue`.
+
+=== Key takeaways
+
+* PriorityQueue guarantees the head, not sorted iteration.
+* `offer` and `poll` restore the heap in O(log n); `peek` is O(1).
+* Finding or removing an arbitrary object requires an O(n) scan.
+
+Self-check:
+
+. Why can `toString()` look unsorted while `poll()` is correct?
+. What does the comparator control?
+. Why is `remove(object)` slower than `poll()`?
+
+== Choosing
+
+[cols="1,3"]
+|===
+|Choose |When
+
+|`ArrayDeque`
+|Default queue and default stack.
+
+|`PriorityQueue`
+|Next item should be the smallest (or comparator-first), single thread.
+
+|`LinkedList`
+|Rare. You already need List and Deque on the same object and a profile said so.
+
+|`ArrayBlockingQueue` / `LinkedBlockingQueue` / `SynchronousQueue` / `DelayQueue`
+|Producer and consumer on different threads. Next document.
+
+|`Stack` / `Vector`
+|Do not add.
+|===
+
+=== Key takeaways
+
+* Pick ArrayDeque for ordinary queue and stack work.
+* Pick PriorityQueue when priority determines the next item.
+* Pick a blocking queue when threads need waiting or bounded capacity.
+
+Self-check:
+
+. Which type models the smallest-next requirement?
+. Which type creates back-pressure?
+. Which legacy types should new code avoid?
+
+== Real-world engineering view
+
+A single-threaded "work still to do" list is an `ArrayDeque`. BFS uses a queue. DFS uses a stack. Both are `ArrayDeque` with different methods.
+
+A "next job is the one with the soonest deadline" list is a `PriorityQueue` of jobs with a comparator on deadline. If two threads add jobs, it is not. Then you want `PriorityBlockingQueue` or a concurrent structure plus a lock.
+
+Do not use `PriorityQueue` as a "sorted collection" you iterate in a report. Drain it, or sort a list.
+
+=== Key takeaways
+
+* BFS and DFS can share ArrayDeque while using different methods.
+* Shared priority work requires a concurrent design.
+* Reporting in sorted order is different from maintaining a priority head.
+
+Self-check:
+
+. Which ArrayDeque behavior distinguishes BFS from DFS?
+. What replaces PriorityQueue for concurrent producers?
+. How should you produce a sorted report?
+
+== Common mistakes
+
+**Trusting `priorityQueue.toString()` as sort order.** Symptom: the log looks unsorted, the code is fine. Fix: poll to print, or copy and sort.
+
+**`offer(null)`.** Symptom: `NullPointerException`, or if you used a list-as-queue, `poll` cannot mean empty. Fix: do not store null.
+
+**`new LinkedList<>()` for a queue by habit.** Symptom: extra allocations, accidental `get(i)` on a type that is also a List. Fix: `ArrayDeque`.
+
+**`Stack`.** Symptom: synchronized Vector with List methods. Fix: `ArrayDeque`.
+
+=== Key takeaways
+
+* Heap layout is not sorted display order.
+* Null conflicts with the empty-queue result.
+* ArrayDeque replaces habitual LinkedList and Stack choices.
+
+Self-check:
+
+. Why should tests not assert PriorityQueue's string form?
+. What does `offer(null)` do?
+. Which queue avoids per-element nodes?
+
+== Senior-level lens
+
+`Queue` as an API type is the right hide: callers can `offer` and `poll`, they cannot `get(i)`. Returning `ArrayDeque` leaks `push` and `descendingIterator`.
+
+A capacity-bounded queue is back-pressure: `offer` returning `false` (or a blocking `put`) is how a producer slows down. `ArrayDeque` grows instead. If unbounded growth is a failure mode, you wanted a blocking queue with a capacity, not a bigger array.
+
+`PriorityQueue` iterator is fail-fast and unordered. There is no `get(i)`. Binary-heap "decrease key" is not on the API; cancelling a job is `remove(Object)` at O(n), which is why serious schedulers build their own structures.
+
+=== Key takeaways
+
+* `offer`/`poll`/`peek` return special values. `add`/`remove`/`element` throw.
+* `ArrayDeque` is the default queue and stack. No null, no index.
+* `PriorityQueue` is a heap. `poll` is ordered. Iteration is not.
+* `LinkedList` as a queue works and is the wrong default.
+
+Self-check:
+
+. What does `poll` return on an empty `ArrayDeque`? What does `remove` do?
+. Why is null forbidden in `ArrayDeque`?
+. Why is `PriorityQueue` iteration not sorted?

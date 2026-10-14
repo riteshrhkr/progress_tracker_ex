@@ -351,6 +351,8 @@ public class VirtualThreadsDemo {
     private static void example7_RealWorldWebScraping() throws Exception {
         System.out.println("--- Example 7: Real-World Web Scraping Scenario ---");
 
+        record ProductPrice(String vendor, String productId, double price, boolean inStock) {}
+
         // Simulate a product aggregator that fetches prices from multiple vendors
         class VendorAPI {
             private final String name;
@@ -370,8 +372,6 @@ public class VirtualThreadsDemo {
                 return new ProductPrice(name, productId, price, inStock);
             }
         }
-
-        record ProductPrice(String vendor, String productId, double price, boolean inStock) {}
 
         // Create vendor APIs
         List<VendorAPI> vendors = List.of(

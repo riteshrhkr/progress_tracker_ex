@@ -1,0 +1,351 @@
+= Views, Factories, Sorting, Sequenced Collections
+:toc: macro
+:toc-title: Table of Contents
+:toclevels: 2
+:sectnums:
+:icons: font
+:source-highlighter: rouge
+
+The difference between a view and a copy, `List.of` versus `Arrays.asList`, how `Comparable` and `Comparator` order elements, and the Java 21 sequenced types.
+
+toc::[]
+
+Previous: link:queues.adoc[queues.adoc]. Next: link:concurrent-collections.adoc[concurrent-collections.adoc]. Index: link:README.adoc[README.adoc].
+
+== Collection versus Collections
+
+`Collection` is the interface: `List`, `Set` and `Queue` extend it.
+
+`Collections` is a class of static helpers: empty wrappers, synchronized wrappers, unmodifiable wrappers, `sort`, `shuffle`, `binarySearch`, `frequency`, `disjoint`.
+
+Naming is an accident of the 1990s. You import both.
+
+=== Key takeaways
+
+* Collection is an interface implemented by collection types.
+* Collections is a utility class containing static operations and wrappers.
+* Similar names do not mean one extends or implements the other.
+
+Self-check:
+
+. Which name appears in `List`'s type hierarchy?
+. Where does `synchronizedList` live?
+. Can you construct a `Collections` object?
+
+[[views-versus-copies]]
+== Views versus copies
+
+A *view* is a second object looking at the same storage. Mutations through the view (when allowed) change the original. Mutations to the original show up in the view.
+
+A *copy* has its own storage. After the copy is taken, the two can diverge.
+
+The shallow version: "`Collections.unmodifiableList` makes an immutable list."
+
+The real version: it makes a wrapper that rejects `add`/`remove`/`set` on *that wrapper*. If you still hold the original, you can change it, and the wrapper shows the change.
+
+Full example: `examples.utilities.ViewsAndFactoriesDemo` — link:examples/utilities/ViewsAndFactoriesDemo.java[ViewsAndFactoriesDemo.java]
+
+Output:
+
+----
+[1] Unmodifiable view still tracks the original
+    view after live.add("b") = [a, b]
+    view.add("c") -> UnsupportedOperationException
+----
+
+`List.copyOf` (and `Set.copyOf`, `Map.copyOf`) copies. Later adds to the original do not appear. If the argument is already an unmodifiable list of the right kind, `copyOf` may reuse it; you still must not assume you can mutate the result.
+
+Output:
+
+----
+[2] List.copyOf is a snapshot, List.of rejects null
+    live after add("c")      = [a, b, c]
+    snapshot still             = [a, b]
+    List.of("a", null) -> NullPointerException
+    Set.of("a", "a")   -> IllegalArgumentException: duplicate element: a
+----
+
+`List.of` / `Set.of` / `Map.of` reject `null`. `Set.of` and `Map.of` reject duplicate keys at construction, not by silently keeping the first.
+
+Pattern A (wrapper, original still mutable):
+
+[source,java]
+----
+return Collections.unmodifiableList(internal);   // caller cannot add; you still can
+----
+
+Pattern B (snapshot the caller cannot affect):
+
+[source,java]
+----
+return List.copyOf(internal);
+----
+
+Use A when you control both sides and want zero copy. Use B at an API boundary you do not trust. Copies of the *elements* are a separate decision: `copyOf` copies the references. If those objects are mutable, the caller can still mutate them. Maps already showed that with `Map.copyOf` and a live `ArrayList` value.
+
+You already met two other views: `Arrays.asList` (fixed-size, `set` writes through) and `subList` (window, structural change on the parent invalidates it) in link:lists.adoc[lists.adoc].
+
+=== Key takeaways
+
+* A view shares storage; a copy has independent storage.
+* An unmodifiable wrapper blocks mutation through that wrapper, not through the original.
+* Collection copies are usually shallow: mutable elements remain mutable.
+
+Self-check:
+
+. What happens to an unmodifiable view when the original grows?
+. Which method creates an unmodifiable snapshot?
+. Does `List.copyOf` clone each element?
+
+== Three ways to get a List of values
+
+[cols="1,2,1,1"]
+|===
+|Call |Mutate |Null |Notes
+
+|`Arrays.asList("a","b")`
+|`set` yes, `add`/`remove` no
+|yes
+|Wraps an array. Changes write through.
+
+|`List.of("a","b")`
+|no
+|no
+|Unmodifiable. Duplicate elements allowed (it is a List).
+
+|`new ArrayList<>(List.of("a","b"))`
+|yes
+|no in the `of`, then you can add null
+|A real growable list.
+|===
+
+Output:
+
+----
+[3] asList versus List.of versus new ArrayList
+    Arrays.asList after set(0,"A") = [A, b]
+    List.of set(0,"A")           -> UnsupportedOperationException
+    new ArrayList<>(List.of) add   = [a, b, c]
+----
+
+`Collections.emptyList()` is a singleton empty unmodifiable list. `Collections.singletonList(x)` is a one-element unmodifiable list. `Collections.nCopies(n, x)` is n references to the same object — cheap, and mutating that object is visible in every slot.
+
+`Map.of` takes up to ten key-value pairs. More than that: `Map.ofEntries(Map.entry("a", 1), ...)`. Duplicate keys throw.
+
+Output:
+
+----
+[5] Map.of and Map.ofEntries
+    Map.of = {a=1, b=2}
+    Map.ofEntries = {a=1, b=2, c=3}
+    Map.of duplicate key -> IllegalArgumentException
+----
+
+These factory maps iterate in an unspecified order. They are not `HashMap` and not `LinkedHashMap`. Do not cast them.
+
+=== Key takeaways
+
+* Arrays.asList is fixed-size, List.of is unmodifiable, and ArrayList is growable.
+* Factory collections reject null; Set and Map factories also reject duplicates.
+* Factory iteration order is unspecified unless the API explicitly promises it.
+
+Self-check:
+
+. Which list allows `set` but rejects `add`?
+. How do you create more than ten fixed Map entries?
+. What does `Set.of("a", "a")` do?
+
+== Synchronized wrappers (preview)
+
+`Collections.synchronizedList(new ArrayList<>())` wraps each method in `synchronized (the wrapper)`. `get` and `add` are then safe as single calls.
+
+Iteration is not a single call. The fail-fast iterator still throws if the list changes during a walk. You must lock the wrapper around the whole for-each:
+
+[source,java]
+----
+synchronized (synced) {
+    for (String s : synced) { ... }
+}
+----
+
+That story, and why `ConcurrentHashMap` exists instead, is link:concurrent-collections.adoc[concurrent-collections.adoc].
+
+=== Key takeaways
+
+* Synchronized wrappers protect one method call at a time.
+* Iteration is multiple calls and requires locking the wrapper for the whole walk.
+* Concurrent collections often provide a better operation-level API.
+
+Self-check:
+
+. Which object must be locked during synchronized-list iteration?
+. Is check-then-add atomic without an outer lock?
+. Why can its iterator still throw ConcurrentModificationException?
+
+[[comparable-versus-comparator]]
+== Comparable versus Comparator
+
+*Comparable* is the type's own order: `User implements Comparable<User>` and `compareTo`. `Collections.sort(list)` and `new TreeSet<User>()` use it. That order is called *natural order*.
+
+*Comparator* is an external order: a separate object that takes two elements and returns negative / zero / positive. `list.sort(comparator)` and `new TreeSet<>(comparator)` use it. One type can have many comparators.
+
+`compare` returning a negative number means "first argument should come before the second". Zero means "treat as the same position" — and for `TreeSet` / `TreeMap`, zero means uniqueness collision. Positive means "first should come after".
+
+Full example: `examples.utilities.ComparatorDemo` — link:examples/utilities/ComparatorDemo.java[ComparatorDemo.java]
+
+Output:
+
+----
+[1] Comparable natural order
+    sort by Comparable (name) = [Person[name=lee, age=20], Person[name=rita, age=20], Person[name=sam, age=40]]
+
+[2] thenComparing
+    sort by age then name     = [Person[name=lee, age=20], Person[name=rita, age=20], Person[name=sam, age=40]]
+----
+
+In this data, name order and age-then-name order match. `thenComparing` is the tie-break: same age, then name. `Comparator.comparingInt(Person::age).thenComparing(Person::name)` is the usual shape.
+
+=== nullsFirst
+
+`Comparator.naturalOrder()` calls `compareTo`. `null.compareTo(...)` throws. `Comparator.nullsFirst(inner)` / `nullsLast` put nulls at one end without asking them to compare.
+
+Output:
+
+----
+[3] nullsFirst
+    nullsFirst = [null, rita, sam]
+    naturalOrder on [rita, null] -> NullPointerException
+----
+
+=== Stable sort
+
+A *stable* sort keeps the original relative order of elements that compare equal. `List.sort` / `Collections.sort` on objects uses TimSort, which is stable.
+
+Output:
+
+----
+[4] Stable sort
+    sort by city only = [Row[city=delhi, name=rita], Row[city=delhi, name=lee], Row[city=pune, name=sam]]
+    rita stayed before lee (both delhi) because the sort is stable
+----
+
+`rita` was before `lee` in the input. Both have city delhi. After sorting by city only, `rita` is still before `lee`. If you need a second key, `thenComparing` is explicit; relying on stability is a silent contract.
+
+`Collections.sort(list)` mutates the list. `Stream.sorted` is a different topic and returns a new stream.
+
+=== Other Collections helpers
+
+`shuffle`, `reverse`, `rotate` rearrange in place. `frequency(c, o)` counts equals. `disjoint(c1, c2)` is true when no element in common. `binarySearch` requires the list to be sorted by the same comparator you pass; the result is negative if missing (`-(insertionPoint) - 1`).
+
+`Collections.checkedList(list, String.class)` inserts a runtime type check on `add`. It is a defence against raw-type heap pollution, not something you use on every list.
+
+=== Key takeaways
+
+* Comparable defines one natural order; Comparator supplies an external order.
+* Comparator result zero has uniqueness consequences in sorted Sets and Maps.
+* Stable sorting preserves the prior order of equal-comparing elements.
+
+Self-check:
+
+. When does TreeSet use `compareTo`?
+. What does `thenComparing` resolve?
+. What does a stable sort preserve?
+
+[[sequenced-collections]]
+== Sequenced collections (Java 21)
+
+A sequenced collection has a first element and a last element, and a reversed view.
+
+`List` and `Deque` already had that idea. Java 21 names it: `SequencedCollection`, `SequencedSet`, `SequencedMap`. `List` extends `SequencedCollection`. `LinkedHashSet` is a `SequencedSet`. `LinkedHashMap` is a `SequencedMap`. `SortedSet` / `NavigableSet` and `SortedMap` / `NavigableMap` join those interfaces too.
+
+New methods on `List`: `getFirst()`, `getLast()`, `addFirst()`, `addLast()`, `removeFirst()`, `removeLast()`, `reversed()`.
+
+Output:
+
+----
+[4] SequencedCollection (Java 21)
+    getFirst = a, getLast = c
+    reversed view = [c, b, a]
+    reversed.set(0,"C"), original = [a, b, C]
+----
+
+`reversed()` is a view. `set(0, "C")` on the reversed list changed the last element of the original. Empty list: `getFirst()` throws `NoSuchElementException`.
+
+`LinkedHashMap` gets `putFirst` / `putLast` / `firstEntry` / `lastEntry` / `pollFirstEntry` / `reversed`. Insertion-order maps become easier to use as sequences without dropping to the entry iterator.
+
+This is not a new data structure. It is a shared API for types that already had two ends.
+
+=== Key takeaways
+
+* Java 21 gives ordered collections a shared first/last API.
+* `reversed()` returns a live view rather than a copy.
+* Sequenced interfaces unify existing ordered types; they do not introduce new storage.
+
+Self-check:
+
+. What happens when you set index 0 through a reversed List?
+. Which Java version introduced these interfaces?
+. Which Map implementation is a SequencedMap?
+
+== Real-world engineering view
+
+API boundaries: return `List.copyOf` / `Set.copyOf` unless the method's job is to share live storage. Accept `List<String>` and copy on the way in if you will store it (`List.copyOf(input)` rejects null and snapshots).
+
+`List.of` in tests and in static final constants is the right default. `new ArrayList<>()` when the structure must grow.
+
+Sorting in a request thread on a small list is fine. Sorting a shared list is a mutation: other threads see it mid-sort unless you copy first.
+
+=== Key takeaways
+
+* Copy at API boundaries unless sharing live storage is intentional.
+* Choose fixed factories for constants and growable implementations for changing data.
+* Copy shared data before sorting unless synchronization protects the mutation.
+
+Self-check:
+
+. Why copy an input List before storing it?
+. Which list form fits a static constant?
+. What can another thread observe during an unprotected sort?
+
+== Common mistakes
+
+**`unmodifiableList` then mutating the original, calling it immutable.** Symptom: a "frozen" config list gains elements. Fix: `List.copyOf` or never keep the original.
+
+**`Arrays.asList` when you meant `List.of`.** Symptom: `set` silently writes through to an array you still use. Fix: `List.of` if unmodifiable, `new ArrayList<>` if not.
+
+**`Set.of("a","a")`.** Symptom: `IllegalArgumentException` at startup. Fix: unique arguments, or `new HashSet<>(List.of(...))` if duplicates should collapse.
+
+**Sorting with a comparator that is not consistent with `equals`, then putting the same objects in a TreeSet.** Symptom: set size disagrees with what sort would suggest. Fix: link:sets.adoc[sets.adoc].
+
+=== Key takeaways
+
+* Unmodifiable and immutable are different when another mutable reference exists.
+* Choose factory, view, or growable copy deliberately.
+* A sorting comparator can also become a uniqueness rule in TreeSet or TreeMap.
+
+Self-check:
+
+. What reference can still change an unmodifiable view?
+. Why can Arrays.asList modify an array?
+. Where does comparator equality affect collection size?
+
+== Senior-level lens
+
+Defensive copies are an encapsulation tool. The four-pillars notes already used `List.copyOf` on a getter. The cost is an allocation. On a hot path returning a large list to a trusted caller, an unmodifiable view is cheaper and still blocks *their* `add`. Measure before you copy in a loop.
+
+`reversed()` on a `LinkedHashSet` is a view that iterates backwards. Adding through that view (where supported) inserts at the opposite end. Read the type you actually have; `List.reversed` is a `List`, `SequencedSet.reversed` is a `SequencedSet`.
+
+Factory collections from `List.of` are value-based: do not synchronize on them, do not assume identity `==`.
+
+=== Key takeaways
+
+* Unmodifiable view ≠ copy. `copyOf` / `of` snapshot (and reject null).
+* `asList` is fixed-size. `List.of` is unmodifiable. `new ArrayList<>(...)` grows.
+* Comparable is the type's order. Comparator is an external order. `thenComparing` breaks ties. TimSort is stable.
+* Java 21 `getFirst` / `getLast` / `reversed` — `reversed` is a view.
+
+Self-check:
+
+. What still changes after `Collections.unmodifiableList(live)` if you keep `live`?
+. How do you build an unmodifiable map of 12 pairs?
+. Does `list.reversed().set(0, x)` change `list`?

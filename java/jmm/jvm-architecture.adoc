@@ -1,0 +1,658 @@
+= The JVM: Components and How It Works
+:toc: macro
+:toc-title: Table of Contents
+:toclevels: 2
+:sectnums:
+:sectnumlevels: 3
+:icons: font
+:source-highlighter: rouge
+:experimental:
+
+Interview guide to the Java Virtual Machine: what it is, the parts inside it, and the path from `javac` to a running method.
+
+This file is about *the machine*. For *thread visibility* (`volatile`, happens-before, locks), use link:java-memory-model.adoc[java-memory-model.adoc].
+
+Package index: link:README.adoc[README.adoc].
+
+toc::[]
+
+---
+
+== Why interviewers ask this
+
+They are not asking you to recite a Wikipedia diagram.
+
+They want to hear, in simple words:
+
+* what runs your bytecode
+* where objects, frames, and class metadata live
+* how a class gets from disk into the JVM
+* why the first call to a method can be slow, then later calls get fast (JIT)
+* why you get `OutOfMemoryError` vs `StackOverflowError`
+
+A weak answer: "JVM is where Java runs."
+
+A better answer: "The JVM loads `.class` files, stores objects on the heap and frames on per-thread stacks, and runs bytecode with an interpreter that a JIT can turn into native code for hot methods."
+
+---
+
+== JDK, JRE, and JVM
+
+Keep this triangle straight. It is a common first question.
+
+[cols="1,3"]
+|===
+|Piece |What it is
+
+|JVM
+|The engine. It understands bytecode, not your `.java` source. HotSpot is the usual JVM in OpenJDK and Temurin.
+
+|JRE
+|JVM + Java class libraries (`java.lang`, `java.util`, ...). Enough to *run* a program. From Java 11 onward you usually ship a JDK or a custom runtime (`jlink`), not a separate JRE download.
+
+|JDK
+|JRE + developer tools: `javac`, `javap`, `jcmd`, `jmap`, debugger support. You write and compile with this.
+|===
+
+`javac` does not run your program. It produces bytecode. The JVM runs that bytecode.
+
+Java is "write once, run anywhere" because every platform has a JVM that implements the same bytecode and the same JMM rules. The CPU still sees native instructions after JIT. You never ship one native binary for all machines.
+
+---
+
+== JVM vs JMM (do not mix them)
+
+[cols="1,3"]
+|===
+| |Say this
+
+|JVM
+|A running process with loaders, heaps, stacks, an interpreter, a JIT, and a garbage collector.
+
+|JMM
+|A specification: when is a write by thread A guaranteed to be seen by thread B? Tools: `synchronized`, `volatile`, `final` fields, thread start/join.
+
+|How they connect
+|The JVM *implements* the JMM on real CPUs (caches, stores, fences). You program to the JMM. You tune the JVM with flags.
+|===
+
+If they ask "what is the JVM memory model?", answer the JMM, then mention heap vs stack as runtime data areas.
+
+---
+
+== Big picture
+
+A HotSpot JVM looks like this:
+
+----
+                    +---------------------------+
+                    |     Class Loader          |
+                    |  bootstrap / platform /   |
+                    |  application (+ custom)   |
+                    +-------------+-------------+
+                                  | bytecode
+                                  v
++---------------------------------+----------------------------------+
+|                     Runtime data areas                             |
+|  Heap (objects)   Metaspace (class metadata)   Direct memory (NIO) |
+|  Per thread: PC register, Java stack, native stack                 |
++---------------------------------+----------------------------------+
+                                  |
+                                  v
+                    +-------------+-------------+
+                    |     Execution engine      |
+                    |  interpreter  +  JIT      |
+                    |  (C1 / C2, tiered)        |
+                    +-------------+-------------+
+                                  |
+                    +-------------+-------------+
+                    |  JNI / native libraries   |
+                    +---------------------------+
+----
+
+Garbage collection is not a fifth box beside these. It is a service that reclaims heap (and can touch metaspace). The collector is part of how the JVM manages the heap.
+
+---
+
+== From `.java` to a running method
+
+Walk this path on a whiteboard. Interviewers love it.
+
+. You write `Hello.java`.
+. `javac` compiles it to `Hello.class` (bytecode + a constant pool).
+. You run `java Hello`. The launcher starts a JVM process.
+. The **bootstrap class loader** loads core classes (`Object`, `String`, ...).
+. The **application class loader** loads `Hello`.
+. Loading, linking, and initialization happen (details below).
+. The JVM looks for `public static void main(String[])`.
+. It creates the main thread, a stack, a first frame, and starts executing bytecode.
+. Hot methods may later be compiled to native code by the JIT.
+
+You can inspect bytecode with:
+
+[source,bash]
+----
+javap -c -p -v Hello
+----
+
+Say in the interview: the JVM never executes your source. It executes bytecode, then native code for hot spots.
+
+---
+
+== Class loader subsystem
+
+The class loader's job: find a class by name, read bytes, and create a `Class` object the rest of the JVM can use.
+
+=== The three built-in loaders
+
+[cols="1,2,2"]
+|===
+|Loader |Who it is |What it loads
+
+|Bootstrap
+|Written in native code, part of the JVM
+|Core runtime (`java.base`: `Object`, `String`, ...). In modern JDKs this is modules under the JDK, not a single `rt.jar`.
+
+|Platform (was Extension)
+|Java class, child of bootstrap
+|Other JDK modules that are not `java.base` (XML, SQL, ...).
+
+|Application (system)
+|Java class, child of platform
+|Your classpath / module path: the code you wrote and your libraries.
+|===
+
+You can add **custom** loaders (servlet containers, plugin systems). Each loader has a parent. This is the *delegation model*.
+
+=== Delegation (parent first)
+
+When a loader is asked for class `com.foo.Bar`:
+
+. Ask the parent first (all the way up to bootstrap).
+. If the parent does not know it, this loader tries to find the bytes itself.
+. If nobody finds it, you get `ClassNotFoundException` / `NoClassDefFoundError` (they are not the same — see interview questions).
+
+Why parent first? So your app cannot quietly replace `java.lang.String` with a fake one.
+
+Tomcat-style web apps sometimes invert this for *application* classes (child first) so two wars can have two versions of a library. Know that this exists. Default Java is still parent first.
+
+=== A class is (name + loader)
+
+Two `Class` objects with the same name loaded by two loaders are *different types*.
+
+Casting between them throws `ClassCastException` even if the bytes are identical. This shows up in "I have two copies of the same JAR" production bugs.
+
+=== Loading, linking, initialization
+
+The spec splits "getting a class ready" into steps. Memorize the three words.
+
+*Loading*::
+Find the bytes and create the `Class` object.
+
+*Linking*::
+Three sub-steps:
+
+* *Verify* — bytecode is well formed (no stack underflow, no fake access).
+* *Prepare* — allocate static fields and set them to default values (`0`, `null`, `false`). Not yet the values from your `static` initializers.
+* *Resolve* — turn symbolic names in the constant pool into real references (optional until first use; often lazy).
+
+*Initialization*::
+Run `<clinit>`: static blocks and static field initializers. This happens *before* the first active use: `new`, a static method call, a static field read/write (except `final` compile-time constants), or a subclass init that needs the parent first.
+
+Parent class initializes before child. This is why people ask about static block order.
+
+[source,java]
+----
+class Parent {
+    static { System.out.println("Parent static"); }
+}
+class Child extends Parent {
+    static { System.out.println("Child static"); }
+}
+// first new Child() prints Parent static, then Child static
+----
+
+=== `Class.forName` vs `ClassLoader.loadClass`
+
+`Class.forName("com.foo.Bar")` loads *and* initializes.
+
+`loader.loadClass("com.foo.Bar")` loads (and links as needed) but does not always initialize until first use.
+
+JDBC drivers used `Class.forName` so the static block could register the driver.
+
+---
+
+== Runtime data areas
+
+The JVM spec names the memory regions. Draw shared vs per-thread.
+
+----
+  Shared by all threads              One copy per thread
+  ----------------------             -------------------
+  Heap                               PC register
+  Metaspace (method area)            Java Virtual Machine stack
+  (plus interned String pool ~ heap) Native method stack
+----
+
+=== Program counter (PC register)
+
+Each Java thread has a PC.
+
+For Java methods it holds the address of the current bytecode instruction (or a native equivalent). For native methods it is undefined.
+
+If they ask "why is the PC per thread?", say: each thread is in a different place in the code.
+
+=== Java stack and frames
+
+Each thread has its own stack. A *frame* is pushed when you call a Java method and popped when it returns (or throws).
+
+A frame holds:
+
+* *local variable array* — parameters and local variables. Slot 0 is `this` for instance methods.
+* *operand stack* — bytecode is stack based: `iload`, `iadd`, `istore`.
+* *frame data* — constant pool reference, return address, exception info.
+
+Local *references* sit in the frame. The objects they point to sit on the *heap*.
+
+Too much recursion or huge local arrays of primitives -> `StackOverflowError`. The stack size is limited (`-Xss`).
+
+=== Native method stack
+
+JNI / native methods use a separate native stack (C frames). On HotSpot this is often combined with the Java stack in practice. In an interview it is enough to say: native calls need C stack space as well.
+
+=== Heap
+
+All Java objects and arrays are allocated on the heap (unless escape analysis scalar-replaces them — an optimization, not a language rule).
+
+The heap is shared. That is why you need the JMM for multi-thread field access.
+
+HotSpot splits it for GC:
+
+----
+  +---------------- Young ----------------+---------- Old ----------+
+  | Eden   | Survivor 0 | Survivor 1      |  Tenured / old gen      |
+  +---------------------------------------+-------------------------+
+----
+
+* New objects start in Eden (often via a *TLAB*: a small bump-pointer buffer per thread, so `new` does not always lock the whole heap).
+* Survivors of young collections move between S0 and S1.
+* Objects that live long enough are *promoted* to old generation.
+
+G1 still has young/old *logically*, but physically the heap is *regions*. ZGC is different again (colored pointers, very short pauses). For a default JDK 17+ interview, say **G1 is the default** and it uses regions.
+
+Heap size flags: `-Xms` initial, `-Xmx` max. If they are equal, the heap does not resize.
+
+=== Metaspace (method area)
+
+The spec name is *method area*. HotSpot's implementation since Java 8 is *Metaspace*.
+
+It holds:
+
+* class metadata (`Klass`)
+* method bytecode
+* the run-time constant pool
+* JIT-related metadata (not the same as the code cache)
+
+Static *variables* that are object references: the *reference* is in class metadata / static storage; the *object* is still on the heap.
+
+Java 8 removed *PermGen*. PermGen was a fixed-size heap-like space and caused `java.lang.OutOfMemoryError: PermGen space`. Metaspace uses native memory and can grow (you can still cap it with `-XX:MaxMetaspaceSize`). Loading too many classes (leaky class loaders) can still OOM Metaspace.
+
+=== Run-time constant pool
+
+Each class has a constant pool: numbers, strings, names of classes and methods.
+
+The JVM *resolves* entries on first use: a `Methodref` becomes a real method pointer. That is why the first call can do extra work.
+
+=== String pool
+
+`String` literals are interned. `new String("a")` is a new object. `"a" == "a"` can be true because both literals share the interned instance. Do not use `==` for string equality in real code. From Java 7 the interned strings live on the *heap*, not PermGen.
+
+=== Direct / off-heap memory
+
+`ByteBuffer.allocateDirect` and many Netty / Kafka buffers sit outside the Java heap. GC does not manage the payload the same way. You can still OOM native memory. `MaxDirectMemorySize` matters in those stacks.
+
+=== Code cache
+
+JIT-compiled native code lives in the *code cache*, a native area. If it fills up, compilation may stop and performance drops. Flag: `-XX:ReservedCodeCacheSize`.
+
+---
+
+== What is inside a heap object
+
+HotSpot object header (typical 64-bit, compressed oops):
+
+. *Mark word* — hash, GC age, lock state (biased / lightweight / inflated monitor).
+. *Klass pointer* — points at class metadata in Metaspace (often 4 bytes with compressed class pointers).
+. *Instance fields* — then padding to 8-byte alignment.
+
+Arrays also store length.
+
+This is why "an `int` field is 4 bytes" is not the whole object size. The header is extra.
+
+Compressed oops: heap pointers stored in 32 bits when the heap is under about 32 GB. That is why some teams keep `-Xmx` just under that line.
+
+---
+
+== Execution engine
+
+This is the part that *runs* bytecode.
+
+=== Interpreter
+
+Starts every method in the interpreter (template interpreter in HotSpot). Easy to start, slower per call.
+
+It also *profiles*: which branches are taken, which types are seen at call sites.
+
+=== JIT compilers (HotSpot)
+
+When a method or loop is *hot*, the JVM compiles it to native machine code.
+
+[cols="1,3"]
+|===
+|Compiler |Role
+
+|C1 (Client)
+|Faster compile, lighter optimizations. Good for startup. Used at lower tiers.
+
+|C2 (Server)
+|Slower compile, heavier optimizations (inlining, loop unrolling, escape analysis). Used for very hot code.
+
+|Graal
+|Alternative compiler (GraalVM / some JDK builds). Same idea: bytecode in, native out.
+|===
+
+*Tiered compilation* (default): a method can move interpreter -> C1 -> C2 as it gets hotter.
+
+Compiled code is stored in the code cache. If assumptions fail (a new subclass shows up at a call site), HotSpot can *deoptimize* and drop back to interpreted or to a less optimistic compile. That is normal, not a bug.
+
+=== Optimizations worth naming
+
+* *Inlining* — copy a small method into the caller. Virtual calls can still inline when the JVM sees only one receiver type (*monomorphic* call site).
+* *Escape analysis* — if an object never leaves the method, the JVM may keep fields in registers (*scalar replacement*) and skip a heap allocation. That is why microbenchmarks lie if you are not careful.
+* *Loop optimizations* — unroll, vectorize, hoist checks.
+
+=== Interpreter vs JIT in one sentence
+
+The interpreter starts fast. The JIT makes hot code fast. Startup vs peak throughput is this tradeoff.
+
+=== AOT (GraalVM native image)
+
+Ahead-of-time compilation builds a native binary. Faster startup, less peak throughput flexibility, closed-world assumptions. Mention it if they ask about Spring Native / serverless. Classic HotSpot interviews still mean interpreter + JIT.
+
+---
+
+== Bytecode and how methods are called
+
+You do not need every opcode. Know the invoke family:
+
+[cols="1,3"]
+|===
+|Instruction |Typical use
+
+|`invokestatic`
+|Static methods.
+
+|`invokespecial`
+|Constructors (`<init>`), `private` methods, `super.method()`.
+
+|`invokevirtual`
+|Normal instance methods. Runtime dispatch (overriding).
+
+|`invokeinterface`
+|Calls through an interface.
+
+|`invokedynamic`
+|Lambda, `invokedynamic` bootstraps. The link is decided at runtime. This is how lambdas are cheap to start.
+|===
+
+`invokevirtual` is why `Animal a = new Dog(); a.speak()` can call `Dog.speak()`. The JVM looks up the method on the object's class.
+
+---
+
+== Native interface (JNI)
+
+When bytecode is not enough (OS calls, crypto accelerators, old C libraries), Java calls native code.
+
+JNI is the bridge: `native` methods, C stubs, then your `.so` / `.dll`.
+
+Costs: crossing the boundary is not free. Bugs in native code can crash the whole JVM (no nice Java exception). Prefer well-tested libraries.
+
+The *native method libraries* block in JVM diagrams is just "the C code JNI can call."
+
+---
+
+== Threads inside the JVM
+
+A classic `java.lang.Thread` is (on HotSpot) backed by an *OS thread*. Stack, scheduling, blocking on I/O — that is the operating system.
+
+Java 21 *virtual threads* are many lightweight Java threads scheduled on a pool of carrier OS threads. They are still Java threads from your code's point of view. Blocking in virtual threads is designed to unmount from the carrier when possible.
+
+If they ask "how many threads can I create?", platform threads are expensive (stack + OS). Virtual threads are cheap in count, not magic for CPU-bound work.
+
+The JVM also has its own VM threads: GC threads, compiler threads, the service thread, signal dispatcher. You see them in thread dumps.
+
+*Safepoint:* a handshake where Java threads pause at a known state so GC or deoptimization can run. A long time-to-safepoint is a real latency issue. You do not control it in app code, but seniors mention it.
+
+---
+
+== Garbage collection as a JVM component
+
+The collector reclaims objects that are not reachable from *GC roots* (stack locals, statics, JNI handles, and a few VM internals).
+
+Young collections are frequent and short. Old / mixed / full collections are rarer and more expensive.
+
+[cols="1,3"]
+|===
+|Collector |Interview one-liner
+
+|Serial
+|One thread, stop-the-world. Fine for small / single-CPU.
+
+|Parallel
+|Throughput. Multiple threads, still stop-the-world pauses.
+
+|CMS
+|Old low-pause collector. Removed. Do not recommend it.
+
+|G1 (default 17+)
+|Heap in regions. Aims for a pause *goal*. Good default.
+
+|ZGC / Shenandoah
+|Very short pauses, concurrent. Large heaps, latency-sensitive apps.
+|===
+
+Stop-the-world means application threads pause. Even "concurrent" collectors have some STW phases. ZGC's STW is tiny compared to old Full GC.
+
+More on generational layout, reference types (`Soft` / `Weak` / `Phantom`), and how this ties to concurrency: link:java-memory-model.adoc[java-memory-model.adoc].
+
+---
+
+== Common JVM flags (say these out loud)
+
+You are not expected to memorize fifty options. Know the ones people actually set.
+
+[cols="1,2"]
+|===
+|Flag |Meaning
+
+|`-Xms` / `-Xmx`
+|Initial and max heap.
+
+|`-Xss`
+|Thread stack size.
+
+|`-XX:MaxMetaspaceSize`
+|Cap class metadata native memory.
+
+|`-XX:+UseG1GC` / `UseZGC`
+|Pick a collector (G1 is already default on 17+).
+
+|`-Xlog:gc*`
+|GC logging (modern unified logging). Older: `-XX:+PrintGCDetails`.
+
+|`-XX:+HeapDumpOnOutOfMemoryError`
+|Dump heap when you die. Pair with `-XX:HeapDumpPath=`.
+
+|`-XX:NativeMemoryTracking=summary`
+|See native memory with `jcmd VM.native_memory`.
+|===
+
+Tools: `jcmd`, `jmap`, `jstack` / thread dump, `javap`, Flight Recorder, `jstat`. In interviews, `jcmd <pid> Thread.print` and a heap dump plus Eclipse MAT / VisualVM is a solid story.
+
+---
+
+== Errors that map to regions
+
+[cols="1,2"]
+|===
+|Error |Usual meaning
+
+|`OutOfMemoryError: Java heap space`
+|Too many live objects, or a leak. Heap too small.
+
+|`OutOfMemoryError: Metaspace`
+|Too many classes, often a classloader leak (redeploys).
+
+|`OutOfMemoryError: Direct buffer memory`
+|Off-heap `ByteBuffer` / netty-style leak or limit.
+
+|`OutOfMemoryError: unable to create native thread`
+|OS cannot create another platform thread (ulimit, memory).
+
+|`StackOverflowError`
+|Too deep Java calls, or a cycle in constructors / `hashCode`.
+
+|`NoClassDefFoundError`
+|Class was there at compile time, missing or failed init at runtime.
+
+|`ClassNotFoundException`
+|Loader looked and did not find it (often checked, your code).
+|===
+
+`NoClassDefFoundError` vs `ClassNotFoundException`: interview favorite.
+
+* Exception: you asked for a class by name (`Class.forName`) and it is not there.
+* Error: the JVM already expected the class (it compiled against it) and cannot load or initialize it now. A failed static initializer can also surface as `ExceptionInInitializerError` wrapping the real cause, then later `NoClassDefFoundError`.
+
+---
+
+== Object creation path (short)
+
+When you write `new Person()`:
+
+. The class must be loaded, linked, and initialized.
+. Heap memory is allocated (TLAB bump, or shared allocation).
+. Header is filled (mark, klass).
+. Fields are zeroed.
+. Constructor chain runs (`Object` -> ... -> `Person`).
+. The reference is stored in a local variable or field.
+
+That is why a constructor can see default `0` / `null` if a child override is called too early. That last point is OOP; the allocation steps are JVM.
+
+---
+
+== How to draw this in 60 seconds
+
+. Box: Class loaders (bootstrap, platform, app).
+. Box: Heap + Metaspace.
+. Small boxes per thread: stack + PC.
+. Box: Interpreter + JIT.
+. Arrow: bytecode in, native CPU out.
+. Side note: GC cleans the heap. JMM is the *rules* for sharing heap fields across threads.
+
+Then stop talking. Let them pick a box to go deeper.
+
+---
+
+== Interview questions
+
+=== Q1. JDK vs JRE vs JVM?
+
+*Answer:* JVM runs bytecode. JRE is JVM plus libraries to run apps. JDK adds compilers and tools. You develop on a JDK. Production still needs a runtime (full JDK or a `jlink` image).
+
+=== Q2. What happens when you run `java Main`?
+
+*Answer:* The launcher starts a JVM. Bootstrap loads core classes. Application loader loads `Main`. The class is linked and initialized. The JVM finds `main`, creates the main thread and a stack frame, and starts executing bytecode. Hot methods may later be JIT-compiled.
+
+=== Q3. Explain the class loader hierarchy and delegation.
+
+*Answer:* Bootstrap, then platform, then application. A loader asks its parent first. That protects core classes. A class's identity is name plus loader.
+
+=== Q4. Loading vs linking vs initialization?
+
+*Answer:* Load = bytes to a `Class`. Link = verify, prepare statics to defaults, resolve symbols. Init = run static blocks and static assignments. Init happens before first active use.
+
+=== Q5. Heap vs stack vs metaspace?
+
+*Answer:* Heap: objects, shared, GC. Stack: per-thread frames (locals, operand stack). Metaspace: class metadata in native memory. A local variable that is a reference lives on the stack; the object is on the heap.
+
+=== Q6. Why PermGen was removed?
+
+*Answer:* PermGen was a bounded heap region for class metadata and caused PermGen OOM. Java 8 moved that to Metaspace in native memory, which can grow (and still be capped).
+
+=== Q7. Interpreter vs JIT?
+
+*Answer:* Interpreter runs bytecode immediately. JIT compiles hot methods to native code (C1 then C2 with tiered compilation). Startup uses interpreter. Peak speed uses JIT.
+
+=== Q8. What is a stack frame?
+
+*Answer:* One method-call's data: locals, operand stack, link back to the class constant pool. Call pushes a frame. Return pops it. Too many frames: `StackOverflowError`.
+
+=== Q9. `ClassNotFoundException` vs `NoClassDefFoundError`?
+
+*Answer:* Exception: explicit lookup failed. Error: JVM needed a class it thought it had (missing at runtime or earlier init failed).
+
+=== Q10. What is a TLAB?
+
+*Answer:* Thread-local allocation buffer. Each thread gets a slice of Eden so `new` is often a pointer bump, not a lock on the whole heap.
+
+=== Q11. What does the JIT actually optimize?
+
+*Answer:* Inlining, especially when a call site sees one type. Escape analysis may skip heap allocation. Loops can be unrolled. If a new type appears, the JVM can deoptimize.
+
+=== Q12. Where does JIT code live?
+
+*Answer:* Code cache, native memory, not the Java heap.
+
+=== Q13. Default GC on JDK 17?
+
+*Answer:* G1. Regions, pause-time goals, good general default. ZGC if you need very low pauses and a newer JDK.
+
+=== Q14. Can the JVM allocate an object on the stack?
+
+*Answer:* Not as a Java language feature. Escape analysis may scalar-replace an object so it never becomes a heap object. You cannot take the address of a Java object on the stack yourself.
+
+=== Q15. What is a safepoint?
+
+*Answer:* A state where the JVM knows every thread's references. GC and some VM operations need it. Threads reach it at well-defined points (not in the middle of every machine instruction).
+
+=== Q16. Platform thread vs virtual thread?
+
+*Answer:* Platform thread ≈ OS thread. Virtual thread (21+) is a lightweight Java thread scheduled on carriers. Many blocking tasks, not a substitute for more CPU cores.
+
+=== Q17. How is the JMM different from "JVM memory" (heap/stack)?
+
+*Answer:* Heap and stack are *where* data lives. The JMM is *when* another thread is allowed to see a write. You can have a correct heap layout and still have a visibility bug without `volatile` or a lock.
+
+=== Q18. Why can `-Xmx` around 32 GB change object size?
+
+*Answer:* Compressed ordinary object pointers. Below ~32 GB, heap refs can be 32-bit. Above that, they may become 64-bit and objects get bigger, which can *hurt* more than the extra heap helps.
+
+=== Q19. What tools do you use when the JVM is "slow" or leaking?
+
+*Answer:* GC logs first. Then thread dump for stuck locks. Heap dump + MAT for leaks. `jcmd` for live info. Flight Recorder for a timeline. Do not start with random `-XX` flags.
+
+=== Q20. Does `static` data live on the heap?
+
+*Answer:* The `Class` and metadata are in metaspace. A static *reference* points at an object, and that object is on the heap. A static `int` is not a heap object.
+
+---
+
+== Study path
+
+. This file — draw the architecture and tell the `java Main` story.
+. link:java-memory-model.adoc[java-memory-model.adoc] — happens-before, `volatile`, `synchronized`, GC details, DCL.
+. Run `javap -c` on a tiny class. Point at `invokevirtual`.
+. Read link:DoubleCheckedLocking.java[DoubleCheckedLocking.java] after you know why `volatile` is not "magic", it is a JMM rule the JVM must implement.
+
+If you can explain those four things without notes, you are ready for JVM rounds.

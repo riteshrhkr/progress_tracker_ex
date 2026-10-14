@@ -1,0 +1,198 @@
+= CompletableFuture and Virtual Threads
+:toc: macro
+:toc-title: Table of Contents
+:toclevels: 2
+:sectnums:
+:icons: font
+:source-highlighter: rouge
+
+This document explains two modern ways to handle concurrent work in Java: composing asynchronous results with `CompletableFuture`, and running blocking-style code on Java 21 virtual threads.
+
+toc::[]
+
+Previous: link:executors-and-thread-pools.adoc[executors-and-thread-pools.adoc]. Next: link:production-and-testing.adoc[production-and-testing.adoc]. Index: link:README.adoc[README.adoc].
+
+[[completablefuture]]
+== CompletableFuture
+
+Suppose one response needs customer details and order details. The two calls do not depend on each other. Running them one after another wastes time if both are waiting on I/O.
+
+[source,java]
+----
+CompletableFuture<Customer> customer = supplyAsync(() -> loadCustomer(id));
+CompletableFuture<List<Order>> orders = supplyAsync(() -> loadOrders(id));
+
+return customer.thenCombine(orders, CustomerPage::new).join();
+----
+
+`CompletableFuture<T>` is both a future result and a set of methods for building the next step. "Asynchronous" means the caller does not sit inside that method waiting for the work to finish immediately. The work can continue elsewhere, and another step can run when it completes.
+
+Full example: `examples.virtualthreads.VirtualThreadDemo` — link:examples/virtualthreads/VirtualThreadDemo.java[VirtualThreadDemo.java]
+
+Output:
+
+----
+[1] Virtual thread
+    isVirtual = true
+
+[2] One virtual thread per task executor
+    result = customer + orders
+
+[3] CompletableFuture composes results
+    combined = customer-42 has 3 orders
+
+[4] CompletableFuture wraps failures
+    cause = ArithmeticException
+----
+
+The shallow version: "`CompletableFuture` makes code non-blocking."
+
+The real version: `CompletableFuture` helps compose work that may finish later. Whether the underlying work blocks a thread depends on what the supplier does and which executor runs it.
+
+=== Key takeaways
+
+* `CompletableFuture` is useful for composing independent results.
+* `thenCombine` joins two successful results into one next value.
+* It does not magically make blocking code non-blocking.
+
+Self-check:
+
+. When do two calls benefit from being started separately?
+. What does asynchronous mean in plain words?
+. Why can a `CompletableFuture` still block a thread underneath?
+
+[[future-failures]]
+== Failure and cancellation
+
+Exceptions thrown inside a `CompletableFuture` are captured and reported when you observe the result.
+
+[source,java]
+----
+future
+    .exceptionally(ex -> fallbackValue)
+    .thenAccept(this::send);
+----
+
+`get()` throws checked exceptions. `join()` throws unchecked `CompletionException`. In both cases, the original failure is wrapped.
+
+[cols="1,2,2"]
+|===
+|Method |Failure wrapper |Use when
+
+|`get()`
+|`ExecutionException`
+|You are already in code that handles checked exceptions.
+
+|`join()`
+|`CompletionException`
+|You want unchecked propagation, often inside stream-like composition.
+
+|`exceptionally`
+|Receives the failure and returns a fallback.
+|You can safely continue with a substitute value.
+
+|`handle`
+|Receives either result or failure.
+|The next step needs to inspect both cases.
+|===
+
+Do not hide failures just to keep the chain pretty. A fallback value is a business decision. If returning cached data, empty data, or a default changes user-visible behavior, make that choice explicit.
+
+=== Key takeaways
+
+* `CompletableFuture` stores failures until the result is observed or handled.
+* `get()` and `join()` wrap exceptions differently.
+* Fallbacks should be deliberate, not a way to silence logs.
+
+Self-check:
+
+. What is the difference between `get()` and `join()` failure handling?
+. When is `exceptionally` appropriate?
+. Why can a fallback be a product decision?
+
+[[virtual-threads]]
+== Virtual threads
+
+Java 21 made virtual threads a final feature. A virtual thread is a Java thread that is managed by the JVM instead of being tied one-to-one to an operating-system thread for its whole lifetime.
+
+[source,java]
+----
+try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
+    Future<String> result = executor.submit(() -> callRemoteService());
+    return result.get();
+}
+----
+
+The mental model:
+
+----
+many virtual threads
+        |
+        v
+small pool of carrier platform threads
+        |
+        v
+operating system threads
+----
+
+When a virtual thread blocks on most JDK-supported blocking I/O, the JVM can unmount it from the carrier thread. The carrier can run another virtual thread while the first one waits.
+
+The shallow version: "Virtual threads replace all async code."
+
+The real version: virtual threads make blocking-style code scale much better for I/O-heavy work. They do not remove the need for timeouts, connection pools, database limits, thread-safe data, or clear cancellation.
+
+=== Key takeaways
+
+* Virtual threads are Java threads managed cheaply by the JVM.
+* They are best for blocking I/O-style workloads.
+* They do not make shared mutable state safe.
+
+Self-check:
+
+. What Java version finalized virtual threads?
+. What is a carrier thread?
+. Why do virtual threads not fix a race condition?
+
+[[pinning-and-limits]]
+== Limits of virtual threads
+
+Virtual threads are cheap, but the things they wait for are not always cheap. A database still has a maximum connection count. A downstream service still has rate limits. The network still fails.
+
+[source,java]
+----
+try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
+    for (Request request : requests) {
+        executor.submit(() -> repository.save(request));
+    }
+}
+----
+
+That code may create many virtual threads, but it cannot create unlimited database capacity. Use semaphores, connection pools, rate limits, or bounded request flow when the bottleneck is outside the JVM.
+
+Pinning is a virtual-thread-specific concern. Pinning means a virtual thread blocks while it is stuck to its carrier, so the carrier cannot run another virtual thread. Long blocking inside a `synchronized` block was one common source. Modern JDKs keep improving this, but the practical rule remains: keep synchronized blocks small, and do not do slow I/O while holding locks.
+
+[cols="1,2"]
+|===
+|Work |Fit for virtual threads
+
+|HTTP calls, JDBC calls, file I/O
+|Usually a good fit when libraries behave well.
+
+|CPU-heavy compression, hashing, image processing
+|Not a magic improvement. CPU is still the limit.
+
+|Shared counters and maps
+|No safety change. Use the same concurrency rules.
+|===
+
+=== Key takeaways
+
+* Virtual threads reduce thread cost, not downstream cost.
+* Avoid slow blocking work while holding locks.
+* CPU-heavy work still needs CPU-aware sizing.
+
+Self-check:
+
+. Why can virtual threads overload a database?
+. What does pinning mean?
+. Which work type does not benefit much from virtual threads?

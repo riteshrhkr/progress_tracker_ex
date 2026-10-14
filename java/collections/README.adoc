@@ -1,0 +1,143 @@
+= The Java Collection Framework
+:toc: macro
+:toc-title: Table of Contents
+:toclevels: 2
+:sectnums:
+:icons: font
+:source-highlighter: rouge
+
+The index for this topic. Seven teaching documents that build on each other, a refresher, an interview file, and thirteen runnable demos whose real output is quoted throughout the notes.
+
+toc::[]
+
+== What to read, in what order
+
+[cols="1,3,1"]
+|===
+|# |Document |Read it when
+
+|1
+|link:overview.adoc[overview.adoc] +
+The hierarchy, Map sitting outside Collection, iteration, fail-fast, equals of collections, null policy, a first complexity table.
+|First, always.
+
+|2
+|link:lists.adoc[lists.adoc] +
+ArrayList backing array and growth, LinkedList nodes, Vector/Stack, `remove(int)` versus `remove(Object)`, `Arrays.asList`, `subList`.
+|Second.
+
+|3
+|link:sets.adoc[sets.adoc] +
+Uniqueness by equals versus by comparator, LinkedHashSet order, EnumSet, when HashSet is a HashMap.
+|Third. Needs `equals`/`hashCode` from the OOP notes.
+
+|4
+|link:maps.adoc[maps.adoc] +
+HashMap lookup and internals (table, load factor, trees), compute/merge, LinkedHashMap LRU, TreeMap, IdentityHashMap, WeakHashMap.
+|Fourth. This is where the deeper implementation details begin.
+
+|5
+|link:queues.adoc[queues.adoc] +
+Throw versus special-value methods, ArrayDeque as queue and stack, PriorityQueue as a heap.
+|Fifth. After lists and maps so ArrayDeque and comparators already exist.
+
+|6
+|link:utilities.adoc[utilities.adoc] +
+Views versus copies, `List.of`, Comparable versus Comparator, stable sort, Java 21 sequenced collections.
+|Sixth. Needs every type already named.
+
+|7
+|link:concurrent-collections.adoc[concurrent-collections.adoc] +
+Why HashMap size drops under two writers, synchronized wrappers, ConcurrentHashMap, CopyOnWrite, blocking queues.
+|Last. Needs the single-thread contracts.
+|===
+
+Then, separately:
+
+* link:quick-review.adoc[quick-review.adoc] — the 15-minute refresher. *This is for revisiting the topic later, not for learning it the first time.* It introduces nothing new and links every item back to the document that explains it. Open it before touching this part of a codebase after six months.
+* link:interview-questions.adoc[interview-questions.adoc] — every interview-framed question and answer for this topic, kept out of the teaching documents on purpose.
+
+== Files
+
+----
+collections/
+├── README.adoc                         (this index)
+├── overview.adoc                       (1) hierarchy, iterator, fail-fast
+├── lists.adoc                          (2) ArrayList, LinkedList, list traps
+├── sets.adoc                           (3) HashSet, TreeSet, EnumSet
+├── maps.adoc                           (4) HashMap internals, other maps
+├── queues.adoc                         (5) ArrayDeque, PriorityQueue
+├── utilities.adoc                      (6) views, factories, sort, sequenced
+├── concurrent-collections.adoc         (7) CHM, CopyOnWrite, blocking queues
+├── quick-review.adoc                       the 15-minute refresher
+├── interview-questions.adoc                all interview material
+└── examples/
+    ├── overview/
+    │   ├── HierarchyDemo.java              Collection vs Map, equals, toArray
+    │   └── IteratorDemo.java               for-each, iterator.remove, ListIterator
+    ├── lists/
+    │   ├── ArrayListDemo.java              capacity, growth, RandomAccess
+    │   └── ListTrapsDemo.java              remove overload, asList, subList
+    ├── sets/
+    │   └── SetContractDemo.java            HashSet, LinkedHashSet, TreeSet, EnumSet
+    ├── maps/
+    │   ├── HashMapDemo.java                get/put, compute, merge, table length
+    │   ├── LinkedHashMapDemo.java          insertion order, access order, LRU
+    │   └── MapPitfallsDemo.java            IdentityHashMap, TreeMap, trees, copyOf
+    ├── queues/
+    │   ├── QueueDequeDemo.java             ArrayDeque queue/stack, throw vs poll
+    │   └── PriorityQueueDemo.java          heap vs iteration, null, remove
+    ├── utilities/
+    │   ├── ViewsAndFactoriesDemo.java      views, of/copyOf, sequenced
+    │   └── ComparatorDemo.java             Comparable, thenComparing, stable sort
+    └── concurrent/
+        └── ConcurrentDemo.java             wrappers, COW, HashMap vs CHM
+----
+
+== Running the examples
+
+Java 21 or newer. Compile everything once, then run whichever demo you want.
+
+Two demos (`ArrayListDemo`, `HashMapDemo`) read private fields with reflection. They need `--add-opens`. The others run without it.
+
+[source,bash]
+----
+cd java/collections
+javac --release 21 -g -d out $(find examples -name '*.java')
+
+java -cp out examples.overview.HierarchyDemo
+java -cp out examples.overview.IteratorDemo
+java --add-opens java.base/java.util=ALL-UNNAMED -cp out examples.lists.ArrayListDemo
+java -cp out examples.lists.ListTrapsDemo
+java -cp out examples.sets.SetContractDemo
+java --add-opens java.base/java.util=ALL-UNNAMED -cp out examples.maps.HashMapDemo
+java -cp out examples.maps.LinkedHashMapDemo
+java -cp out examples.maps.MapPitfallsDemo
+java -cp out examples.queues.QueueDequeDemo
+java -cp out examples.queues.PriorityQueueDemo
+java -cp out examples.utilities.ViewsAndFactoriesDemo
+java -cp out examples.utilities.ComparatorDemo
+java -cp out examples.concurrent.ConcurrentDemo
+----
+
+Each demo has a `main`, prints numbered sections, and needs no arguments or dependencies.
+
+`-g` keeps local variable names in the class files.
+
+`ConcurrentDemo` starts two threads. `HashMap` size after the race is not fixed and is usually below the expected 20000. `ConcurrentHashMap` produced 20000.
+
+All output quoted in the documents was produced by running these files on Temurin 21.0.11 with `--release 21`. Nanosecond timings in `ArrayListDemo` are one run, not a benchmark.
+
+== The shortest possible summary
+
+Pick the interface for the contract (index, uniqueness, lookup, head) and the class for the cost (array, hash table, tree, heap).
+
+`HashMap` / `HashSet` find by hash then equals. `TreeMap` / `TreeSet` find by comparison. Iteration order is a promise only when the type says so (`List`, `LinkedHash*`, `Sorted*`).
+
+Do not share `ArrayList` or `HashMap` across threads. Fail-fast iterators detect structural change on one thread; they are not a concurrency story.
+
+== Related topics in this repo
+
+* link:../oops/object-class-contracts.adoc[equals and hashCode] — the contract HashSet and HashMap actually run. The lost-key demo lives there.
+* link:../jmm/README.adoc[JVM and Java Memory Model] — happens-before for a `ConcurrentHashMap.put` that another thread `get`s.
+* link:../Java_updates/README.adoc[Java version updates] — `List.of` (Java 9), sequenced collections (Java 21).

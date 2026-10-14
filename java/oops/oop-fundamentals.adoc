@@ -1,0 +1,509 @@
+= OOP Fundamentals: Classes, Objects, References
+:toc: macro
+:toc-title: Table of Contents
+:toclevels: 2
+:sectnums:
+:icons: font
+:source-highlighter: rouge
+
+What an object actually is in Java, how variables point at objects, what the default field values are, and the exact order in which a `new` expression brings an object to life.
+
+toc::[]
+
+Previous: none, start here. Next: link:four-pillars.adoc[four-pillars.adoc]. Index: link:README.adoc[README.adoc].
+
+== The big picture
+
+=== What problem OOP solves
+
+A program is combination of data plus the operations on that data. You can keep those two seprate, or you can keep them together.
+
+Procedural code keeps them apart. Data sits in structures and functions elsewhere operate on it. Nothing stops any function from writing any field, so the rules about valid data live in people's heads and in code review.
+
+Object-oriented code puts the data and the operations that are allowed on that data in the same place, and hides the data behind those operations. The rule "a balance can never go negative" then has exactly one home.
+
+[source,java]
+----
+// data and rules apart: anyone can do this
+account.balance = -500;
+
+// data and rules together: the class refuses
+account.withdraw(1_000_000);   // IllegalStateException: insufficient funds
+----
+
+That is the whole point. Everything else in this topic is machinery for making that split work at scale.
+
+=== The mental model to carry
+
+Three words that get used interchangeably and should not be:
+
+[cols="1,3"]
+|===
+|Word |What it is
+
+|Class
+|The recipe. A description of what fields exist and what methods can be called. It lives in the loaded class data, not in your object.
+
+|Object
+|The cake. A block of memory on the heap holding one set of the field values the class described.
+
+|Reference
+|A note with the cake's address. This is what your variable holds. It is never the object itself.
+|===
+
+Java only ever gives you the note. You never hold an object directly, which is why two variables can point at one object, and why `==` on two variables asks "same address?" rather than "same contents?".
+
+== Class, object, reference
+
+=== The three of them in code
+
+[source,java]
+----
+class Cake {                       // the class: one recipe
+    String flavour;
+    int layers;
+}
+
+Cake a = new Cake();               // one object, one reference to it
+Cake b = new Cake();               // a second object
+Cake c = a;                        // a third reference to the first object
+----
+
+In memory:
+
+----
+   stack (local variables)          heap (objects)
+
+   a ──────────────┐
+                   ├──────────►  Cake#1 { flavour="vanilla", layers=2 }
+   c ──────────────┘
+
+   b ─────────────────────────►  Cake#2 { flavour="vanilla", layers=2 }
+----
+
+`new` does two things: it allocates the block on the heap, and it hands you back the address. The variable stores the address.
+
+The heap is the memory area where JVM allocates objects and the garbage collector cleans up. Local variables live on the thread's stack frame and disappear when the method returns.
+
+=== Identity versus equality
+
+Because a variable holds an address, `==` compares addresses.
+
+Full example: `examples.basics.ClassObjectDemo` — link:examples/basics/ClassObjectDemo.java[ClassObjectDemo.java]
+
+Output:
+
+----
+[2] Two objects, three variables
+    a == b : false   two separate objects
+    a == c : true    one object, two variables holding its address
+    a after 'c.baked = true' : Cake[vanilla, 2 layers, baked=true]
+
+[3] equals() with no override is still identity
+    a.equals(b)      : false
+    "x".equals("x")  : true   String overrides equals
+----
+
+Two points from the output:
+
+updating object referenced by `c` also update `a`, because there was only ever one object.
+
+`a.equals(b)` returned `false` even though the contents match, because `Object.equals` is defined as `this == obj`. Until a class overrides it, `equals` and `==` mean the same thing. `String` overrides the `equals()`, which is why in section 3 compairing "x" with "X" return true. Overriding `equals` properly is its own subject: link:object-class-contracts.adoc[object-class-contracts.adoc].
+
+=== Default field values
+
+A field you never assign is not garbage and is not undefined. The JVM zeroes the whole object when it allocates it.
+
+Output from the same demo:
+
+----
+[1] Default field values
+    int     = 0
+    long    = 0
+    double  = 0.0
+    boolean = false
+    char    = (numeric value) 0
+    String  = null
+    int[]   = null
+----
+
+Every primitive gets its zero value, every reference gets `null`. This applies to fields only. A *local* variable has no default — the compiler refuses to read it before you assign it.
+
+[source,java]
+----
+void method() {
+    int x;
+    System.out.println(x);   // compile error: variable x might not have been initialized
+}
+----
+
+=== Java passes references by value
+
+This one is worded badly everywhere, so state it precisely: Java copies the argument into the parameter, always. For a reference type, what gets copied is the address because the variable hold the address of the object.
+
+[source,java]
+----
+static void mutate(Box box)   { 
+    box.value = 42; // follows the address, edits the object
+}              
+
+static void reassign(Box box) { 
+    box = new Box(); 
+    box.value = 99; // overwrites the local copy only
+}  
+----
+
+Output:
+
+----
+[4] References are passed by value
+    after mutate(box)   : 42   the object was changed
+    after reassign(box) : 42   the caller's variable never moved
+----
+
+So a method can change the object you handed it, but it can never make your variable point somewhere else. There is no pass-by-reference in Java.
+
+=== null
+
+`null` is a reference that points at no object. Calling anything on it fails at runtime.
+
+----
+[5] null is a reference pointing at nothing
+    NullPointerException: Cannot read field "flavour" because "<local6>" is null
+----
+
+That message naming the variable is a *helpful NullPointerException message*, on by default since Java 15. It only names local variables when the class was compiled with debug information (`javac -g`); without it you get a placeholder like `"<local6>"`.
+
+=== Key takeaways
+
+* A class is a description, an object is a block of heap memory, a reference is the address you hold.
+* `==` on references compares addresses. `equals` does too, until a class overrides it.
+* Fields default to zero or `null`; locals have no default and the compiler enforces it.
+* Arguments are always copied. Copying a reference still lets the method mutate the object.
+* Turn on `-g` if you want NPE messages to name your local variables.
+
+Self-check:
+
+. Two variables, one object. What does `==` return, and why?
+. What is the value of an unassigned `String` field, and of an unassigned `String` local?
+. Can a method make the caller's variable point at a different object? Why not?
+. Why did `a.equals(b)` return `false` for two identical `Cake` objects?
+
+== Constructors and object creation
+
+=== What a constructor is for
+
+When `new Account(...)` finishes, the object should be ready to use. You should not need a second step to make it safe.
+
+What does *ready to use* mean here? Every rule the class cares about is already true. For a bank account, that might mean: the balance is set, it is not negative, and no method can leave it in a state the class considers broken.
+
+Two ways to create the same object:
+
+[source,java]
+----
+// Pattern A: create first, fix later
+Account a = new Account();       // object exists, but balance is 0 and nothing stopped a bad value
+a.setBalance(-500);              // now the object is in a state the class should never allow
+
+// Pattern B: the constructor does the work
+Account b = new Account(10_000); // when this line finishes, the object is already in a good state
+----
+
+Pattern A gives you an object you still have to configure. Pattern B gives you an object that is already correct when `new` returns. The constructor's job is Pattern B: finish with a usable object, or do not finish at all.
+
+[source,java]
+----
+final class Account {
+    private long balanceCents;
+
+    Account(long openingCents) {
+        if (openingCents < 0) {
+            throw new IllegalArgumentException("opening balance cannot be negative");
+        }
+        this.balanceCents = openingCents;
+    }
+}
+----
+
+If the opening balance is negative, the constructor throws and no `Account` object is handed to the caller. That is better than creating one and hoping nobody sets a bad value later.
+
+Why? Because once an invalid object exists, any code that receives it can break. A failed constructor call is easy to spot. An object with `balance = -500` sitting in a list is not.
+
+=== Important rules
+
+* No return type, and the name must match the class exactly.
+* If you write no constructor at all, the compiler gives you a no-argument one. The moment you write any constructor, that free one disappears.
+* `this(...)` calls another constructor of the same class, `super(...)` calls the parent's. Either must be the first statement. (From Java 22+ allowed statements before `this` or `super` call)
+* If you write neither, the compiler inserts `super()` for you.
+
+=== The exact initialization order
+
+Java defines a fixed order for initialization. Knowing it explains why a `final` field can still read as `null` inside a method.
+
+Full example: `examples.basics.ConstructorOrderDemo` — link:examples/basics/ConstructorOrderDemo.java[ConstructorOrderDemo.java]
+
+Output:
+
+----
+[1] First instance
+    [static]   Base static block
+    [static]   Derived static block
+    [instance] Base instance initializer
+    [ctor]     Base constructor starts
+               Derived.describe() label=null size=0
+    [ctor]     Base constructor ends
+    [instance] Derived instance initializer
+    [ctor]     Derived constructor ends
+
+[2] Calling describe() after construction finished
+               Derived.describe() label=alpha size=10
+
+[3] Second instance, static blocks do not run again
+    [instance] Base instance initializer
+    [ctor]     Base constructor starts
+               Derived.describe() label=null size=0
+    [ctor]     Base constructor ends
+    [instance] Derived instance initializer
+    [ctor]     Derived constructor ends
+----
+
+The order is:
+
+. Static initializers run once per class, the first time the class is used, parent before child.
+. Then, for each object: the parent's field initializers and instance initializer blocks, then the parent's constructor body.
+. Then the child's field initializers and instance initializer blocks, then the child's constructor body.
+
+So the parent is fully constructed before the child has assigned a single field.
+
+=== Do not call overridable methods from a constructor
+
+`Base`'s constructor called `describe()`. `describe()` is overridden in `Derived`. Java always picks the method from the real object rather than from the type of the variable — the name for this behaviour is called *dynamic dispatch*, and it is already active during construction. So the *child's* version ran, while the child's fields were still at their defaults.
+
+----
+    [ctor]     Base constructor starts
+               Derived.describe() label=null size=0
+----
+
+`label` was `null` and `size` was `0`, even though both are `final` and are assigned in the `Derived` constructor a few lines later. After construction, the same call prints `label=alpha size=10`.
+
+WARNING: Never call an overridable method from a constructor. Make it `private`, `static` or `final`, or move the call out of the constructor. This is exactly how "the field was null but I definitely set it" bugs happen, and it also hits `readObject` and `clone`.
+
+=== Static versus instance
+
+[cols="1,2,2"]
+|===
+|  |`static` member |Instance member
+
+|Belongs to
+|The class
+|One object
+
+|How many copies
+|One, ever
+|One per object
+
+|Created when
+|The class is initialized
+|The object is created
+
+|Can read
+|Only other static members directly
+|Both static and instance members
+
+|Dispatch
+|Chosen at compile time by the declared type
+|Chosen at runtime by the object
+|===
+
+The last row is the one that surprises people, and it is covered with output in link:four-pillars.adoc[four-pillars.adoc].
+
+=== Key takeaways
+
+* A constructor's contract is: return a valid object or throw.
+* Order per object: parent fields and initializer blocks, parent constructor, child fields and initializer blocks, child constructor.
+* Static blocks run once, on first use of the class, parent first.
+* Calling an overridable method from a constructor runs the subclass version against uninitialized subclass fields.
+* Writing any constructor removes the compiler-supplied no-argument one.
+
+Self-check:
+
+. In what order do a parent's field initializers and a child's constructor run?
+. Why can a `final` field be observed as `null`?
+. When exactly does a static block run, and how many times?
+. What happens to the default constructor when you add a constructor with arguments?
+
+== Access control
+
+=== The four levels
+
+[cols="1,1,1,1,1"]
+|===
+|Modifier |Same class |Same package |Subclass, other package |Anywhere
+
+|`private`
+|yes
+|no
+|no
+|no
+
+|(none, "package-private")
+|yes
+|yes
+|no
+|no
+
+|`protected`
+|yes
+|yes
+|yes
+|no
+
+|`public`
+|yes
+|yes
+|yes
+|yes
+|===
+
+Two details that are easy to get wrong.
+
+`protected` includes package access. A `protected` member is visible to every class in the same package, related or not.
+
+`protected` across packages is narrower than it looks. A subclass in another package can access the member *on itself*, not on an arbitrary instance of the parent.
+
+[source,java]
+----
+package other;
+class Child extends Parent {
+    void f(Parent p, Child c) {
+        this.prot();   // fine
+        c.prot();      // fine
+        p.prot();      // error: prot() has protected access in Parent
+    }
+}
+----
+
+=== Choosing a level
+
+Start at `private` and widen only when something forces you to. Every level above `private` is a promise to whoever calls it.
+
+`public` on a field is almost always a mistake, because it fixes the representation forever. `public static final` on a genuinely constant, immutable value is the exception.
+
+[source,java]
+----
+public static final int MAX_RETRIES = 3;                 // fine, int is immutable
+public static final List<String> NAMES = new ArrayList<>(); // NOT a constant: anyone can add to it
+----
+
+The second line is `final`, so the variable cannot be repointed — but the list is still editable by any caller. `final` on a reference and immutability of the object are different things, covered in link:object-class-contracts.adoc[object-class-contracts.adoc].
+
+=== Key takeaways
+
+* Four levels: `private`, package-private, `protected`, `public`.
+* `protected` also means package-visible, which is wider than most people assume.
+* Across packages, `protected` works through your own type, not through a parent-typed reference.
+* Default to `private`; widening is a commitment you cannot easily take back.
+* `final` on a field stops reassignment of the variable, not modification of the object.
+
+Self-check:
+
+. Which two access levels allow another class in the same package to see a member?
+. Why can a subclass in a different package not call `parentRef.protectedMethod()`?
+. Is `public static final List<String>` a constant?
+
+== What runs underneath
+
+=== Layer 1: what every Java developer should know
+
+Objects live on the heap. References live wherever the variable lives: a local variable's reference sits in the thread's stack frame, a field's reference sits inside the enclosing object on the heap.
+
+An object stays alive as long as something reachable points at it. When nothing does, the garbage collector may reclaim it. You never free memory yourself, and you cannot force collection — `System.gc()` is a suggestion.
+
+Method calls on an object are dispatched on the real type of the object, not the type of the variable. That single fact powers polymorphism.
+
+=== Layer 2: what a senior engineer should understand
+
+Every object on the HotSpot JVM carries a header before its fields. On a 64-bit JVM with compressed pointers, that is a 8-byte mark word (identity hash, lock state, GC age bits) plus a 4-byte class pointer, and the whole object is padded to an 8-byte boundary. So an object with a single `int` field costs 16 bytes, not 4.
+
+NOTE: Those exact numbers are HotSpot implementation details, not language rules. They differ with `-XX:-UseCompressedOops`, with very large heaps, and on other JVMs. Verify with JOL (`org.openjdk.jol`) rather than assuming.
+
+That header is why "just wrap it in an object" is not free in hot paths, and why `long[]` beats `List<Long>` when you are storing millions of numbers.
+
+The class pointer in the header leads to the class metadata, which holds the method table. A virtual call reads the class pointer, finds the method, and jumps. The JIT compiler usually removes that cost: when a call site only ever sees one type, HotSpot inlines the method directly and guards it with a cheap type check. When it sees many types, it falls back to the table lookup.
+
+Class metadata itself lives in *metaspace*, which is native memory outside the Java heap, not in the heap (this replaced PermGen in Java 8).
+
+=== Key takeaways
+
+* Reachability, not scope, decides when an object can be collected.
+* Object headers make small objects cost far more than the sum of their fields.
+* Virtual dispatch is usually inlined away by the JIT when a call site sees one type.
+* Class metadata lives in metaspace, off-heap, since Java 8.
+
+Self-check:
+
+. Where does an object live, and where does the reference to it live?
+. Roughly why does an object with one `int` field take 16 bytes on HotSpot?
+. What makes a virtual call cheap in practice?
+
+== Common mistakes
+
+=== Comparing objects with `==`
+
+[source,java]
+----
+String a = "hello";
+String b = new String("hello");
+System.out.println(a == b);        // false: two objects
+System.out.println(a.equals(b));   // true: same characters
+----
+
+The symptom is a comparison that works in tests and fails in production, because the literals in your test are interned into a shared pool while the production values come from parsing and are fresh objects.
+
+The same trap with boxed integers is worse, because it works for small values:
+
+[source,java]
+----
+Integer x = 127, y = 127;
+Integer p = 128, q = 128;
+System.out.println(x == y);   // true:  cached
+System.out.println(p == q);   // false: not cached
+----
+
+`Integer.valueOf` caches -128 to 127 by default, and autoboxing goes through it. The upper bound is tunable with `-XX:AutoBoxCacheMax`. Use `equals` for boxed types, always.
+
+=== Leaking `this` from a constructor
+
+[source,java]
+----
+class Listener {
+    Listener(EventBus bus) {
+        bus.register(this);   // the object is not finished yet
+        this.config = loadConfig();
+    }
+}
+----
+
+The symptom is another thread receiving an event and reading `config` as `null`. Register after construction, or use a static factory method that constructs first and publishes second.
+
+=== Assuming a getter protects a field
+
+A `private` field handed out by a getter is only as private as the object it returns. If that object is mutable, the field is effectively public. Shown with output in link:four-pillars.adoc[four-pillars.adoc].
+
+=== Key takeaways
+
+* `==` between objects is an identity check; `equals` is the contents check.
+* Boxed `Integer` comparison with `==` works for -128..127 and then silently stops working.
+* Do not let `this` escape before the constructor finishes.
+
+Self-check:
+
+. Why does `==` succeed for `Integer` 127 and fail for 128?
+. What is wrong with `bus.register(this)` inside a constructor?
+. When does returning a `private` field from a getter break encapsulation?
+
+== Where to go next
+
+The four pillars build directly on everything here: link:four-pillars.adoc[four-pillars.adoc].
+
+Index: link:README.adoc[README.adoc].

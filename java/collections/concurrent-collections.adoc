@@ -1,0 +1,384 @@
+= Concurrent Collections
+:toc: macro
+:toc-title: Table of Contents
+:toclevels: 2
+:sectnums:
+:icons: font
+:source-highlighter: rouge
+
+Why ArrayList and HashMap cannot be shared between threads, what synchronized wrappers actually lock, and the concurrent types you use instead: ConcurrentHashMap, CopyOnWriteArrayList, and blocking queues.
+
+toc::[]
+
+Previous: link:utilities.adoc[utilities.adoc]. Next: none. Index: link:README.adoc[README.adoc].
+
+[[concurrency-problem]]
+== The problem
+
+`ArrayList` and `HashMap` assume one thread at a time. Two threads calling `put` or `add` can:
+
+* lose an entry (size ends below the number of successful-looking puts)
+* throw `ConcurrentModificationException` if one thread iterates
+* in older HashMap implementations, corrupt a chain so `get` loops forever
+
+That is not a Java Memory Model essay. The JMM is link:../jmm/README.adoc[java/jmm]. This document is: which collection you pick when two threads must share a structure.
+
+The shallow version: "use `Collections.synchronizedMap` and it is thread-safe."
+
+The real version: thread-safe as a *single method call* is not the same as correct as a *sequence of calls*, and locking every call on one monitor does not scale like a type designed for concurrent writers.
+
+You have three options:
+
+. Do not share. A request-scoped `HashMap` on one thread is fine.
+. Share, and lock around every *compound* use yourself (including iteration).
+. Share a concurrent collection whose operations match what you actually do (`put`, `compute`, `offer`/`take`).
+
+=== Key takeaways
+
+* Ordinary mutable collections assume one thread at a time.
+* Protect complete multi-call operations, not only individual method calls.
+* Avoiding shared mutable state is often the simplest correct option.
+
+Self-check:
+
+. Can two threads safely call `put` on the same HashMap?
+. What makes check-then-put one compound operation?
+. What are the three broad ways to handle shared collection state?
+
+[[synchronized-wrappers]]
+== Synchronized wrappers
+
+`Collections.synchronizedList(new ArrayList<>())` (and `synchronizedSet`, `synchronizedMap`) wrap each method in `synchronized` on the wrapper.
+
+`add` is then atomic with respect to other `add`/`get`/`size` on that wrapper. for-each is `iterator()`, which is several calls. The iterator is still fail-fast.
+
+Full example: `examples.concurrent.ConcurrentDemo` — link:examples/concurrent/ConcurrentDemo.java[ConcurrentDemo.java]
+
+Output:
+
+----
+[1] Synchronized wrapper, fail-fast iterator
+    for-each plus add on synchronizedList -> ConcurrentModificationException
+----
+
+That was one thread. The wrapper did not help. The required pattern is:
+
+[source,java]
+----
+List<String> synced = Collections.synchronizedList(new ArrayList<>());
+synchronized (synced) {
+    for (String s : synced) {
+        // ...
+    }
+}
+----
+
+You must lock on the wrapper, not on the inner list. Compound check-then-act (`if (!map.containsKey(k)) map.put(k, v)`) needs the same lock around both calls, or it is still a race.
+
+`Hashtable` and `Vector` are the same idea baked into the class: synchronized methods, fail-fast iterators, no compound-operation API. New code does not add them.
+
+=== Key takeaways
+
+* A synchronized wrapper serializes individual calls on one monitor.
+* Iteration and check-then-act still need an outer lock.
+* Lock the wrapper object, not the wrapped collection.
+
+Self-check:
+
+. Why can synchronizedList iteration still fail?
+. Which object should surround the for-each lock?
+. Is `containsKey` followed by `put` one protected operation?
+
+== HashMap versus ConcurrentHashMap under two writers
+
+Two threads insert disjoint keys, 10_000 each, expected size 20_000.
+
+Output from one run on Temurin 21:
+
+----
+[3] HashMap versus ConcurrentHashMap under two writers
+    HashMap size after 2 x 10_000 puts = 13430 (expected 20000)
+    ConcurrentHashMap size             = 20000
+----
+
+Your HashMap number will differ. It will often not be 20_000. ConcurrentHashMap keeps every entry.
+
+`ConcurrentHashMap` forbids null keys and null values. `HashMap` allows both.
+
+Output:
+
+----
+[4] ConcurrentHashMap rejects null
+    put(null, 1) -> NullPointerException
+    put("a", null) -> NullPointerException
+    HashMap allows both: {null=1, a=null}
+----
+
+Null is banned so `get` returning `null` always means "absent". Concurrent code cannot afford the extra `containsKey` race.
+
+=== Key takeaways
+
+* Concurrent writes can lose HashMap entries without throwing.
+* ConcurrentHashMap preserves the entries in this workload.
+* Rejecting null makes absence unambiguous during concurrent access.
+
+Self-check:
+
+. Is the failed HashMap size deterministic?
+. Why is `containsKey` after a null `get` unsafe as a separate check?
+. Which map should shared writers use?
+
+[[concurrenthashmap]]
+== ConcurrentHashMap
+
+=== What every developer should know
+
+* No full-map lock on `get` / `put` of different keys. Writers to *different* keys proceed together.
+* `put`, `putIfAbsent`, `remove`, `compute`, `computeIfAbsent`, `merge` are atomic *per key*. Two threads `compute` on the same key: one runs after the other, not in the middle of each other.
+* Iterators are *weakly consistent*: they walk a view that may include later updates and miss others. They do not throw `ConcurrentModificationException`.
+* `size()` is accurate enough for diagnostics. Prefer `mappingCount()` when the count might exceed `Integer.MAX_VALUE`.
+* No nulls.
+
+`computeIfAbsent` on a `ConcurrentHashMap` is the grouping pattern that is actually safe to share:
+
+[source,java]
+----
+chm.computeIfAbsent(city, c -> new ConcurrentLinkedQueue<>()).add(user);
+----
+
+If the value collection is an ordinary `ArrayList`, two threads that both get the *same* list still race on `ArrayList.add`. Atomic map compute does not make the value object thread-safe. Use a concurrent value, or synchronize on it.
+
+=== Senior: how it is built (Java 8+, OpenJDK)
+
+Java 7 `ConcurrentHashMap` was an array of Segments, each a small Hashtable. That picture is obsolete.
+
+Java 8+ uses a table of bins like `HashMap`: nodes, then trees in packed bins. An empty bin is claimed with compare-and-swap (CAS) — a CPU operation that writes only if the slot is still what we read. If the bin already has nodes, the writer synchronizes on the bin's head node, not on the whole map.
+
+Resize is cooperative: threads that notice a resize help copy bins. You do not stop the world for a rehash.
+
+This is HotSpot/OpenJDK implementation detail, not a language rule. Other JDKs of the same version follow the same specification (the class javadoc) with the same general approach.
+
+Happens-before: a successful `put` *happens-before* a later `get` that sees that value. That is the JMM hook. If you need the definition of happens-before, use the JMM notes.
+
+Do not call `compute` from inside another `compute` on the same map in a way that touches other keys and expects a consistent snapshot. The javadoc warns about that. Keep the function short and side-effect free except for the returned value.
+
+=== Key takeaways
+
+* ConcurrentHashMap provides atomic operations per key, not a transaction across keys.
+* Its iterators tolerate concurrent changes and may observe only some of them.
+* A thread-safe map does not make mutable values such as ArrayList thread-safe.
+
+Self-check:
+
+. Can two updates to different keys proceed together?
+. What can a weakly consistent iterator miss?
+. Why can `ConcurrentHashMap<K, ArrayList<V>>` still lose values?
+
+[[copyonwritearraylist]]
+== CopyOnWriteArrayList
+
+Every `add` / `set` / `remove` allocates a new array, copies, and publishes it to a `volatile` field. Readers walk that array with no lock.
+
+The iterator is a snapshot of the array at `iterator()` time. Later adds are invisible to it. No `ConcurrentModificationException`.
+
+Output:
+
+----
+[2] CopyOnWriteArrayList iterator is a snapshot
+    list after add("b")     = [a, b]
+    iterator started before  = a
+----
+
+Writes are O(n) copies. This is for many readers, rare writes: a list of listeners, a list of filters loaded at startup and occasionally replaced. It is a poor request-scoped work queue.
+
+`CopyOnWriteArraySet` is a `CopyOnWriteArrayList` underneath plus uniqueness. Tiny sets only.
+
+=== Key takeaways
+
+* Every write copies and publishes a new array.
+* Readers avoid locking and iterators keep a snapshot.
+* This trade-off fits rare writes, not queues or frequently changing data.
+
+Self-check:
+
+. Does an existing iterator see a later add?
+. What is the cost of a write for `n` elements?
+. Which workload makes copy-on-write reasonable?
+
+[[blocking-queues]]
+== Blocking queues
+
+A `BlockingQueue` is a `Queue` whose `put` waits if the queue is full and whose `take` waits if it is empty. That waiting is how a producer slows down when the consumer is behind — *back-pressure*.
+
+[cols="1,3"]
+|===
+|Type |Shape
+
+|`ArrayBlockingQueue`
+|Bounded. Backed by an array. Capacity is required. Fairness flag optional.
+
+|`LinkedBlockingQueue`
+|Optionally bounded (default `Integer.MAX_VALUE`, which is "unbounded for practical purposes" and a memory risk). Node-based.
+
+|`SynchronousQueue`
+|Capacity 0. `put` waits for a `take`. A hand-off, not a buffer.
+
+|`PriorityBlockingQueue`
+|Unbounded heap. Same unordered iterator as `PriorityQueue`.
+
+|`DelayQueue`
+|Head is the element whose delay has expired. Elements implement `Delayed`.
+
+|`LinkedTransferQueue`
+|`TransferQueue`: `transfer` waits until a consumer takes the element.
+|===
+
+`offer(e, time, unit)` and `poll(time, unit)` wait up to a timeout. `drainTo` pulls a batch.
+
+Single-thread equivalent remains `ArrayDeque`. Do not use a blocking queue "just in case" on one thread; you pay park/unpark and extra layout.
+
+`ConcurrentLinkedQueue` is a non-blocking unbounded concurrent queue: `offer`/`poll` do not wait. If you need waiting, use a `BlockingQueue`. If you need wait-free-ish passing without a bound, `ConcurrentLinkedQueue`.
+
+=== Key takeaways
+
+* Blocking queues coordinate producers and consumers through waiting operations.
+* A real capacity creates back-pressure instead of deferred memory failure.
+* SynchronousQueue hands work directly from one thread to another without buffering it.
+
+Self-check:
+
+. What happens when `put` reaches a full bounded queue?
+. Why is default LinkedBlockingQueue capacity risky?
+. Which queue has zero storage capacity?
+
+== ConcurrentSkipListMap and Set
+
+A skip list is a layered linked structure that gives O(log n) find and put, where `n` is the number of entries. Upper layers skip over groups of nodes, so each search narrows the remaining distance instead of walking every element. `ConcurrentSkipListMap` is both concurrent and sorted. `ConcurrentSkipListSet` is the corresponding Set.
+
+Use it when you need concurrent writers *and* `firstKey` / range views. If you only need concurrent lookup by equals, `ConcurrentHashMap` is the default.
+
+=== Key takeaways
+
+* Skip-list collections combine concurrent updates with sorted traversal.
+* Their usual lookup and update cost is O(log n).
+* Prefer ConcurrentHashMap when sorted ranges are unnecessary.
+
+Self-check:
+
+. What requirement justifies a skip-list map?
+. What does `n` mean in its O(log n) cost?
+. Which type is the default for unsorted concurrent lookup?
+
+== Choosing
+
+[cols="1,3"]
+|===
+|Situation |Type
+
+|Do not share
+|`ArrayList` / `HashMap` / `ArrayDeque`
+
+|Share, low contention, simple calls, you will lock around iteration
+|Synchronized wrapper — usually worse than the concurrent type
+
+|Shared map, per-key atomic updates
+|`ConcurrentHashMap`
+
+|Shared tiny list, almost never writes
+|`CopyOnWriteArrayList`
+
+|Producer / consumer, need waiting and a bound
+|`ArrayBlockingQueue` (known cap) or `LinkedBlockingQueue` (cap you actually set)
+
+|Producer / consumer, no waiting, unbounded
+|`ConcurrentLinkedQueue`
+
+|Concurrent and sorted
+|`ConcurrentSkipListMap` / `Set`
+
+|`Hashtable` / `Vector`
+|Read in old code. Do not add.
+|===
+
+=== Key takeaways
+
+* Choose by operation: atomic keys, snapshots, waiting, or sorted ranges.
+* Set an explicit capacity when queue growth must be controlled.
+* Legacy synchronized classes are not the default for new designs.
+
+Self-check:
+
+. Which collection fits a listener list?
+. Which queue fits bounded producer-consumer work?
+. Which map offers atomic per-key updates?
+
+== Real-world engineering view
+
+A cache field on a Spring singleton: `ConcurrentHashMap`, or a real cache library if you need TTL and size in bytes. `HashMap` plus "we only write at startup" is fine if you publish the map safely once (`volatile` or `final` after the constructor) and never mutate it. If you mutate it later, it was not a startup map.
+
+A worker pool: `BlockingQueue` of jobs, bounded. Unbounded `LinkedBlockingQueue` in an executor is a common outage: the queue absorbs the load until memory dies instead of rejecting work.
+
+Listener lists: `CopyOnWriteArrayList`. The copy on register is the point.
+
+Never share an `ArrayList` "because we only add during tests". Tests become two threads the day someone adds a scheduler.
+
+=== Key takeaways
+
+* Long-lived service fields need explicit publication and mutation rules.
+* Bounded queues turn overload into visible back-pressure.
+* Match listener, cache, and worker-pool workloads to different collections.
+
+Self-check:
+
+. When can a populated HashMap be read safely by many threads?
+. Why can an unbounded executor queue cause an outage?
+. Which list fits rarely-changing listeners?
+
+== Common mistakes
+
+**`HashMap` on a shared service field.** Symptom: missing keys, size too small, rare infinite loops on ancient JDKs. Fix: do not share, or `ConcurrentHashMap`.
+
+**Synchronized wrapper, for-each without `synchronized (wrapper)`.** Symptom: `ConcurrentModificationException` under load. Fix: lock around iteration, or a concurrent type.
+
+**`ConcurrentHashMap` of `ArrayList` values, unsynchronized `list.add`.** Symptom: lost elements in the list. Fix: concurrent value type, or compute that replaces an immutable copy.
+
+**`CopyOnWriteArrayList` as a work queue.** Symptom: CPU and allocation on every `add`. Fix: `ConcurrentLinkedQueue` or a blocking queue.
+
+**Unbounded blocking queue as a safety net.** Symptom: heap fills, latency explodes, then OOM. Fix: a real capacity and a reject policy.
+
+=== Key takeaways
+
+* Replacing HashMap is only one part of making shared state correct.
+* The values inside a concurrent map need their own safety strategy.
+* Unbounded buffering hides overload until memory and latency collapse.
+
+Self-check:
+
+. What remains unsafe after changing only the outer map?
+. Why is CopyOnWriteArrayList a poor work queue?
+. What should happen when a bounded queue is full?
+
+== Senior-level lens
+
+Correctness first: per-key atomicity versus a consistent snapshot of the whole map. `ConcurrentHashMap` gives you the first. It does not give you "these three keys as of one instant". If you need a snapshot, copy under a scheme you control, or use a different structure.
+
+Observability: `size()` on CHM is not free. Logging it on every request is a real cost at huge sizes. Approximate is usually enough.
+
+Testing: two threads and an assertion on size (as in the demo) catches "we used HashMap". It does not prove a compound invariant. For those, you need the invariant stated, then `compute`, then a test with many threads and a verifier, or a tool like JCStress for the hard cases.
+
+The JMM rule you actually need here: after a `put`, another thread's `get` that sees the value also sees writes that happened-before that `put` in the writer. Do not reinvent `volatile` on every field of the value object if the publication is the map put — unless those fields were written *after* the put.
+
+=== Key takeaways
+
+* Three options: do not share, lock compound uses, or a concurrent type.
+* Synchronized wrappers lock one method. Iterators still fail-fast.
+* `ConcurrentHashMap`: per-key atomic, no nulls, weakly consistent iterators, no full-map lock.
+* `CopyOnWriteArrayList`: snapshot iterators, write copies the array.
+* Blocking queues implement back-pressure. Unbounded queues defer the outage.
+
+Self-check:
+
+. Why did HashMap size land below 20_000 with two writers?
+. What must you still lock when using `synchronizedList`?
+. Why does ConcurrentHashMap reject null?
+. When is CopyOnWriteArrayList the wrong list?

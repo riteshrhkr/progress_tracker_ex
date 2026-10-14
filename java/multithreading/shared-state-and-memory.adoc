@@ -1,0 +1,237 @@
+= Shared State and Memory
+:toc: macro
+:toc-title: Table of Contents
+:toclevels: 2
+:sectnums:
+:icons: font
+:source-highlighter: rouge
+
+This document explains why shared mutable data breaks under multiple threads, and how visibility, atomicity, `volatile`, atomics, and immutability fit together.
+
+toc::[]
+
+Previous: link:threads-and-runnables.adoc[threads-and-runnables.adoc]. Next: link:locks-and-coordination.adoc[locks-and-coordination.adoc]. Index: link:README.adoc[README.adoc].
+
+[[shared-mutable-state]]
+== The problem with shared mutable state
+
+Shared means more than one thread can reach the same object. Mutable means the object can change after it is created. State means the data the program remembers, such as a counter field or a list of pending jobs.
+
+[source,java]
+----
+class Counter {
+    int count;
+    void increment() {
+        count++;
+    }
+}
+----
+
+At first, `count++` looks like one action. It is not. It means: read `count`, add one, write the new value back.
+
+----
+Thread A reads 41
+Thread B reads 41
+Thread A writes 42
+Thread B writes 42
+
+Two increments happened, but the value moved by one.
+----
+
+That bug is called a race condition. A race condition means the result depends on the timing of multiple threads. The same code can pass once and fail later.
+
+Full example: `examples.sharedstate.RaceConditionDemo` — link:examples/sharedstate/RaceConditionDemo.java[RaceConditionDemo.java]
+
+Output from one run:
+
+----
+[1] Lost update
+    unsafe count       = 104941
+    expected count     = 200000
+
+[2] Synchronized update
+    synchronized count = 200000
+
+[3] AtomicInteger update
+    atomic count       = 200000
+----
+
+The unsafe count is not guaranteed to be `104941`. That number came from one run. The guarantee is worse: there is no guarantee that the final number will be correct.
+
+=== Key takeaways
+
+* `count++` is a read, a calculation, and a write.
+* A race condition means timing changes the result.
+* Shared mutable state needs coordination, or it should not be shared.
+
+Self-check:
+
+. Why can two increments produce one visible increment?
+. Why is the wrong number allowed to change between runs?
+. What makes state both shared and mutable?
+
+[[atomicity-visibility-ordering]]
+== Atomicity, visibility, and ordering
+
+When people say "thread-safe", slow down and ask which problem is being solved.
+
+[cols="1,3,2"]
+|===
+|Problem |Plain meaning |Example
+
+|Atomicity
+|An operation must happen as one indivisible step from other threads' point of view.
+|No other thread sees the middle of `increment`.
+
+|Visibility
+|When one thread writes a value, another thread must actually see it.
+|A worker sees `stop = true`.
+
+|Ordering
+|Threads must agree that some actions happened before others.
+|The object is fully built before another thread reads it.
+|===
+
+The shallow version: "`volatile` makes a variable thread-safe."
+
+The real version: `volatile` fixes visibility and ordering for reads and writes of that variable. It does not make `count++` atomic, because the read and write are still separate actions.
+
+[source,java]
+----
+volatile boolean stop;
+
+while (!stop) {
+    doWork();
+}
+----
+
+That flag is a good use of `volatile`: one thread writes `stop = true`, another thread repeatedly reads it. There is no compound update.
+
+Bad pattern:
+
+[source,java]
+----
+volatile int count;
+count++; // still read, add, write
+----
+
+Good pattern:
+
+[source,java]
+----
+AtomicInteger count = new AtomicInteger();
+count.incrementAndGet();
+----
+
+=== Key takeaways
+
+* Atomicity, visibility, and ordering are different problems.
+* `volatile` is good for simple published values and stop flags.
+* `volatile` does not make compound updates atomic.
+
+Self-check:
+
+. Which problem does `volatile` mainly solve?
+. Why is `volatile int count; count++` still broken?
+. When is `AtomicInteger` a better fit?
+
+[[happens-before]]
+== Happens-before in plain language
+
+Before using the technical name, picture the need. One thread prepares data. Another thread reads it. You need a rule that says the reader is allowed to see the prepared data, not a half-old view.
+
+----
+Thread A: user.name = "Riya"
+Thread A: ready = true
+
+Thread B: sees ready == true
+Thread B: should see user.name == "Riya"
+----
+
+The Java Memory Model gives rules for this. The Java Memory Model is the part of Java that defines what writes by one thread another thread is allowed to see. A happens-before relationship means Java guarantees that the effects of one action are visible to another later action.
+
+Common happens-before edges:
+
+[cols="1,3"]
+|===
+|Edge |What it means
+
+|`Thread.start()`
+|Writes before `start()` are visible to the started thread.
+
+|`Thread.join()`
+|After `join()` returns, the joining thread sees what the finished thread did.
+
+|`synchronized`
+|Unlocking a monitor happens-before another thread later locks the same monitor.
+
+|`volatile`
+|Writing a volatile variable happens-before another thread later reads that same volatile value.
+
+|Concurrent utilities
+|Classes like `BlockingQueue`, `ConcurrentHashMap`, and `Future` define their own memory effects.
+|===
+
+This is language behavior, not a HotSpot optimization detail. The deeper memory model notes live in link:../jmm/java-memory-model.adoc[java-memory-model.adoc].
+
+=== Key takeaways
+
+* Happens-before is about guaranteed visibility and ordering.
+* Starting and joining threads create useful visibility edges.
+* `synchronized`, `volatile`, and concurrent utilities are not just locking tools; they also publish memory safely.
+
+Self-check:
+
+. What problem does happens-before solve?
+. Why does `join()` help the main thread see worker results?
+. Is happens-before only a performance detail?
+
+[[immutability]]
+== Avoid sharing changeable data
+
+Immutable means an object cannot change after construction. For example, `String` is immutable: `toUpperCase()` returns another string instead of changing the existing one.
+
+[source,java]
+----
+record UserView(long id, String name) {
+}
+----
+
+A record is not automatically deeply immutable. If a record holds a mutable `ArrayList`, the list can still change. But records with immutable fields are a simple way to move read-only data between threads.
+
+The shallow version: "Use locks to make shared data safe."
+
+The real version: the best shared data is often data that cannot change. If nothing can change it, two threads cannot corrupt it by writing at the same time.
+
+[cols="1,2,2"]
+|===
+|Need |Prefer |Why
+
+|Request data
+|Local variables or immutable records
+|Each request gets its own data, so threads do not fight.
+
+|Shared counter
+|`AtomicInteger` / `LongAdder`
+|The update operation is built for concurrency.
+
+|Shared map
+|`ConcurrentHashMap`
+|The map defines safe concurrent operations.
+
+|Multi-field rule
+|A lock around all fields
+|The rule spans more than one value.
+|===
+
+=== Key takeaways
+
+* Immutable data removes many concurrency bugs instead of hiding them behind locks.
+* Records help when their fields are also safe to share.
+* Choose the tool based on the operation, not based on a slogan.
+
+Self-check:
+
+. What does immutable mean?
+. Why can a record still hold mutable data?
+. When is a lock still needed instead of an atomic counter?

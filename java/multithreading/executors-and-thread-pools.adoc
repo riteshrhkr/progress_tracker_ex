@@ -1,0 +1,197 @@
+= Executors and Thread Pools
+:toc: macro
+:toc-title: Table of Contents
+:toclevels: 2
+:sectnums:
+:icons: font
+:source-highlighter: rouge
+
+This document explains why Java backend code submits tasks to executors, how thread pools behave, and what to watch when queues, failures, and shutdown enter the picture.
+
+toc::[]
+
+Previous: link:locks-and-coordination.adoc[locks-and-coordination.adoc]. Next: link:completablefuture-and-virtual-threads.adoc[completablefuture-and-virtual-threads.adoc]. Index: link:README.adoc[README.adoc].
+
+[[executor-service]]
+== Why executors exist
+
+Creating a raw thread for every piece of work gives you control, but it also gives you every problem: naming, limiting, error handling, shutdown, and back pressure. Back pressure means the system slows or rejects new work instead of accepting unlimited work and dying later.
+
+[source,java]
+----
+ExecutorService pool = Executors.newFixedThreadPool(4);
+Future<String> future = pool.submit(() -> loadUser(userId));
+String user = future.get();
+----
+
+An executor separates the task from the thread that runs it. You submit a `Runnable` when there is no result, or a `Callable<T>` when the task returns a value or throws a checked exception.
+
+Full example: `examples.executors.ExecutorDemo` — link:examples/executors/ExecutorDemo.java[ExecutorDemo.java]
+
+Output:
+
+----
+[1] Fixed thread pool reuses workers
+    task-a ran on pool-1-thread-1
+    task-b ran on pool-1-thread-2
+    task-c ran on pool-1-thread-2
+
+[2] Future.get() reports task failure
+    cause = ArithmeticException
+----
+
+Notice `task-c`. It reused one of the two pool threads. The point of a fixed pool is not "make tasks faster by magic". It is "run no more than this many tasks at the same time."
+
+=== Key takeaways
+
+* Executors separate task submission from thread ownership.
+* A fixed pool limits concurrency.
+* `Callable` returns a value; `Runnable` does not.
+
+Self-check:
+
+. What problem does an executor solve compared with raw `new Thread(...)`?
+. What does a fixed pool limit?
+. Why did the third task reuse a worker?
+
+[[future]]
+== Future and task failure
+
+A `Future<T>` represents a result that may not be ready yet.
+
+[source,java]
+----
+Future<Integer> future = pool.submit(() -> 42);
+Integer value = future.get(); // waits if needed
+----
+
+`get()` blocks the current thread until the task completes. If the task failed, `get()` throws `ExecutionException`, and the original exception is inside `getCause()`.
+
+Bad pattern:
+
+[source,java]
+----
+try {
+    future.get();
+} catch (Exception e) {
+    log.warn("failed", e); // hides whether caller should retry, cancel, or fail
+}
+----
+
+Good pattern:
+
+[source,java]
+----
+try {
+    return future.get();
+} catch (ExecutionException e) {
+    throw new ServiceException("task failed", e.getCause());
+}
+----
+
+`Future.cancel(true)` requests cancellation by interrupting the running task if possible. The task still has to cooperate with interruption.
+
+=== Key takeaways
+
+* `Future.get()` waits for the result.
+* Task exceptions are wrapped in `ExecutionException`.
+* Cancellation is cooperative when a task has already started.
+
+Self-check:
+
+. Where is the original exception stored?
+. Why can `get()` be dangerous on a request thread?
+. Does cancellation forcibly stop arbitrary code?
+
+[[pool-sizing]]
+== Pool sizing and queues
+
+A pool has workers and usually a queue. If all workers are busy, new tasks wait in the queue.
+
+----
+requests -> executor queue -> worker-1
+                         \-> worker-2
+                         \-> worker-3
+----
+
+For CPU-heavy work, more threads than CPU cores usually adds context switching. Context switching means the operating system pauses one thread and resumes another, which costs time.
+
+For blocking I/O work, more threads can help because many threads are waiting on network or disk. But unlimited threads or unlimited queues can turn slow downstream calls into memory pressure.
+
+[cols="1,2,2"]
+|===
+|Work type |Usual pool direction |Reason
+
+|CPU-heavy
+|Near available CPU cores
+|Extra threads compete for the same CPUs.
+
+|Blocking I/O
+|More than CPU cores, or virtual threads
+|Threads spend much time waiting.
+
+|Scheduled jobs
+|Dedicated scheduler
+|A stuck job should not starve request work.
+|===
+
+Avoid `Executors.newCachedThreadPool()` and unbounded queues unless you have a clear reason. They can accept work faster than the system can finish it.
+
+=== Key takeaways
+
+* A queue hides overload until it becomes latency or memory pressure.
+* CPU-heavy and I/O-heavy work need different sizing decisions.
+* Separate pools for unrelated workloads prevent one slow area from starving another.
+
+Self-check:
+
+. What happens when all pool threads are busy?
+. Why are too many CPU threads wasteful?
+. What can go wrong with an unbounded queue?
+
+[[shutdown]]
+== Shutdown
+
+An `ExecutorService` owns threads. If you create it, you must shut it down.
+
+[source,java]
+----
+try (ExecutorService pool = Executors.newFixedThreadPool(2)) {
+    pool.submit(task);
+}
+----
+
+In Java 21, `ExecutorService` is `AutoCloseable`, so try-with-resources shuts it down when the block ends. Older code often uses `shutdown()` and then `awaitTermination(...)`.
+
+Bad pattern:
+
+[source,java]
+----
+ExecutorService pool = Executors.newFixedThreadPool(2);
+pool.submit(task);
+// method returns; pool threads keep JVM alive
+----
+
+Good pattern:
+
+[source,java]
+----
+pool.shutdown();
+if (!pool.awaitTermination(30, TimeUnit.SECONDS)) {
+    pool.shutdownNow();
+}
+----
+
+In Spring Boot, prefer framework-managed executors when possible. Then the application lifecycle starts and stops them with the application.
+
+=== Key takeaways
+
+* Executor threads are resources.
+* Shut down executors you create.
+* Framework-managed executors are often safer in applications.
+
+Self-check:
+
+. Why can a forgotten executor keep a JVM alive?
+. What changed in Java 21 for try-with-resources?
+. Why should application code prefer managed executors?

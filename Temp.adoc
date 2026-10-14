@@ -1,0 +1,9 @@
+
+
+Old - 
+A thread is one path of execution inside a process. A process is the running program: the JVM, its heap, loaded classes, file handles, and other operating-system resources. Threads in the same JVM share that process memory.
+
+New - 
+A **process** is a running program that has its own resources, such as JVM memory (heap), loaded classes, and file handles. A **thread** is an independent path of execution within a process. Threads running in the same JVM share the process's memory and resources.
+
+As you can see the new is more user friendly and easy to understand so update the prompt

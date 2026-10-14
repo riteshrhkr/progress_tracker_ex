@@ -1,0 +1,238 @@
+= OOP Quick Review
+:toc: macro
+:toc-title: Table of Contents
+:toclevels: 2
+:icons: font
+:source-highlighter: rouge
+
+The 15-minute refresher. Everything here is explained in the other documents and links back to them. Read those first — this one is for getting the topic back into your head, not for learning it.
+
+toc::[]
+
+Index: link:README.adoc[README.adoc].
+
+== The topic in four sentences
+
+OOP keeps data and the operations allowed on that data in one place, so the rules about valid data have exactly one home.
+
+A class is the description, an object is the block of heap memory, and your variable only ever holds the address.
+
+Methods are chosen at runtime from the real object; fields, static methods and overloads are chosen at compile time from the declared type.
+
+Most real-world OOP mistakes are one of three things: a leaked mutable reference, an inheritance relationship that should have been composition, or `equals` without a matching `hashCode`.
+
+== If you remember only 10 things
+
+. A variable holds a reference, never an object. `==` compares addresses.
+. Arguments are always copied. A method can mutate your object, never repoint your variable.
+. Overriding is decided by the object at runtime; overloading by the declared type at compile time.
+. Fields and `static` methods are *hidden*, not overridden — the declared type wins.
+. Never call an overridable method from a constructor: the subclass version runs against uninitialized fields.
+. `private` protects the reference, not the object it points at. Return a copy.
+. `final` stops reassignment of a variable. It does not make the object immutable.
+. Override `equals` and `hashCode` together, from immutable fields only.
+. Extending a class couples you to its self-use, which is undocumented and can change.
+. Make nested classes `static` unless they truly need the outer instance.
+
+== Core terms
+
+[cols="1,3"]
+|===
+|Term |One-line meaning
+
+|Reference
+|The address of an object; what every non-primitive variable holds.
+
+|Invariant
+|A rule that must be true about an object at all times, such as "balance is never negative".
+
+|Dynamic dispatch
+|Picking the method at runtime from the object's real class.
+
+|Hiding
+|A subclass field or static method with the same name as the parent's; both exist, the declared type picks.
+
+|Covariant return
+|An override returning a subtype of the declared return type.
+
+|Self-use
+|One method of a class calling another overridable method of the same class.
+
+|Coupling
+|How much one piece of code depends on another's internals.
+
+|Cohesion
+|How closely the things inside one class belong together.
+
+|Compact constructor
+|A record constructor with no parameter list, used to validate or replace the incoming values.
+
+|Effectively final
+|A local variable assigned once and never reassigned; required for capture by a lambda or local class.
+
+|Template method
+|A `final` method fixing the algorithm and calling `protected abstract` steps that subclasses fill in.
+|===
+
+== Decision table
+
+[cols="1,1,2"]
+|===
+|Question |Pick |Because
+
+|Capability that unrelated types can have?
+|Interface
+|Multiple inheritance of type, leaves `extends` free — link:four-pillars.adoc[pillars]
+
+|Implementations must share state or a constructor?
+|Abstract class
+|Interfaces cannot hold instance state — link:four-pillars.adoc[pillars]
+
+|Fixed algorithm, one open step?
+|Abstract class, `final` skeleton + `protected abstract` step
+|Template method — link:four-pillars.adoc[pillars]
+
+|Set of subtypes is closed and you own it?
+|`sealed` + exhaustive `switch`
+|Adding a type becomes a compile error everywhere — link:four-pillars.adoc[pillars]
+
+|Set of implementations is open-ended?
+|Interface + polymorphism
+|New types need no edits to callers — link:design-principles.adoc[design]
+
+|"Is a substitutable kind of", parent designed for it?
+|`extends`
+|Substitution actually holds — link:design-principles.adoc[design]
+
+|"Is implemented using" / want a narrow API?
+|Composition
+|Only the public API couples you — link:design-principles.adoc[design]
+
+|Class is only its values?
+|`record`
+|Free `equals`/`hashCode`/`toString` — link:object-class-contracts.adoc[contracts]
+
+|Need to hide the representation or subclass it?
+|Plain class
+|Records are `final` with public accessors — link:object-class-contracts.adoc[contracts]
+
+|Handing a collection to a caller you do not control?
+|`List.copyOf`
+|A view still changes when you mutate the source — link:four-pillars.adoc[pillars]
+|===
+
+== Rules and numbers worth memorizing
+
+* Init order per object: parent field initializers and instance blocks → parent constructor → child field initializers and instance blocks → child constructor. link:oop-fundamentals.adoc[fundamentals]
+* Static blocks run once, at first use of the class, parent before child.
+* Field defaults: `0`, `0.0`, `false`, `'\u0000'`, `null`. Locals have no default; the compiler rejects reading them.
+* Override may *widen* access, *narrow* the return type and *narrow or drop* checked exceptions. Never the reverse.
+* `final`, `static` and `private` methods cannot be overridden.
+* Overload matching order: widening → boxing → varargs. First match wins.
+* Access: `private` < package-private < `protected` < `public`. `protected` includes package access.
+* `Integer` cache is -128..127, so `==` on boxed values works below 128 and then stops.
+* HotSpot object header: ~12 bytes with compressed pointers, padded to 8; an object with one `int` is 16 bytes. Implementation detail, not a language rule.
+* Versions: default methods 8, private interface methods 9, `List.copyOf` 10, helpful NPE messages 15, `instanceof` pattern 16, records 16, `sealed` 17, pattern matching for `switch` final in 21.
+
+== Traps
+
+Symptom first, then cause.
+
+* `HashSet` holds two objects you consider equal → `equals` overridden, `hashCode` not. link:object-class-contracts.adoc[contracts]
+* `map.get(key)` returns `null` but `map.toString()` shows the entry → a key field was mutated after `put`.
+* A `final` field is `null` inside a method → an overridable method was called from the constructor. link:oop-fundamentals.adoc[fundamentals]
+* The `Animal` variable prints the `Animal` name but the `Dog` sound → fields hide, methods override. link:four-pillars.adoc[pillars]
+* Overload picks `pick(Object)` for a `String` → the variable is declared `Object`; overloads resolve at compile time.
+* `pick(null)` will not compile → two equally specific overloads; cast the `null`.
+* Counter reports 6 after adding 3 → `addAll` in the parent calls the overridden `add`. link:design-principles.adoc[design]
+* An "immutable" object changed → the constructor stored the caller's collection, or the getter handed the internal one back. link:object-class-contracts.adoc[contracts]
+* `UnsupportedOperationException` from an implementation → the interface is too fat, split it. link:design-principles.adoc[design]
+* Heap grows slowly and nothing looks retained → an inner class instance is keeping its outer object alive. link:design-principles.adoc[design]
+* `x == y` true for 127 and false for 128 → boxed `Integer` cache. link:oop-fundamentals.adoc[fundamentals]
+* Square resized to 5x4 has area 16 → a subtype broke a promise the parent made. link:design-principles.adoc[design]
+
+== Code I should be able to write from memory
+
+`equals` and `hashCode`:
+
+[source,java]
+----
+@Override public boolean equals(Object o) {
+    if (this == o) return true;
+    if (!(o instanceof GoodUser other)) return false;
+    return email.equals(other.email);
+}
+@Override public int hashCode() { return Objects.hash(email); }
+----
+
+A guarded constructor plus defensive copies:
+
+[source,java]
+----
+SafeTrip(String name, List<String> stops) {
+    if (name == null || name.isBlank()) throw new IllegalArgumentException("name required");
+    this.name = name;
+    this.stops = List.copyOf(stops);
+}
+List<String> stops() { return stops; }
+----
+
+Composition instead of extension:
+
+[source,java]
+----
+final class CountingSet<E> {
+    private final Set<E> delegate = new HashSet<>();
+    private int added;
+    boolean add(E e) { added++; return delegate.add(e); }
+}
+----
+
+Template method:
+
+[source,java]
+----
+abstract class Report {
+    final String render() { return "[" + title + "]\n" + body(); }
+    protected abstract String body();
+}
+----
+
+Sealed type plus exhaustive switch:
+
+[source,java]
+----
+sealed interface Payment permits Card, Cash {}
+String describe(Payment p) {
+    return switch (p) {
+        case Card c -> "card " + c.last4();
+        case Cash ignored -> "cash";
+    };
+}
+----
+
+== Two-minute self-test
+
+No answers here on purpose. Each links to the section that holds one.
+
+. One object behind two variables of different types. Which of field access, method call and overload resolution use the object rather than the variable? → link:four-pillars.adoc[four-pillars.adoc]
+. A `final` field reads as `null`. Give the mechanism. → link:oop-fundamentals.adoc[oop-fundamentals.adoc]
+. `equals` is overridden and `hashCode` is not. What does the `HashSet` do, and does anything throw? → link:object-class-contracts.adoc[object-class-contracts.adoc]
+. Why is `getClass()`-based `equals` symmetric but restrictive, and `instanceof`-based `equals` the reverse? → link:object-class-contracts.adoc[object-class-contracts.adoc]
+. Your subclass counter says 6 after three additions. Explain, then fix it without inheritance. → link:design-principles.adoc[design-principles.adoc]
+. Name both boundaries through which a `private final` collection field can leak. → link:object-class-contracts.adoc[object-class-contracts.adoc]
+. When is a `sealed` hierarchy better than open polymorphism, and when is it wrong? → link:four-pillars.adoc[four-pillars.adoc]
+. `f(long)`, `f(Integer)` and `f(int...)` all exist. Which does `f(7)` call, and why is that ordering fixed? → link:four-pillars.adoc[four-pillars.adoc]
+. Why must a lambda's captured local be effectively final? → link:design-principles.adoc[design-principles.adoc]
+. Why does `Square extends Rectangle` compile and still be wrong? → link:design-principles.adoc[design-principles.adoc]
+
+== Running the examples
+
+[source,bash]
+----
+cd java/oops
+javac --release 21 -g -d out $(find examples -name '*.java')
+java -cp out examples.pillars.PolymorphismDemo
+----
+
+Full list of demos: link:README.adoc[README.adoc].

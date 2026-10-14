@@ -1,0 +1,481 @@
+= Maps
+:toc: macro
+:toc-title: Table of Contents
+:toclevels: 2
+:sectnums:
+:icons: font
+:source-highlighter: rouge
+
+What a Map is, how HashMap finds a key, the internals that affect size and speed, LinkedHashMap order, TreeMap sorting, and the implementations that stop using equals.
+
+toc::[]
+
+Previous: link:sets.adoc[sets.adoc]. Next: link:queues.adoc[queues.adoc]. Index: link:README.adoc[README.adoc].
+
+[[what-a-map-is]]
+== What a Map is
+
+A Map is a lookup: a *key* maps to a *value*. Keys are unique. Values need not be. `put` of an existing key replaces the value and returns the old one.
+
+A Map is not a Collection. You cannot `add` a pair as one element. You can walk `keySet()`, `values()`, or `entrySet()` — those *are* Collections, and they are views: remove from the set, the map loses the entry.
+
+The shallow version: "HashMap is a dictionary of key to value."
+
+The real version: a Map makes a uniqueness *contract* on keys. A contract is a promise callers can rely on; here, the promise is that one key identifies at most one value. A Map also provides a way to find that value without scanning every entry. `HashMap` finds by `hashCode` then `equals`. `TreeMap` finds by comparison. `IdentityHashMap` finds by `==`. Pick the wrong one and `get` can return `null` for a key you expected to find.
+
+=== Key takeaways
+
+* A Map stores one value for each unique key.
+* Map is separate from Collection, but its key, value, and entry views are Collections.
+* Different Map implementations use different rules to decide whether two keys match.
+
+Self-check:
+
+. What happens when `put` receives a key that is already present?
+. Why does Map not have an `add(element)` method?
+. Which three views let you walk a Map?
+
+[[hashmap-lookup]]
+== How HashMap looks up a key
+
+=== What every developer should know
+
+`put(key, value)` and `get(key)` do two steps:
+
+. Take `key.hashCode()`, mix it, and pick a slot in an array (a *bucket*).
+. In that bucket, look at each occupant until `equals` says yes, or the chain ends.
+
+If `equals` is overridden and `hashCode` is not, two equal keys land in different buckets. `get` looks in the new key's bucket and never sees the old one. That failure is shown in link:../oops/object-class-contracts.adoc[object-class-contracts.adoc] (`EqualsHashCodeDemo`). This document assumes that pair is correct.
+
+Full example: `examples.maps.HashMapDemo` — link:examples/maps/HashMapDemo.java[HashMapDemo.java]
+
+Output:
+
+----
+[1] get, put, null key
+    get(new User("a@x.com")) = 3
+    get(null)                 = 0
+    get(missing)              = null
+----
+
+A new `User` with the same email hits the same entry. `get` of a missing key returns `null`. That is also the return when the key is present and the value *is* `null`. `containsKey` is the way to tell those apart.
+
+`HashMap` allows one `null` key (bucket 0) and any number of `null` values. `ConcurrentHashMap` and `Hashtable` allow neither.
+
+=== The methods that replace contains-then-put
+
+[source,java]
+----
+int n = counts.getOrDefault("a", 0);     // 0, map still empty
+counts.putIfAbsent("a", 1);              // inserts
+counts.putIfAbsent("a", 99);             // ignored
+----
+
+Output:
+
+----
+[2] getOrDefault and putIfAbsent
+    getOrDefault("a", 0) = 0, map = {}
+    after putIfAbsent 1 then 99, map = {a=1}
+----
+
+`getOrDefault` does not insert. `putIfAbsent` inserts only when the key is missing or mapped to `null`.
+
+`computeIfAbsent` runs a function *only* when the key is missing, then stores the result. It is the way to group:
+
+[source,java]
+----
+byCity.computeIfAbsent("delhi", city -> new ArrayList<>()).add("rita");
+----
+
+Output:
+
+----
+[3] computeIfAbsent
+    grouped = {pune=[lee], delhi=[rita, sam]}
+----
+
+(The map's iteration order is not a contract. Your run may print `delhi` first.)
+
+The function must not modify the same map. HashMap notices and throws.
+
+Output:
+
+----
+[4] computeIfAbsent must not mutate the map
+    mutating inside computeIfAbsent -> ConcurrentModificationException
+----
+
+`merge(key, value, remappingFn)` inserts `value` if the key is absent, otherwise replaces with `remappingFn(old, value)`. For counters:
+
+[source,java]
+----
+totals.merge("err", 1, Integer::sum);
+----
+
+Output:
+
+----
+[5] merge
+    after three merge calls = {err=2, ok=1}
+----
+
+`compute` always runs the function (including when absent; `old` is null). `computeIfPresent` runs only when present. `replace` / `replaceAll` are the "only if already there" cousins of `put`.
+
+=== Key takeaways
+
+* Lookup is hash then equals. Missing `get` is `null`, which is also a legal value.
+* `getOrDefault` reads. `putIfAbsent` / `computeIfAbsent` / `merge` write with a defined missing-key rule.
+* Do not mutate the map inside `computeIfAbsent`.
+
+Self-check:
+
+. How do you tell "key missing" from "value is null"?
+. What does `getOrDefault` do to the map?
+. When does `merge` call the remapping function?
+
+[[hashmap-internals]]
+== HashMap internals
+
+=== Everyone: table, load factor, resize
+
+The table starts `null`. The first `put` allocates 16 buckets (or the sized constructor's power of two). *Load factor* 0.75 means "resize when size exceeds 75% of the table length". For 16 buckets that threshold is 12. The 13th distinct key doubles the table to 32 and re-places every entry.
+
+This demo uses reflection. Run with `--add-opens` as in the README.
+
+Output:
+
+----
+[6] Table length
+    new HashMap<>() table = null
+    after 1 put, length   = 16
+    size 13 grew table 16 -> 32
+----
+
+Resize is why `new HashMap<>(expected)` (or `HashMap.newHashMap(expected)` on Java 19+) matters for a bulk load. The constructor argument is *capacity*, not expected size. To hold `n` elements without a resize, you need capacity `n / 0.75` rounded up to a power of two. `newHashMap(n)` does that math.
+
+A load factor you never change is correct. Lower than 0.75 wastes array slots for a slightly lower collision rate. Higher than 0.75 saves memory and lengthens buckets.
+
+=== Senior: hash spreading, collisions, trees
+
+`hashCode` is a 32-bit int. The bucket index uses only the low bits (`hash & (tableLength - 1)`, and table length is always a power of two). If a `hashCode` implementation puts all its information in the high bits, every key would hit bucket 0. HashMap mixes with:
+
+[source,java]
+----
+h ^ (h >>> 16)     // high bits xor'd into the low bits
+----
+
+That is *hash spreading*. You still must write a `hashCode` that depends on the same fields as `equals`. Spreading cannot fix `return 1`.
+
+When several keys land in one bucket, Java 8+ stores them as a linked list until the bin has 8 nodes *and* the table length is at least 64. Then that bin becomes a red-black tree (`TreeNode`). If the bin later shrinks to 6, it becomes a list again. Those numbers are `TREEIFY_THRESHOLD`, `MIN_TREEIFY_CAPACITY`, `UNTREEIFY_THRESHOLD` in the OpenJDK source. They are implementation details of this HashMap, not a Java language rule.
+
+Comparison inside the tree: hash first, then `compareTo` if the key's class implements `Comparable`, otherwise identity (`tieBreakOrder`). HashMap does **not** throw `ClassCastException` for non-Comparable keys. That rumour is TreeMap's behaviour leaking into HashMap talks.
+
+Full example: `examples.maps.MapPitfallsDemo` — link:examples/maps/MapPitfallsDemo.java[MapPitfallsDemo.java]
+
+Output:
+
+----
+[3] HashMap treeifies without Comparable; TreeMap does not
+    HashMap 16 keys, same hashCode, not Comparable, size = 16
+    TreeMap with an explicit comparator accepts them, size = 2
+    TreeMap first put, no comparator -> ClassCastException
+----
+
+Sixteen keys with `hashCode() { return 1; }` all sit in one bin. HashMap still holds them. TreeMap without a comparator cannot.
+
+Treeification is a denial-of-service defence: a long chain of colliding hashes used to make `get` O(n), where `n` is the number of keys in that one bucket. A tree reduces lookup in that bucket to O(log n): doubling the bucket size adds roughly one more comparison level. Honest `hashCode` values still matter. A tree of 16 identical hashes is slower than 16 well-spread buckets.
+
+Iteration order of HashMap is the table walk. It is not insertion order. It can change on resize. Do not depend on it. Java 8's transfer during resize made order look "more stable" in some programs. That is not a contract.
+
+`HashMap` is not thread-safe. Two writers can lose entries or, on older JDKs, corrupt a chain. link:concurrent-collections.adoc[concurrent-collections.adoc].
+
+[[mutable-map-keys]]
+=== Mutable keys
+
+If you `put`, then change a field that `hashCode` / `equals` use, the entry sits in the old bucket with a new hash. `get` uses the new hash, looks in the wrong bucket, returns `null`. `size` still counts the entry. Nothing throws.
+
+That demo is `EqualsHashCodeDemo` section `[2]` in the OOP notes. An *immutable* value cannot be changed after creation. A HashMap key does not need every field to be immutable, but the fields used by `equals` and `hashCode` must not change while the key is in the map.
+
+=== Key takeaways
+
+* Default table 16, load factor 0.75, resize at size 13, double each time.
+* Spreading mixes high bits into the index. It is not a substitute for a real `hashCode`.
+* Colliding bins become trees at 8 nodes when the table is large enough. HashMap does not require `Comparable` for that.
+* Mutating a key after `put` loses the lookup, not the entry.
+
+Self-check:
+
+. At what size does a default HashMap first resize?
+. What is the difference between constructor capacity and expected number of entries?
+. Does HashMap throw if colliding keys are not Comparable?
+
+[[linkedhashmap]]
+== LinkedHashMap
+
+`LinkedHashMap` is a `HashMap` whose entries also point to the entry before and after them. Those links form a doubly-linked list, and walking that list produces the map's iteration order.
+
+Default: *insertion order*. Re-`put` of an existing key updates the value and does not move the entry.
+
+Full example: `examples.maps.LinkedHashMapDemo` — link:examples/maps/LinkedHashMapDemo.java[LinkedHashMapDemo.java]
+
+Output:
+
+----
+[1] Insertion order
+    iteration = {c=1, a=9, b=3}
+----
+
+`a` was inserted second, then updated to 9. It stayed second.
+
+The three-argument constructor `new LinkedHashMap<>(capacity, loadFactor, true)` turns on *access order*: `get` and `put` move the entry to the end. Iteration is then least-recently-used first.
+
+Output:
+
+----
+[2] Access order
+    after puts           = {c=1, a=2, b=3}
+    after get("c")       = {a=2, b=3, c=1}
+----
+
+Override `removeEldestEntry` to drop the eldest when the map grows past a bound. That is a tiny LRU cache.
+
+Output:
+
+----
+[3] LRU via removeEldestEntry
+    after a,b,c          = {a=1, b=2, c=3}
+    get(a) then put(d)   = {c=3, a=1, d=4}
+----
+
+`get(a)` made `a` newest, so `b` was eldest. `put(d)` would have been size 4, so `b` was dropped.
+
+This is an in-process cache with no expiry, no size in bytes, and no concurrent writers. Production caches (Caffeine, a `ConcurrentHashMap` plus your own eviction, a dedicated cache service) exist because those gaps matter. For "remember the last N ids in this request", `removeEldestEntry` is enough.
+
+=== Key takeaways
+
+* LinkedHashMap adds predictable iteration order to HashMap.
+* In access-order mode, reading an entry moves it to the newest position.
+* `removeEldestEntry` can build a small bounded LRU, but not a full production cache.
+
+Self-check:
+
+. Does updating an existing value move it in insertion-order mode?
+. What changes when access order is enabled?
+. Which entry is removed by a size-bounded LRU?
+
+[[treemap]]
+== TreeMap
+
+`TreeMap` keeps keys in a balanced search tree: smaller keys are reached by following one direction and larger keys by following the other. The balancing rules keep the tree from becoming a long chain; this specific structure is called a *red-black tree*. `get`, `put`, and `remove` are O(log n), where `n` is the number of keys. Doubling the map size adds roughly one more comparison level. Iteration is sorted.
+
+Keys must be `Comparable`, or you pass a `Comparator`. Mixing types (`put(1)` then `put("two")`) throws `ClassCastException` when the tree first compares them.
+
+Output:
+
+----
+[2] TreeMap keys must be comparable
+    put(1) then put("two") -> java.lang.ClassCastException: class java.lang.Integer cannot be cast to class java.lang.String ...
+----
+
+Full example: link:examples/maps/MapPitfallsDemo.java[MapPitfallsDemo.java].
+
+The same rule as TreeSet applies: the comparator should agree with `equals`. If the comparator returns 0 for two keys that `equals` says are different, TreeMap treats them as one key and one value replaces the other. See link:sets.adoc#treeset[TreeSet uniqueness].
+
+`NavigableMap` methods include `firstKey` / `lastKey`, nearest-key lookups such as `ceilingKey` / `floorKey`, and range views such as `headMap` / `tailMap` / `subMap`. A range view stays connected to the parent: changes in range are visible both ways. Putting an out-of-range key through the view throws `IllegalArgumentException`; unlike `subList`, changing the parent Map does not invalidate the view itself. An iterator over the view is still fail-fast.
+
+`null` keys are not allowed with natural order. Values may be null.
+
+=== Key takeaways
+
+* TreeMap keeps keys sorted and supports range lookups.
+* Its main operations take O(log n), where `n` is the number of keys.
+* Comparator equality decides whether a key is already present.
+
+Self-check:
+
+. What must a key provide when no Comparator is passed?
+. Why can a comparator make one value replace another?
+. Are `subMap` and `descendingMap` copies or views?
+
+[[other-map-implementations]]
+== Other Map implementations
+
+=== EnumMap
+
+Array indexed by `enum.ordinal()`. No hashing. No null keys. Faster and smaller than `HashMap<MyEnum, V>` when the key type is an enum. Construct with `new EnumMap<>(MyEnum.class)`.
+
+=== IdentityHashMap
+
+Uses `==` and `System.identityHashCode`, not `equals` / `hashCode`. Two `new String("x")` objects are two keys.
+
+Full example: link:examples/maps/MapPitfallsDemo.java[MapPitfallsDemo.java].
+
+Output:
+
+----
+[1] IdentityHashMap uses ==
+    a.equals(b) = true, a == b = false
+    IdentityHashMap size = 2  {x=2, x=1}
+    HashMap size         = 1  {x=2}
+----
+
+Use it for topology (identity of nodes in a graph), not for "string keys". The constructor's `expectedMaxSize` is not the same as HashMap capacity; it sizes an array for linear probing. This type does not implement `Map`'s equals-based contract in spirit, even though it implements the `Map` interface.
+
+=== WeakHashMap
+
+Keys are held through a reference that does not keep an otherwise-unused object alive; Java calls this a `WeakReference`. If nothing else in the program points at a key object, the garbage collector may collect it, and the entry disappears. Values use ordinary strong references. If a value points back at its key, the key stays reachable and the entry does not disappear.
+
+`System.gc()` is a hint, not a promise, so this file does not print a "size became 0" line that might fail on another run. Use WeakHashMap for metadata that should live only while its key object is still used elsewhere. Do not use it as a size-bounded cache; caches need explicit eviction rules.
+
+=== Hashtable
+
+Legacy, synchronized methods, no null keys or values. Old APIs may expose an `Enumeration`, an older cursor API with `hasMoreElements()` and `nextElement()` instead of Iterator's `hasNext()` and `next()`. Its iterators are fail-fast. New code uses `HashMap` for one-thread use or `ConcurrentHashMap` for shared access. You will still meet Hashtable as the superclass of `Properties`.
+
+=== Unmodifiable map, mutable values
+
+`Map.copyOf` / `Map.of` reject structural `put`. They do not freeze the value objects.
+
+Full example: link:examples/maps/MapPitfallsDemo.java[MapPitfallsDemo.java].
+
+Output:
+
+----
+[4] Unmodifiable map, mutable values
+    Map.copyOf still sees later adds to the list: {eng=[rita, sam]}
+    frozen.put(...) -> UnsupportedOperationException
+----
+
+If the values must not change, copy them too, or store immutable values (`List.copyOf` inside).
+
+=== Key takeaways
+
+* EnumMap is the compact default for enum keys.
+* IdentityHashMap compares object identity; WeakHashMap lets unused keys disappear.
+* An unmodifiable map can still contain mutable values.
+
+Self-check:
+
+. Why do two equal String objects remain separate IdentityHashMap keys?
+. What can keep a WeakHashMap key alive unexpectedly?
+. Does `Map.copyOf` copy the objects stored as values?
+
+[[choosing-a-map]]
+== Choosing a Map
+
+[cols="1,3"]
+|===
+|Choose |When
+
+|`HashMap`
+|Default. One thread (or a thread that does not share the map). `equals` / `hashCode` are correct.
+
+|`LinkedHashMap`
+|Insertion-order iteration, or access-order LRU with `removeEldestEntry`.
+
+|`TreeMap`
+|Sorted keys, range queries. Comparator consistent with equals.
+
+|`EnumMap`
+|Enum keys.
+
+|`IdentityHashMap`
+|Identity, not equality. Rare.
+
+|`WeakHashMap`
+|Entries should die with the key object. Not a size-bounded cache.
+
+|`ConcurrentHashMap`
+|Shared across threads. link:concurrent-collections.adoc[concurrent-collections.adoc].
+
+|`Hashtable`
+|Do not add. Read it in old code.
+
+|`Map.of` / `Map.copyOf`
+|Fixed contents, no nulls. link:utilities.adoc[utilities.adoc].
+|===
+
+=== Key takeaways
+
+* Start with HashMap for local, unsorted lookup.
+* Choose another implementation only for a required property such as order, ranges, identity, enum keys, or concurrency.
+* The key-matching rule matters as much as the iteration order.
+
+Self-check:
+
+. Which Map provides sorted range queries?
+. Which Map preserves insertion order?
+. Which Map should hold shared mutable state?
+
+== Real-world engineering view
+
+A request-scoped map (group this payload by city) is a `HashMap`. Size it if the key count is known.
+
+A field on a singleton service is shared. `HashMap` is then a bug, not a default. Either do not share it, or use `ConcurrentHashMap`, or confine it to one thread.
+
+`computeIfAbsent` on a shared `HashMap` is still a race: two threads can both see missing and both insert. On `ConcurrentHashMap` the per-key computation is atomic.
+
+High-cardinality maps (a key per user id, unbounded) are a memory leak with extra steps. Bound them, expire them, or keep them in a store that already does.
+
+Autoboxing: `Map<Integer, Integer>` stores two objects per entry plus the `Node`. For primitive-heavy maps, that shows up in allocations. Measure before you reach for a specialised library.
+
+=== Key takeaways
+
+* Ownership decides whether HashMap is safe: local is different from shared.
+* Atomic map methods do not make mutable values thread-safe.
+* Unbounded key growth is a memory problem even when each lookup is fast.
+
+Self-check:
+
+. When does a service field make HashMap unsafe?
+. Is `computeIfAbsent` atomic on a shared HashMap?
+. What should you decide before storing one key per user forever?
+
+== Common mistakes
+
+**`get` then `put` instead of `computeIfAbsent` / `merge`.** Symptom: nested maps with repeated boilerplate, and a race once the map is shared. Fix: the atomic helpers, and a concurrent map if shared.
+
+**Using `HashMap` iteration order in a test.** Symptom: flaky assertion on `toString`. Fix: `LinkedHashMap` or compare as a set of entries.
+
+**Mutable key.** Symptom: `get` returns null, `size` is 1, dump of the map still shows the entry. Fix: immutable keys.
+
+**`IdentityHashMap` for string keys** because "it might be faster". Symptom: `get("x")` misses the `new String("x")` you put. Fix: `HashMap`.
+
+**`WeakHashMap` as a cache.** Symptom: values pin keys, or the map empties at a GC pause you did not expect. Fix: a real cache.
+
+=== Key takeaways
+
+* Choose helpers such as `merge` for clearer update rules.
+* Never depend on HashMap iteration order or mutate fields used by a stored key's equality.
+* IdentityHashMap and WeakHashMap solve narrow identity and lifetime problems.
+
+Self-check:
+
+. What causes a stored key to become unreachable through `get`?
+. How do you make an order-sensitive map test intentional?
+. Why is WeakHashMap not a predictable cache?
+
+== Senior-level lens
+
+`entrySet` is a view. `entry.setValue` during iteration is supported for `HashMap` and updates the map. `iterator.remove` removes the entry. Adding to the map during that iteration is fail-fast.
+
+`keySet.remove(k)` removes the mapping. It is the same map.
+
+Returning `map.keySet()` from a public method is returning a live view of your keys. The caller can `remove`. Return `Set.copyOf(map.keySet())` if that is not the API.
+
+`HashMap` initial capacity is a power of two. Passing `100` gives a table of 128, not 100. That is fine. Passing `expectedSize` without dividing by 0.75 means you still resize once. `newHashMap(expectedSize)` exists so you do not write the formula wrong.
+
+Do not quote the Java 7 "segment" story as how `ConcurrentHashMap` works today. That class was rewritten in Java 8. The concurrent document covers the current one.
+
+=== Key takeaways
+
+* HashMap: hash, equals, table of power-of-two buckets, resize at load 0.75, trees in oversized bins.
+* LinkedHashMap adds a list: insertion order or access order.
+* TreeMap is sorted, needs Comparable or a Comparator, throws on mixed incomparable keys.
+* IdentityHashMap is `==`. WeakHashMap is GC-sensitive keys. Neither is the default map.
+
+Self-check:
+
+. Why does `new HashMap<>(100)` not have 100 buckets?
+. How do you turn LinkedHashMap into an LRU of size N?
+. Why can `Map.copyOf` still change under you?

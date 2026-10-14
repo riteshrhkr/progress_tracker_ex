@@ -1,0 +1,268 @@
+= Collection Framework Interview Questions
+:toc: macro
+:toc-title: Table of Contents
+:toclevels: 2
+:sectnums:
+:icons: font
+:source-highlighter: rouge
+
+Every interview-framed item for this topic lives here, so the teaching documents stay about understanding. Answers show the reasoning, not a definition to recite.
+
+toc::[]
+
+Index: link:README.adoc[README.adoc]. Teaching path starts at link:overview.adoc[overview.adoc].
+
+== Warm-up
+
+*1. How is Map related to Collection?*
+
+It is not a subtype. A Map is key-to-value. `add(e)` would not make sense. `keySet()`, `values()`, and `entrySet()` *are* Collections, and they are views of the map. link:overview.adoc[overview]
+
+*2. List versus Set in one sentence each.*
+
+List: positions and duplicates; `List.equals` requires the same elements in the same sequence. Set: uniqueness; `add` returns false for a duplicate, and `Set.equals` checks membership without caring about iteration order. link:overview.adoc[overview] link:sets.adoc[sets]
+
+*3. What does fail-fast mean?*
+
+The iterator copies a change counter (`modCount`). If the collection's structure changes except through that iterator's `remove`, `next()` throws `ConcurrentModificationException`. It is not a thread-safety guarantee and it is not a rollback. link:overview.adoc[overview]
+
+*4. ArrayList versus LinkedList — which is the default List, and why?*
+
+ArrayList. `get(i)` is an array access. LinkedList `get(i)` walks nodes. Append on ArrayList is amortised O(1). Use LinkedList only if you already sit on a `ListIterator` at the insert point and a profile said the shifts dominate — which is rare. Queue/stack is `ArrayDeque`, not LinkedList. link:lists.adoc[lists]
+
+*5. How does HashMap find a key?*
+
+`hashCode` (spread) picks a bucket, then `equals` on the occupants. Missing `get` returns `null`, which is also a legal value — use `containsKey`. link:maps.adoc[maps]
+
+*6. HashSet versus TreeSet uniqueness?*
+
+HashSet: `equals` (and `hashCode` to find the bucket). TreeSet: comparator (or `compareTo`) returning 0. Those can disagree. link:sets.adoc[sets]
+
+*7. `offer` versus `add` on a Queue?*
+
+`add` throws if it cannot insert (`IllegalStateException` on a full bounded queue). `offer` returns `false`. On `ArrayDeque` both usually succeed because it grows. Empty: `poll` returns null, `remove` throws. link:queues.adoc[queues]
+
+== Practical
+
+*8. You `remove(1)` on a `List<Integer>` and the wrong element disappears. Why?*
+
+Overload resolution picks `remove(int)` — index 1 — not `remove(Object)`. Use `remove(Integer.valueOf(1))` or `removeIf`. Demo: link:examples/lists/ListTrapsDemo.java[ListTrapsDemo.java].
+
+*9. `Arrays.asList(arr).add("x")` throws. `set` worked. What is this object?*
+
+A fixed-size view of the array. `set` writes through. `add`/`remove` cannot change the array length. `List.of` rejects `set` too. A growable copy is `new ArrayList<>(...)`. link:lists.adoc[lists] link:utilities.adoc[utilities]
+
+*10. `list.subList(1,3)` then `list.add(...)` then you touch the subList. What happens?*
+
+`ConcurrentModificationException`. `subList` is a window. A structural change on the parent invalidates it. Copy the window if it must survive. Demo: link:examples/lists/ListTrapsDemo.java[ListTrapsDemo.java].
+
+*11. Two equal objects in a HashSet. Size 2. What did you forget?*
+
+`hashCode`, almost always. They land in different buckets and are never compared. Nothing throws. Full demo in the OOP notes: `EqualsHashCodeDemo`. link:../oops/object-class-contracts.adoc[object-class-contracts]
+
+*12. You need a unique list that keeps insertion order.*
+
+`LinkedHashSet`. `HashSet` does not promise order. `TreeSet` sorts. `new HashSet<>(list)` drops list order. link:sets.adoc[sets]
+
+*13. Group strings by city into `Map<String, List<String>>` without a contains-then-put race in the boilerplate.*
+
+`map.computeIfAbsent(city, c -> new ArrayList<>()).add(name)`. Do not mutate the map inside the lambda. If the map is shared, use `ConcurrentHashMap` *and* a thread-safe list (or replace with an immutable copy). Demo: link:examples/maps/HashMapDemo.java[HashMapDemo.java].
+
+*14. LRU of the last N keys, in-process, one thread.*
+
+`LinkedHashMap` with access-order `true` and `removeEldestEntry` returning `size() > n`. Not a production cache (no TTL, no bound in bytes, not concurrent). Demo: link:examples/maps/LinkedHashMapDemo.java[LinkedHashMapDemo.java].
+
+== Senior
+
+=== 15. Walk through HashMap internals (Java 8+).
+
+*The line of thinking:* they want the table, the hash, collisions, resize, and trees — and they want you to mark what is OpenJDK HashMap versus the language.
+
+*A good answer:* Array of bins, length a power of two, default 16. Index is `(spread hash) & (length-1)`, spreading is `h ^ (h >>> 16)`. Load factor 0.75: default map resizes at size 13, table doubles, entries re-placed. A bin is a list until 8 nodes *and* table length ≥ 64, then a red-black tree; it untreeifies at 6. Tree compares hash, then `Comparable` if present, else identity — HashMap does *not* throw for non-Comparable keys. Not thread-safe. Numbers are this implementation, not JLS.
+
+*Likely follow-up: why treeify?* Long colliding chains made `get` O(n) and were a hash-flooding DoS. A tree is O(log n) in that bin. Honest `hashCode` still matters. Demo: link:examples/maps/MapPitfallsDemo.java[MapPitfallsDemo.java] (16 colliding keys still sit in a HashMap).
+
+=== 16. HashMap versus Hashtable versus ConcurrentHashMap versus Collections.synchronizedMap.
+
+*The line of thinking:* null policy, locking granularity, compound operations, iterators.
+
+*A good answer:* HashMap: one thread, allows null key/value, fail-fast iterators. Hashtable: legacy, synchronized methods, no nulls, fail-fast — do not add. `synchronizedMap`: one monitor per call, you still lock around iteration, no `compute` atomicity. ConcurrentHashMap: no nulls, per-key atomic `compute`/`merge`, weakly consistent iterators, no full-map lock, Java 8+ bins+CAS not Java 7 segments.
+
+*Likely follow-up: is size() on CHM constant time?* It sums counters. Fine for diagnostics. `mappingCount()` is the `long` form. Do not log it on every request at huge sizes.
+
+=== 17. When is CopyOnWriteArrayList the right list?
+
+*The line of thinking:* write cost versus snapshot reads.
+
+*A good answer:* Many readers, rare writes — listener lists, filter chains. Every mutation copies the array. The iterator is a snapshot: later adds are invisible, no CME. A work queue or a per-request list is the wrong use; that is `ArrayList` or `ConcurrentLinkedQueue` / a blocking queue.
+
+*Likely follow-up: CopyOnWriteArraySet?* Same cost, uniqueness on top, tiny sets only.
+
+=== 18. Why not LinkedList as the default Queue?
+
+*The line of thinking:* both types implement `Deque`, so compare their memory layout, API shape, and usual runtime cost rather than stopping at "both work."
+
+*A good answer:* It works (`Deque`). You allocate a node per element and you expose List if the variable is typed `LinkedList`. `ArrayDeque` is a circular array, no nodes, no List methods, no null. Default queue and default stack.
+
+*Likely follow-up: when LinkedList?* You need List *and* Deque on one object and a profile agreed. Rare. link:queues.adoc[queues]
+
+=== 19. How do you return a list from an API without leaking internal storage?
+
+*The line of thinking:* view versus copy, and mutable elements.
+
+*A good answer:* `List.copyOf(internal)` snapshots references and rejects later `add` on the result. `Collections.unmodifiableList(internal)` is a view: if you still mutate `internal`, the caller sees it. Neither freezes the *elements*; mutable values need their own copies. At a trusted internal boundary, the view avoids the allocation.
+
+*Likely follow-up: List.of versus copyOf?* `of` is literals / known values, rejects null. `copyOf` takes an existing collection. Both unmodifiable.
+
+=== 20. A bounded BlockingQueue versus an unbounded one in an executor.
+
+*The line of thinking:* back-pressure versus deferred OOM.
+
+*A good answer:* Bounded `ArrayBlockingQueue` (or `LinkedBlockingQueue(cap)`): `put` waits or `offer` fails, the producer slows, you can reject. Unbounded (default `LinkedBlockingQueue` in some executors): the queue absorbs load until the heap dies. Capacity is a production choice, not an implementation detail.
+
+== Trick questions
+
+*21. Is HashMap iteration order insertion order since Java 8?*
+
+No. You may observe something that looks stable until a resize. The contract is unordered. Need order: `LinkedHashMap`.
+
+*22. Can two threads iterate a HashMap if they never write?*
+
+The JMM still does not promise they see a consistent table without a happens-before from publication. A map filled then safely published (`final`, or volatile write of the reference after last put) can be read by many threads. Mutating later without concurrency control is the bug. "We only get" is not enough if anyone still `put`s.
+
+*23. TreeSet of Users sorted by age, `equals` on email. Size 2 for one email. Is contains broken?*
+
+The comparator is not consistent with equals. The tree is coherent as a tree. As a `Set`, `contains`/`equals` can surprise you. Either compare the same fields `equals` uses, or do not use a Set. link:sets.adoc[sets]
+
+*24. Why can't ArrayDeque hold null?*
+
+`poll`/`peek` return null to mean empty. A null element would be indistinguishable. PriorityQueue: cannot compare null.
+
+*25. `Map.copyOf` then the value list grows. Is the map mutable?*
+
+The map structure is not. The copy is shallow. Mutable values are still mutable. Demo: link:examples/maps/MapPitfallsDemo.java[MapPitfallsDemo.java].
+
+*26. Does HashMap throw ClassCastException when it treeifies non-Comparable keys?*
+
+No. That is a common mix-up with TreeMap. HashMap falls back to identity order in the tree. TreeMap without a comparator rejects a non-Comparable key on the first put.
+
+== Predict the output
+
+*27.*
+
+[source,java]
+----
+List<String> a = new ArrayList<>(List.of("a", "b", "c", "d"));
+for (String s : a) {
+    if (s.equals("b")) a.remove(s);
+}
+System.out.println(a);
+----
+
+Throws `ConcurrentModificationException`. After the throw, the list is `[a, c, d]` — `remove` already happened, then the hidden iterator's next `next()` detected the changed list. Demo: link:examples/overview/IteratorDemo.java[IteratorDemo.java].
+
+*28.*
+
+[source,java]
+----
+String x = new String("k");
+String y = new String("k");
+Map<String, Integer> identity = new IdentityHashMap<>();
+identity.put(x, 1);
+identity.put(y, 2);
+Map<String, Integer> hash = new HashMap<>();
+hash.put(x, 1);
+hash.put(y, 2);
+System.out.println(identity.size() + " " + hash.size());
+----
+
+`2 1` — IdentityHashMap uses `==`, HashMap uses equals. Demo: link:examples/maps/MapPitfallsDemo.java[MapPitfallsDemo.java].
+
+*29.*
+
+[source,java]
+----
+PriorityQueue<Integer> q = new PriorityQueue<>();
+for (int n : new int[] {10, 3, 5, 1}) q.offer(n);
+System.out.println(q);
+System.out.println(q.poll() + " " + q.poll());
+----
+
+The first line is `[1, 3, 5, 10]` on this JDK, but that is the heap's internal layout, not a promised sorted traversal. The second line is `1 3`: repeated `poll` calls follow priority order. Do not assert that `toString()` is sorted. Demo: link:examples/queues/PriorityQueueDemo.java[PriorityQueueDemo.java].
+
+*30.*
+
+[source,java]
+----
+List<String> live = new ArrayList<>();
+live.add("a");
+List<String> view = Collections.unmodifiableList(live);
+live.add("b");
+System.out.println(view);
+----
+
+`[a, b]`. The wrapper tracks the original. `view.add` would throw. Demo: link:examples/utilities/ViewsAndFactoriesDemo.java[ViewsAndFactoriesDemo.java].
+
+== Rapid fire
+
+[cols="2,3"]
+|===
+|Prompt |One line
+
+|Default ArrayList capacity before first add
+|0 (shared empty array). First add → 10.
+
+|Default HashMap table after first put
+|16. Resize at size 13.
+
+|Load factor
+|0.75
+
+|TREEIFY_THRESHOLD
+|8 (and table length ≥ 64)
+
+|List.equals a Set with same elements
+|false (both ways)
+
+|HashSet implementation
+|HashMap of keys to a dummy object
+
+|EnumSet iteration order
+|Enum declaration order
+
+|Stack replacement
+|`ArrayDeque`
+
+|Vector
+|Synchronized ArrayList. Do not add.
+
+|`Set.of("a","a")`
+|`IllegalArgumentException`
+
+|CHM null key
+|`NullPointerException`
+
+|Java 21 `reversed()`
+|A view
+
+|`RandomAccess`
+|Marker: `get(i)` is cheap. ArrayList yes, LinkedList no.
+
+|PECS
+|Producer-extends, consumer-super (`List<? extends T>` read, `List<? super T>` write)
+|===
+
+== A mock round
+
+Work these without scrolling up. Then check the linked document.
+
+. Draw Iterable → Collection → List/Set/Queue, and Map beside them. Where does Deque sit? link:overview.adoc[overview]
+. Write `removeIf` to drop `"b"` from an ArrayList. Why not for-each `remove`? link:overview.adoc[overview]
+. Size `ArrayList` for 10_000 elements. What goes wrong if you do not? link:lists.adoc[lists]
+. `List<Integer> xs = new ArrayList<>(List.of(10, 20, 1)); xs.remove(1);` — contents? link:lists.adoc[lists]
+. Two Users, `equals`/`hashCode` on email, TreeSet by age. Size after both adds. Is that a valid Set? link:sets.adoc[sets]
+. Explain load factor, and write the Java 19 call that sizes a HashMap for n mappings. link:maps.adoc[maps]
+. Implement a 3-entry LRU with LinkedHashMap. link:maps.adoc[maps]
+. Empty ArrayDeque: results of `poll`, `peek`, `remove`. link:queues.adoc[queues]
+. Why is PriorityQueue not a sorted List? link:queues.adoc[queues]
+. Return an internal `ArrayList` from a getter without letting the caller `add`. View or copy — when each? link:utilities.adoc[utilities]

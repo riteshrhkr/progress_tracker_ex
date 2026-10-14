@@ -317,7 +317,7 @@ public class PatternMatchingDemo {
         record Order(String id, Customer customer, List<OrderItem> items, LocalDate orderDate) {}
 
         // Payment types
-        sealed interface Payment permits CreditCard, PayPal, BankTransfer {}
+        interface Payment permits CreditCard, PayPal, BankTransfer {}
         record CreditCard(String last4, String type) implements Payment {}
         record PayPal(String email) implements Payment {}
         record BankTransfer(String accountNumber) implements Payment {}
@@ -382,6 +382,7 @@ public class PatternMatchingDemo {
                 }
                 case PayPal(String email) -> subtotal * 0.034;
                 case BankTransfer(String account) -> 0.0;
+                default -> 0.0;
             };
 
             double total = subtotal - discount + fee;
@@ -398,6 +399,7 @@ public class PatternMatchingDemo {
                     "PayPal (" + email + ")";
                 case BankTransfer(String account) ->
                     "Bank Transfer (Account: " + account + ")";
+                default -> "Unknown payment method";
             };
 
             // Print order summary

@@ -1,0 +1,535 @@
+= The Four Pillars: Encapsulation, Inheritance, Polymorphism, Abstraction
+:toc: macro
+:toc-title: Table of Contents
+:toclevels: 2
+:sectnums:
+:icons: font
+:source-highlighter: rouge
+
+The four main ideas of OOP, explained with real examples of how they actually work: how getters can accidentally expose data, how fields can be kept private, how Java decides which method to call, and the difference between an interface and an abstract class.
+
+toc::[]
+
+Previous: link:oop-fundamentals.adoc[oop-fundamentals.adoc]. Next: link:object-class-contracts.adoc[object-class-contracts.adoc]. Index: link:README.adoc[README.adoc].
+
+== Encapsulation
+
+=== Shallow version versus real version
+
+****
+*Shallow understanding:* encapsulation means private fields with getters and setters.
+
+*Real understanding:* encapsulation means the class hides how it stores its data and refuses to let anyone put it in a state that breaks its rules. A bank account exposes `withdraw()`, not `setBalance()`.
+****
+
+A class with a `private` field and a matching setter for every field has hidden nothing. The representation is still public, just spelled with more keystrokes. What you actually want is: the object cannot be observed in a state that violates its own rules.
+
+The rule a class protects is called an *invariant* — something that must be true about the object at all times. "Balance is never negative" is an invariant.
+
+=== A guard is what makes it encapsulation
+
+[source,java]
+----
+final class Account {
+    private long balanceCents;
+
+    void withdraw(long cents) {
+        if (cents <= 0)            throw new IllegalArgumentException("amount must be positive");
+        if (cents > balanceCents)  throw new IllegalStateException("insufficient funds: ...");
+        balanceCents -= cents;
+    }
+
+    long balanceCents() { return balanceCents; }   // read is fine, blind write is not
+}
+----
+
+Full example: `examples.pillars.EncapsulationDemo` — link:examples/pillars/EncapsulationDemo.java[EncapsulationDemo.java]
+
+Output:
+
+----
+[1] No guard means no invariant
+    leaky.balance = -500.0
+
+[2] The guarded version refuses bad state
+    balance after withdraw(2500) = 7500
+    withdraw(1000000) rejected: insufficient funds: have 7500, need 1000000
+    new Account(-1) rejected: opening balance cannot be negative
+----
+
+Notice the constructor guards too. An invariant that only the methods enforce is an invariant an object can be born without.
+
+=== Returning a mutable field from a getter
+
+`private` protects the *field*, meaning the reference. It says nothing about the object that reference points at. Hand that object out and the field is effectively public.
+
+[source,java]
+----
+private final List<String> history = new ArrayList<>();
+
+List<String> historyLeak() { return history; }        // caller now holds your internal list
+List<String> history()     { return List.copyOf(history); }   // caller holds a copy
+----
+
+Output:
+
+----
+[3] A getter that returns the internal list undoes all of it
+    history after tampering through the leaky getter: [forged entry]
+
+[4] The copy cannot be used to reach back in
+    List.copyOf(...).add(...) threw UnsupportedOperationException
+    history is still: [forged entry]
+----
+
+The audit history was cleared and a forged entry inserted, through a getter, on a class whose field is `private final`. The copy in section 4 refuses the same attempt.
+
+`List.copyOf` gives an unmodifiable *copy*. `Collections.unmodifiableList` gives an unmodifiable *view* — if you keep mutating the original, the view changes with it. Use the copy when you are handing data to a caller you do not control.
+
+Making the copy costs an allocation per call. On a hot path returning a large collection, that shows up in profiles. The usual answers are to return the unmodifiable view when you control both sides, or to hold an immutable collection internally so there is nothing to copy.
+
+=== Encapsulation is not only about fields
+
+Hiding a field is the small version. The valuable version is hiding a decision.
+
+[source,java]
+----
+// exposes the decision: every caller must know about the cache
+if (cache.containsKey(id)) return cache.get(id);
+return repo.load(id);
+
+// hides it: callers ask for a user, the class decides where it comes from
+User user = users.byId(id);
+----
+
+If you later add a second cache tier, only one class changes.
+
+=== Key takeaways
+
+* An invariant is a rule that must always hold. Encapsulation exists to protect invariants.
+* Guard in the constructor as well as in the methods, or invalid objects can be created directly.
+* `private` protects the reference, not the object it points at. Returning a mutable field defeats it.
+* `List.copyOf` is a copy, `Collections.unmodifiableList` is a live view. They fail differently.
+* The strongest use is hiding decisions, not just fields.
+
+Self-check:
+
+. What is an invariant, and where must it be enforced?
+. Why is a class with a getter and setter for every field not encapsulated?
+. What is the difference between an unmodifiable copy and an unmodifiable view?
+. What is the cost of defensive copying, and when would you avoid it?
+
+== Inheritance
+
+=== What it actually gives you
+
+`class Dog extends Animal` gives you two separate things:
+
+. *Subtyping*: a `Dog` can be used wherever an `Animal` is expected. This is the valuable half.
+. *Code reuse*: `Dog` gets `Animal`'s implementations for free. This is the half that causes trouble.
+
+Java allows single inheritance of classes and multiple inheritance of interfaces. Every class without an `extends` clause implicitly extends `Object`.
+
+=== Methods are chosen by the object, fields are not
+
+This is the single most confusing rule in Java inheritance, and it has a clean explanation: method calls are resolved at runtime from the object; field accesses and static method calls are resolved at compile time from the declared type of the variable.
+
+[source,java]
+----
+class Animal { String name = "animal"; String speak() { return "..."; } }
+class Dog extends Animal { String name = "dog"; @Override String speak() { return "woof"; } }
+
+Dog dog = new Dog();
+Animal asAnimal = dog;   // one object, two variable types
+----
+
+Full example: `examples.pillars.InheritanceDemo` — link:examples/pillars/InheritanceDemo.java[InheritanceDemo.java]
+
+Output:
+
+----
+[1] Same object, two variable types
+    asAnimal.name  = animal   (field, picked from the variable type)
+    dog.name       = dog      (field, picked from the variable type)
+    asAnimal.speak() = woof   (method, picked from the object)
+
+[2] Both fields exist at once, the subclass one hides the other
+    dog.hiddenParentName() = animal
+    ((Animal) dog).name    = animal
+----
+
+There is one object with *two* fields called `name`. The subclass field *hides* the parent's rather than replacing it, and which one you get depends on the type you are looking through. `super.name` reaches the hidden one.
+
+The clearest illustration is a method inherited from the parent:
+
+----
+[3] A base-class method sees the base field but the overridden method
+    name field says 'animal', speak() says 'woof'
+----
+
+That is one line of code in `Animal.intro()`, reading `name` and calling `speak()`, and the two resolve by different rules.
+
+TIP: Do not hide fields. There is no legitimate use for two fields with the same name in one hierarchy. Keep fields `private` and the problem cannot occur.
+
+=== Static methods are hidden, not overridden
+
+----
+[4] Static methods are hidden, not overridden
+    Animal.kind() = Animal.kind()
+    Dog.kind()    = Dog.kind()
+    variable is declared Animal, holds a Dog, .kind() gives Animal.kind()
+----
+
+The variable holds a `Dog`, and `Animal.kind()` still ran. Static methods belong to the class, so the compiler picks one from the declared type and there is no runtime lookup. Marking such a method `@Override` does not compile:
+
+----
+error: static method statik() in Sub cannot be annotated with @Override
+----
+
+=== The rules an override must obey
+
+[cols="1,2"]
+|===
+|Aspect |Rule
+
+|Signature
+|Name and parameter types must match exactly. Different parameters means overloading, not overriding.
+
+|Return type
+|Same type, or a subtype of it (*covariant return*, since Java 5).
+
+|Access
+|Same or wider. Narrowing is rejected.
+
+|Checked exceptions
+|Same, narrower, or none. You cannot add new checked exceptions.
+
+|`final` / `static` / `private`
+|Cannot be overridden at all.
+|===
+
+Two of those, as javac actually reports them:
+
+----
+error: visible() in Sub cannot override visible() in Base
+  attempting to assign weaker access privileges; was public
+
+error: throwsNothing() in Sub cannot override throwsNothing() in Base
+  overridden method does not throw IOException
+----
+
+Always write `@Override`. It is not decoration — it turns a silent typo that creates a brand new method into a compile error.
+
+=== Constructors chain upward
+
+----
+[5] Constructors run from the top of the chain down
+    Vehicle(4)
+    Car(hatchback)
+    hatchback with 4 wheels
+----
+
+A subclass object contains its superclass part, so that part must be built first. The full ordering, including initializer blocks, is in link:oop-fundamentals.adoc[oop-fundamentals.adoc].
+
+=== When inheritance is the wrong tool
+
+*Coupling* is how much one piece of code depends on the internals of another — high coupling means changing A forces you to change B. Inheritance is the tightest coupling Java offers: the subclass depends on the superclass's fields, its method implementations, and on how those methods call each other. Change the parent, break the child.
+
+The practical rule is that inheritance is safe when the parent was *designed* for it — documented, with clear extension points — and risky otherwise. The failure modes, with output, are in link:design-principles.adoc[design-principles.adoc].
+
+=== Key takeaways
+
+* Inheritance bundles subtyping (useful) with implementation reuse (risky).
+* Overridden methods dispatch on the object; fields and statics resolve on the declared type.
+* Fields are hidden, not overridden, and both copies exist. Keep fields private.
+* An override may widen access and narrow the return type and checked exceptions, never the reverse.
+* `@Override` converts a whole class of silent bugs into compile errors.
+
+Self-check:
+
+. One object, a `Dog` behind an `Animal` variable. Why does `speak()` give the `Dog` answer and `name` the `Animal` one?
+. Can a static method be overridden? What happens instead?
+. Which of return type, access level, and checked exceptions may an override widen?
+. Why must `super()` run before the subclass constructor body?
+
+== Polymorphism
+
+=== The two kinds, and when each is decided
+
+[cols="1,2,2"]
+|===
+| |Overriding (runtime polymorphism) |Overloading (compile-time)
+
+|Same name, and
+|identical parameter list
+|different parameter list
+
+|Chosen using
+|the real object
+|the declared types of the arguments
+
+|Chosen when
+|the call executes
+|the code compiles
+
+|Lives across
+|a class and its subclass
+|one class, or a class and its subclass
+|===
+
+The proper name for the first is *dynamic dispatch*: the JVM looks at the real object, finds its class, and picks the method from there.
+
+=== Overriding: the object decides
+
+Full example: `examples.pillars.PolymorphismDemo` — link:examples/pillars/PolymorphismDemo.java[PolymorphismDemo.java]
+
+Output:
+
+----
+[1] Overriding, the object decides
+    Circle               area = 3.1416
+    Square               area = 4.0000
+----
+
+The loop variable is declared `Shape`. Neither `Circle` nor `Square` is mentioned in the loop. Adding a `Triangle` requires no change to the calling code, which is the entire payoff.
+
+=== Overloading: the compiler decides, and it uses the variable
+
+[source,java]
+----
+static String pick(Object o) { return "pick(Object)"; }
+static String pick(String s) { return "pick(String)"; }
+
+String text = "hello";
+Object textAsObject = text;      // the same object
+----
+
+Output:
+
+----
+[2] Overloading, the declared type decides
+    pick(text)         -> pick(String)
+    pick(textAsObject) -> pick(Object)   same object, different variable type
+----
+
+One object, two answers. If you expected `pick(String)` both times, you were expecting overload resolution to happen at runtime. It never does.
+
+=== Overload resolution rules
+
+A `null` argument goes to the most specific applicable overload. If two are equally specific and neither is a subtype of the other, it does not compile:
+
+----
+error: reference to pick is ambiguous
+  both method pick(String) in Errors and method pick(Integer) in Errors match
+----
+
+Cast the `null` (`pick((String) null)`) to say which you meant.
+
+When an `int` is passed, the compiler works through three phases in order and stops at the first that finds a match:
+
+. widening primitive conversion (`int` to `long`)
+. boxing (`int` to `Integer`)
+. varargs (`int...`)
+
+----
+[4] int argument: widening wins over boxing, boxing wins over varargs
+    priority(7) -> priority(long)
+----
+
+That order exists so that adding an overload does not silently change what existing code calls. It also means adding an overload to a widely used method is a compatibility risk worth thinking about.
+
+=== Covariant return
+
+An override may return a subtype of what the parent declared.
+
+----
+[5] Covariant return
+    declared return type is Object, actual value: from Child
+    through Child the return type is String: FROM CHILD
+----
+
+Through a `Parent` variable you get the declared `Object` and must cast. Through a `Child` variable the compiler knows it is a `String`. This is what lets `clone()` and builder methods return the precise type instead of forcing casts on callers.
+
+=== Key takeaways
+
+* Overriding is resolved at runtime from the object; overloading at compile time from the declared types.
+* One object behind two variable types can select two different overloads.
+* Ambiguous `null` arguments are a compile error; cast to disambiguate.
+* Overload matching tries widening, then boxing, then varargs, and stops at the first hit.
+* Covariant returns let an override narrow the return type.
+
+Self-check:
+
+. Same object, variable typed `Object` versus `String`. Which overload runs, and why?
+. Why does `pick(null)` fail to compile when `pick(String)` and `pick(Integer)` both exist?
+. Given `f(long)`, `f(Integer)` and `f(int...)`, which one does `f(7)` call?
+. What is a covariant return type and what problem does it remove?
+
+== Abstraction
+
+=== Shallow version versus real version
+
+****
+*Shallow understanding:* abstraction means using `abstract` classes and interfaces.
+
+*Real understanding:* abstraction means naming what a thing does so that callers never need to know how it does it, and so the how can change without touching them.
+****
+
+`List` is the example that proves it. Your code says `list.add(x)`. Whether that is an array being resized or a chain of nodes is not your concern, and swapping one for the other changes nothing at the call site.
+
+=== Interface versus abstract class
+
+[cols="1,2,2"]
+|===
+| |Interface |Abstract class
+
+|Instance state
+|No (only `public static final` constants)
+|Yes, including `private` fields
+
+|Constructors
+|No
+|Yes, called via `super(...)`
+
+|How many per class
+|Many
+|One
+
+|Method bodies
+|`default`, `static`, `private` (Java 8/9)
+|Any, including `protected` helpers
+
+|Access levels
+|`public` by default; `private` allowed for helpers
+|All four
+
+|Adding a method later
+|Source-compatible only if it has a `default` body
+|Fine if it is concrete
+|===
+
+*When do I choose which:*
+
+* You are describing a *capability* something can have, and unrelated types may have it → interface. `Comparable`, `AutoCloseable`, `Runnable`.
+* Several implementations must share *state* or a non-trivial constructor → abstract class.
+* You want a fixed algorithm with one or two steps left open → abstract class with a `final` method calling `protected abstract` steps.
+* You are unsure → interface. It leaves the single `extends` slot free, and you can add an abstract base class later without breaking anyone.
+
+In modern code the two are usually combined: a public interface for the contract, plus a package-private abstract class holding shared plumbing.
+
+=== Default methods and the diamond
+
+A `default` method is an interface method with a body, added in Java 8 so that `Collection` could gain `stream()` without breaking every existing implementation.
+
+Full example: `examples.pillars.AbstractionDemo` — link:examples/pillars/AbstractionDemo.java[AbstractionDemo.java]
+
+Output:
+
+----
+[1] Interface with a default method and a lambda implementation
+    hello, Ritesh
+
+[2] Two inherited defaults, resolved explicitly
+    duck.move() = walking and swimming
+----
+
+`Greeter` has one abstract method, so a lambda can implement it, while `greet()` and a `private` helper come along for free.
+
+When a class inherits two `default` methods with the same signature from unrelated interfaces, Java does not pick for you. It refuses to compile until you override and choose:
+
+[source,java]
+----
+class Duck implements Walker, Swimmer {
+    @Override
+    public String move() {
+        return Walker.super.move() + " and " + Swimmer.super.move();
+    }
+}
+----
+
+`Walker.super.move()` is the syntax for "the default from that specific interface".
+
+If a class inherits a method from both a superclass and an interface default, the class wins with no error. The shorthand is "the class always beats the interface".
+
+=== Abstract class holding a skeleton
+
+[source,java]
+----
+abstract static class Report {
+    private final String title;
+    protected Report(String title) { this.title = title; }
+
+    final String render() { return "[" + title + "]\n" + body(); }       // fixed
+    protected abstract String body();                                    // open
+}
+----
+
+Output:
+
+----
+[3] Abstract class supplying the skeleton
+    [Sales]
+        units sold: 42
+----
+
+`render()` is `final` on purpose: subclasses fill the hole, they do not redraw the outline. This shape is the *template method* pattern, and it is one of the few places inheritance is clearly the right tool.
+
+=== Sealed types: abstraction with a closed list
+
+Sometimes you want the opposite of open extension. A payment is a card, cash or a transfer, and that list is not meant to grow behind your back. `sealed` (Java 17) states the permitted subtypes:
+
+[source,java]
+----
+sealed interface Payment permits Card, Cash, Transfer {}
+record Card(String last4) implements Payment {}
+record Cash() implements Payment {}
+record Transfer(String iban) implements Payment {}
+
+static String describe(Payment payment) {
+    return switch (payment) {          // no default branch needed
+        case Card c     -> "card ending " + c.last4();
+        case Cash ignored -> "cash";
+        case Transfer t -> "transfer to " + t.iban();
+    };
+}
+----
+
+Output:
+
+----
+[4] Sealed interface plus exhaustive switch
+    card ending 4242
+    cash
+    transfer to DE89...
+----
+
+Because the list is closed, the compiler can prove the switch is exhaustive. Remove one branch and it fails immediately:
+
+----
+error: the switch expression does not cover all possible input values
+----
+
+That is the real benefit: adding a fourth payment type turns every incomplete switch into a compile error rather than a runtime surprise. Pattern matching for `switch` finalised in Java 21.
+
+The trade-off is deliberate. Sealed types are for domains you own and want to keep closed; open interfaces are for extension points other people plug into.
+
+=== Key takeaways
+
+* Abstraction is about hiding how, not about which keyword you typed.
+* Interface for a capability, abstract class for shared state or a fixed skeleton. Interface when in doubt.
+* `default` methods exist so interfaces can grow without breaking implementations.
+* Conflicting defaults must be resolved with `X.super.method()`; a class implementation always beats an interface default.
+* `sealed` closes a hierarchy, which lets the compiler check switch exhaustiveness.
+
+Self-check:
+
+. Give one thing an abstract class can do that an interface cannot, and one the other way round.
+. Why were `default` methods added in Java 8?
+. A class implements two interfaces with the same default method. What does the compiler do?
+. What does `sealed` buy you that a plain interface does not?
+
+== Where to go next
+
+Overriding `equals` and `hashCode` correctly, and building classes that cannot be corrupted: link:object-class-contracts.adoc[object-class-contracts.adoc].
+
+Index: link:README.adoc[README.adoc].
